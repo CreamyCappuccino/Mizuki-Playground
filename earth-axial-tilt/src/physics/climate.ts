@@ -1,4 +1,4 @@
-import { clamp, dailyMeanInsolation } from './solar';
+import { clamp, dailyMeanInsolation, dayLengthHours } from './solar';
 
 const CACHE = new Map<string, number>();
 
@@ -52,7 +52,7 @@ export function annualProfile(latitudeDeg: number, obliquityDeg: number): Annual
     points.push({
       day,
       insolation: dailyMeanInsolation(latitudeDeg, day, obliquityDeg),
-      daylight: 0,
+      daylight: dayLengthHours(latitudeDeg, day, obliquityDeg),
       temperature: temperatureEstimateC(latitudeDeg, day, obliquityDeg),
     });
   }
