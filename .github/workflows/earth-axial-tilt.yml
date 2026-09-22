@@ -1,0 +1,52 @@
+name: Earth Axial Tilt CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'earth-axial-tilt/**'
+      - '.github/workflows/earth-axial-tilt.yml'
+  pull_request:
+    paths:
+      - 'earth-axial-tilt/**'
+      - '.github/workflows/earth-axial-tilt.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: earth-axial-tilt
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: earth-axial-tilt/package-lock.json
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Production build
+        run: npm run build
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Browser smoke test
+        run: npm run test:e2e
