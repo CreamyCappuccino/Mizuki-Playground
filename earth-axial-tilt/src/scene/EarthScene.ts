@@ -7,6 +7,8 @@ import type { LocationPreset } from '../data/locations';
 import { geographicToCartesian, cartesianToGeographic, sunDirection } from '../physics/geometry';
 import { rotatingSunDirection, wrapRotation } from '../physics/diurnal';
 import { createInstantSolarLayer } from './instantSolar';
+import { EarthAppearance } from './earthAppearance';
+import { parseVisualQuality, qualitySettings, viewFieldOfView, type VisualQuality } from './visualQuality';
 
 export type SurfaceMode = 'normal' | 'insolation' | 'daylight' | 'temperature' | 'instant';
 
@@ -30,7 +32,6 @@ const EARTH_RADIUS = 2.15;
 // A direction glyph, not a scale Sun. Keep it beyond the 12-unit camera orbit
 // so looking down on a subsolar location cannot place a giant Sun in the foreground.
 const SUN_MARKER_DISTANCE = 20;
-const EARTH_TEXTURE = 'https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg';
 
 export class EarthScene {
   private readonly canvas: HTMLCanvasElement;
@@ -38,6 +39,13 @@ export class EarthScene {
   private readonly camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
   private readonly renderer: THREE.WebGLRenderer;
   private readonly controls: OrbitControls;
+  private readonly appearance: EarthAppearance;
+  private readonly resizeObserver: ResizeObserver;
+  private quality: VisualQuality = 'high';
+  private nightLights = true;
+  private dirty = true;
+  private renderCount = 0;
+  private readonly sunLocal = new THREE.Vector3();
   private readonly earthGroup = new THREE.Group();
   private readonly earthMesh: THREE.Mesh<THREE.SphereGeometry, THREE.MeshPhongMaterial>;
   private readonly dataMesh: THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial>;
@@ -122,21 +130,11 @@ export class EarthScene {
     this.earthMesh = new THREE.Mesh(earthGeometry, earthMaterial);
     this.earthGroup.add(this.earthMesh);
 
-    const texture = new THREE.TextureLoader().load(
-      EARTH_TEXTURE,
-      (loaded) => {
-        if (this.disposed) { loaded.dispose(); return; }
-        loaded.colorSpace = THREE.SRGBColorSpace;
-        earthMaterial.map = loaded;
-        earthMaterial.color.set(0xffffff);
-        earthMaterial.needsUpdate = true;
-      },
-      undefined,
-      () => {
-        // Scientific layers remain functional if the decorative texture cannot load.
-      },
-    );
-    texture.anisotropy = Math.min(8, this.renderer.capabilities.getMaxAnisotropy());
+    this.appearance = new EarthAppearance(earthGeometry, earthMaterial, this.invalidate, (asset, status) => {
+      this.canvas.dataset[asset === 'day' ? 'dayTexture' : 'nightTexture'] = status;
+      this.canvas.dispatchEvent(new Event('visualstatus'));
+    });
+    this.earthGroup.add(this.appearance.night, this.appearance.atmosphere);
 
     const dataGeometry = earthGeometry.clone();
     const colors = new Float32Array(dataGeometry.attributes.position.count * 3);
@@ -157,7 +155,6 @@ export class EarthScene {
     this.instantMesh = createInstantSolarLayer(earthGeometry);
     this.earthGroup.add(this.instantMesh);
 
-    this.earthGroup.add(this.createAtmosphere());
     this.earthGroup.add(this.createLatitudeGrid());
     this.earthGroup.add(this.marker);
     this.scene.add(this.earthGroup);
@@ -170,6 +167,11 @@ export class EarthScene {
     canvas.addEventListener('pointercancel', this.handlePointerCancel);
     canvas.addEventListener('pointerup', this.handlePointer);
     window.addEventListener('resize', this.resize);
+    document.addEventListener('visibilitychange', this.invalidate);
+    this.controls.addEventListener('change', this.invalidate);
+    this.resizeObserver = new ResizeObserver(this.resize);
+    this.resizeObserver.observe(canvas);
+    this.setQuality('high');
 
     this.setState(this.state);
     this.resize();
@@ -206,6 +208,11 @@ export class EarthScene {
     if (seasonChanged || next.mode !== undefined || previous.thermal !== this.state.thermal || previous.temperatureModel !== this.state.temperatureModel || previous.heatDepth !== this.state.heatDepth) this.updateDataLayer();
     // Current world matrices are also needed for picking before the next frame.
     this.earthGroup.updateMatrixWorld(true);
+    this.sunLocal.fromArray(rotatingSunDirection(this.state.day, this.state.tilt, this.state.rotation));
+    this.appearance.setSun(this.sunDirectionVector, this.sunLocal);
+    this.appearance.setVisibility(this.state.mode === 'normal', this.nightLights);
+    this.canvas.dataset.nightLightsVisible = String(this.state.mode === 'normal' && this.nightLights && this.canvas.dataset.nightTexture === 'ready');
+    this.invalidate();
   }
 
   focusLocation(): void {
@@ -230,10 +237,29 @@ export class EarthScene {
     this.controls.update();
     this.controls.enableDamping = damping;
     this.camera.updateMatrixWorld(true);
+    this.invalidate();
   }
+
+  setQuality(value: VisualQuality): void {
+    this.quality = parseVisualQuality(value);
+    this.resize();
+  }
+
+  setNightLights(enabled: boolean): void {
+    this.nightLights = enabled;
+    this.appearance.setVisibility(this.state.mode === 'normal', enabled);
+    this.canvas.dataset.nightLightsVisible = String(this.appearance.night.visible);
+    this.invalidate();
+  }
+
+  refreshView(): void { this.resize(); }
+  private readonly invalidate = (): void => { this.dirty = true; };
 
   dispose(): void {
     window.removeEventListener('resize', this.resize);
+    document.removeEventListener('visibilitychange', this.invalidate);
+    this.resizeObserver.disconnect();
+    this.appearance.dispose();
     this.disposed = true;
     cancelAnimationFrame(this.frameId);
     this.controls.dispose();
@@ -257,16 +283,28 @@ export class EarthScene {
     const width = this.canvas.clientWidth;
     const height = this.canvas.clientHeight;
     if (width === 0 || height === 0) return;
+    const config = qualitySettings(this.quality, window.devicePixelRatio, this.renderer.capabilities.getMaxAnisotropy());
+    if (this.renderer.getPixelRatio() !== config.pixelRatio) this.renderer.setPixelRatio(config.pixelRatio);
+    this.appearance.setAnisotropy(config.anisotropy);
     this.renderer.setSize(width, height, false);
+    this.canvas.dataset.quality = this.quality;
+    this.canvas.dataset.pixelRatio = String(config.pixelRatio);
     this.camera.aspect = width / height;
+    this.camera.fov = viewFieldOfView(this.camera.aspect);
     this.camera.updateProjectionMatrix();
+    this.invalidate();
   };
 
   private readonly animate = (): void => {
     if (this.disposed) return;
     if (!document.hidden) {
       this.controls.update();
-      this.renderer.render(this.scene, this.camera);
+      if (this.dirty) {
+        this.renderer.render(this.scene, this.camera);
+        this.dirty = false;
+        this.canvas.dataset.renderCount = String(++this.renderCount);
+        this.canvas.dataset.nightLightsVisible = String(this.appearance.night.visible);
+      }
     }
     this.frameId = requestAnimationFrame(this.animate);
   };
@@ -305,36 +343,6 @@ export class EarthScene {
       geometry,
       new THREE.LineBasicMaterial({ color: 0x345071, transparent: true, opacity: 0.34 }),
     );
-  }
-
-  private createAtmosphere(): THREE.Mesh {
-    const material = new THREE.ShaderMaterial({
-      vertexShader: `
-        varying vec3 vNormal;
-        varying vec3 vViewPosition;
-        void main() {
-          vNormal = normalize(normalMatrix * normal);
-          vec4 viewPosition = modelViewMatrix * vec4(position, 1.0);
-          vViewPosition = viewPosition.xyz;
-          gl_Position = projectionMatrix * viewPosition;
-        }
-      `,
-      fragmentShader: `
-        varying vec3 vNormal;
-        varying vec3 vViewPosition;
-        void main() {
-          vec3 viewDir = normalize(-vViewPosition);
-          float rim = pow(1.0 - max(dot(normalize(vNormal), viewDir), 0.0), 2.6);
-          gl_FragColor = vec4(0.22, 0.62, 1.0, rim * 0.34);
-        }
-      `,
-      transparent: true,
-      blending: THREE.AdditiveBlending,
-      side: THREE.FrontSide,
-      depthWrite: false,
-    });
-
-    return new THREE.Mesh(new THREE.SphereGeometry(EARTH_RADIUS * 1.035, 96, 64), material);
   }
 
   private createLatitudeGrid(): THREE.Group {
