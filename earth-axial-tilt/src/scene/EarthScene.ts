@@ -23,6 +23,9 @@ interface EarthSceneOptions {
 }
 
 const EARTH_RADIUS = 2.15;
+// A direction glyph, not a scale Sun. Keep it beyond the 12-unit camera orbit
+// so looking down on a subsolar location cannot place a giant Sun in the foreground.
+const SUN_MARKER_DISTANCE = 20;
 const EARTH_TEXTURE = 'https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg';
 
 export class EarthScene {
@@ -181,7 +184,7 @@ export class EarthScene {
     if (seasonChanged || next.day !== undefined) {
       this.sunDirectionVector.fromArray(sunDirection(this.state.day));
       this.sunLight.position.copy(this.sunDirectionVector).multiplyScalar(10);
-      this.sunMesh.position.copy(this.sunDirectionVector).multiplyScalar(7.2);
+      this.sunMesh.position.copy(this.sunDirectionVector).multiplyScalar(SUN_MARKER_DISTANCE);
       this.subsolarMarker.position.copy(this.sunDirectionVector).multiplyScalar(EARTH_RADIUS * 1.027);
       this.terminator.quaternion.setFromUnitVectors(this.ringNormal, this.sunDirectionVector);
     }
@@ -205,15 +208,23 @@ export class EarthScene {
     const position = this.earthGroup.localToWorld(new THREE.Vector3(...geographicToCartesian(
       this.state.location.latitude, this.state.location.longitude,
     ))).normalize();
-    this.camera.position.copy(position).multiplyScalar(8.2);
-    this.controls.target.set(0, 0, 0);
-    this.controls.update();
+    this.setViewPosition(position.multiplyScalar(8.2));
   }
 
   resetView(): void {
-    this.camera.position.set(0.4, 1.3, 8.2);
+    this.setViewPosition(new THREE.Vector3(0.4, 1.3, 8.2));
+  }
+
+  private setViewPosition(position: THREE.Vector3): void {
+    // Flush residual drag inertia before selecting an exact observer position.
+    const damping = this.controls.enableDamping;
+    this.controls.enableDamping = false;
+    this.controls.update();
+    this.camera.position.copy(position);
     this.controls.target.set(0, 0, 0);
     this.controls.update();
+    this.controls.enableDamping = damping;
+    this.camera.updateMatrixWorld(true);
   }
 
   dispose(): void {
