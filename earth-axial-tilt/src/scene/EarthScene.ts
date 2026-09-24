@@ -469,6 +469,8 @@ export class EarthScene {
     const rect = this.canvas.getBoundingClientRect();
     this.pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
     this.pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    // Camera controls can change orientation before the next animation frame.
+    this.camera.updateMatrixWorld(true);
     this.raycaster.setFromCamera(this.pointer, this.camera);
 
     const hit = this.raycaster.intersectObject(this.earthMesh, false)[0];
