@@ -143,8 +143,9 @@ test('day graph uses a daily mean reference and keeps its curve while spinning',
   await expect(meanLine).toHaveCSS('stroke-width', '1px');
   await expect(meanLine).toHaveCSS('visibility', 'visible');
   const meanY = Number(await meanLine.getAttribute('y1'));
-  expect(meanY).toBeGreaterThan(18);
-  expect(meanY).toBeLessThan(162);
+  const gridY = await page.locator('#annual-chart .chart-grid').evaluateAll(lines => lines.map(line => Number(line.getAttribute('y1'))));
+  expect(meanY).toBeGreaterThan(Math.min(...gridY));
+  expect(meanY).toBeLessThan(Math.max(...gridY));
   await expect(meanLine).toHaveAttribute('y2', String(meanY));
   await page.locator('#noon-here').click();
   const path = await page.locator('.day-chart-line').getAttribute('d');
