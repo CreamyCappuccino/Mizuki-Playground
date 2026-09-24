@@ -1,6 +1,10 @@
-# What the numbers mean (v0.3)
+# What the numbers mean (v0.5)
 
 ## Temperature is not the daytime maximum
+
+Neither temperature mode is an hourly weather calculation. **Thermal EBM**, the v0.5 default, solves a repeating seasonal energy balance. **Illustrative** preserves the v0.1–v0.4 heuristic exactly. A new configuration is a new equilibrated experiment, not an instantaneous physical jump in Earth's real climate.
+
+## Illustrative mode (unchanged legacy model)
 
 The plotted temperature is an illustrative **daily-mean-style estimate** for a latitude band, representing day and night together. It is not an observed station value, a daily maximum/minimum, a feels-like temperature, or a forecast. The annual summary averages the 365 plotted daily values; the displayed curve range is a range of **daily means**, not intraday extremes.
 
@@ -16,11 +20,56 @@ The 28-day lag is illustrative. Land/ocean heat storage, altitude, atmospheric c
 
 v0.2 retains v0.1's coefficients deliberately. It makes the interpretation explicit rather than raising a few coefficients to make selected cities look correct. Fractional days now use a continuous lag, and each annual profile contains all 365 days.
 
+## Thermal EBM: seasonal heat storage and meridional transport
+
+The new model solves a dry, zonally averaged energy-balance equation. It does not use the legacy latitude baseline or impose an artificial lag:
+
+```
+x = sin(latitude)
+C dT/dt = (1 - alpha(x)) Q(x,t) - (A + B T) + D d/dx[(1-x²) dT/dx]
+alpha(x) = 0.3 + 0.078 * (3 x² - 1) / 2
+C = 4,000,000 * H J m^-2 K^-1
+A = 210 W m^-2; B = 2 W m^-2 K^-1; D = 0.55 W m^-2 K^-1
+```
+
+`Q` is the existing astronomical daily-mean TOA irradiance; `T` is in degrees Celsius. The temperature variable is a seasonal surface/column proxy forced by daily means, not an observed 2-m station air temperature or an hourly mean computed from weather samples. Radiation is represented by a linear outgoing-flux parameterization. Latitude-to-latitude transport is a diffusive approximation, not resolved winds or ocean currents.
+
+**Fast / Mixed / Slow** use H = 2.5 / 10 / 50 meters of *equivalent* water respectively (10 / 40 / 200 MJ m^-2 K^-1). This sets one heat capacity uniformly across the whole planet. It does not fill land with water, look up local ocean depth, or classify cities as land/ocean. Greater heat storage smooths and delays the seasonal response. For this fixed-albedo linear model, changing C does not change the equilibrated annual mean; changing tilt can redistribute annual-mean temperatures.
+
+Parameters are transparent educational choices in the family described by Brian E. J. Rose's Climate Laboratory and climlab. They are **not fitted to Taipei, Singapore or a climatology dataset**. We implement the solver directly in TypeScript; climlab is a reference, not an application dependency.
+
+### Numerics and interpretation
+
+The sphere is divided into 90 latitude bands with 2-degree edges. Finite-volume weights are differences of sin(latitude); opposing interface fluxes cancel, and pole boundaries have zero flux. Values are carried at band area-centres, so the exact poles use the adjacent polar-cap temperature, not a separately resolved point.
+
+Backward-Euler steps of half a model day solve a pre-factorized tridiagonal system. Forcing is evaluated at step endpoints. The solver starts from the annual-mean steady solution and integrates until the maximum change at the same annual phase is below 1e-6 C (at most 80 years). Nonconvergence or nonfinite results produce an explicit error, not a clipped fallback. Each output has 365 temperature rows; fractional dates interpolate in time and sin(latitude), wrapping continuously across the year. The displayed annual summary averages these daily samples.
+
+The seasonal model conserves transported energy globally. Its converged global absorbed-minus-outgoing radiation residual is checked independently in tests. Tests also refine the grid to 180 bands and the timestep to one quarter day; the current 90-degree/Mixed check differs by less than 0.2 C at the tested locations/dates. This is a numerical consistency check, **not a physical uncertainty bound or forecast accuracy**.
+
+### Model limits are particularly important at extreme tilt
+
+Fixed reflectivity and linear outgoing radiation ignore changing ice, water vapour, latent heat, clouds, greenhouse feedbacks and circulation changes. At high obliquity and low heat capacity the model can return very large temperatures (including above 100 C). The UI warns about large extrapolations when any band/year sample is outside -60 to 60 C. That threshold is a presentation flag, not a validated physical validity domain. These values must not be read as Earth's future climate, boiling oceans, or a habitability prediction.
+
+No temperature value is clipped by this solver. The thermal map has a labelled fixed -100 to 180 C display scale (endpoint colours saturate); numeric readouts and graphs preserve the result. Illustrative mode keeps its previous -65 to 55 C clamp and matching scale.
+
+### Consistency while interacting
+
+A module Web Worker solves the seasonal fields away from rendering. It caches at most six configurations and processes at most one active request plus the latest desired request. Superseded replies cannot overwrite the current model. Changing date, spin, camera or selected location reuses the solved year. While a changed thermal configuration is unresolved, temperature numbers/curves are withheld and the temperature-colour overlay is hidden; astronomical controls remain usable. Errors offer retry or an explicit switch to Illustrative, never a silent model substitution.
+
+The Earth-reference curve uses the same selected temperature model and heat capacity at 23.44 degrees. It is not observed climate, nor a different heat-storage control run.
+
+### Primary references
+
+- Brian E. J. Rose, University at Albany, *The Climate Laboratory*, seasonal heat storage and energy-balance model: https://brian-rose.github.io/ClimateLaboratoryBook/courseware/seasonal-cycle/
+- Same author, finite-latitude energy balance and no-flux transport: https://brian-rose.github.io/ClimateLaboratoryBook/courseware/one-dim-ebm/
+- climlab EBM documentation, parameter units and model definitions: https://climlab.readthedocs.io/en/stable/api/climlab.model.ebm.html
+- Vite, module-worker bundling: https://vite.dev/guide/features#web-workers
+
 ## Real-world scale checks (not calibration data in the app)
 
 - **Singapore, Changi, 1991–2020:** the official monthly 24-hour mean ranges from **26.8 to 28.6 C**; mean daily maximum ranges from **30.5 to 32.4 C**. These are different statistics. Source: Meteorological Service Singapore, *Climate of Singapore*, temperature discussion and climate-station means table: https://www.weather.gov.sg/climate-climate-of-singapore/
 - **Taipei, 1991–2020:** Taiwan's TCCIP/NCDR station-data presentation gives an annual mean of **23.3 C** in its station-anomaly baseline table, based on CWA observations. Source: https://tccip.ncdr.nat.gov.tw/ds_01.aspx . Station history and processing matter; the page documents station relocation / series-joining caveats.
-- With the app's latitude 25.033 N and tilt 23.44 degrees, the retained toy model gives an annual mean of about **20.36 C**, with daily-mean estimates from **13.37 to 25.97 C**. Thus the app's cool Taipei result is not explained solely by “mean versus maximum”: the model is also not locally calibrated.
+- In Illustrative mode, with the app's latitude 25.033 N and tilt 23.44 degrees, the retained toy model gives an annual mean of about **20.36 C**, with daily-mean estimates from **13.37 to 25.97 C**. Thus the app's cool Taipei result is not explained solely by “mean versus maximum”: the model is also not locally calibrated.
 
 These historical normals are not current weather observations and do not validate the counterfactual 90-degree climate.
 
@@ -66,7 +115,7 @@ Background references (definitions / implementation conventions, not a claim to 
 
 The optional dashed annual curve runs the **same** model at Earth's 23.44 degrees. It is not a measured-climate curve. Both curves use the same chart scale.
 
-Surface legends use the same numerical ranges as the geometry: daily and instantaneous solar 0–1361 W/m2, daylight 0–24 h, and temperature -65–55 C. The solar scale therefore does not saturate prematurely near 90-degree obliquity.
+Surface legends use the same numerical ranges as the geometry: daily and instantaneous solar 0–1361 W/m2, daylight 0–24 h, and temperature -65–55 C in Illustrative mode or -100–180 C in Thermal EBM mode (colour limits, not temperature clipping). The solar scale therefore does not saturate prematurely near 90-degree obliquity.
 
 ## Visual resources and remaining limits
 
