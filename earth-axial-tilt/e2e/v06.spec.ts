@@ -25,6 +25,8 @@ async function ready(page: Page) { await expect(page.locator('#atlas-plot')).toH
 
 test('atlas opens paused, selects a latitude and day, and keeps longitude and rotation', async ({ page }, info) => {
   await page.setViewportSize({width:1440,height:1000});
+  await expect(page.getByLabel('Exact angle')).toHaveCount(1);
+  await expect(page.getByLabel('Atlas tilt in degrees')).toHaveCount(1);
   const rotation=await page.locator('#rotation').inputValue();
   await page.locator('#play-year').click();
   await page.locator('#open-atlas').click();
