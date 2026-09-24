@@ -15,14 +15,19 @@
 
       <header class="topbar glass">
         <div>
-          <p class="eyebrow">MIZUKI PLAYGROUND / PLANET LAB · v0.6</p>
+          <p class="eyebrow">MIZUKI PLAYGROUND / PLANET LAB · v0.7</p>
           <h1>Earth Axial Tilt</h1>
         </div>
         <div class="topbar__readout" aria-live="polite">
           <span id="season-label">June solstice</span>
           <strong id="date-readout">Day 172</strong>
         </div>
+        <div class="view-toolbar" aria-label="Viewing controls">
+          <label for="visual-quality">Quality <select id="visual-quality"><option value="eco">Eco</option><option value="balanced">Balanced</option><option value="high" selected>High</option></select></label>
+          <button id="focus-view" aria-pressed="false">Focus view</button>
+        </div>
       </header>
+      <p id="focus-view-note" hidden>Focus view · drag to orbit, scroll / pinch to zoom · Esc or Show controls to return.</p>
 
       <aside class="controls glass" aria-label="Simulation controls">
         <section>
@@ -114,6 +119,12 @@
         <section>
           <p class="eyebrow">LOCATION</p>
           <select id="location-select" aria-label="Choose a location"></select>
+        </section>
+        <section class="appearance-controls" aria-label="Earth appearance">
+          <p class="eyebrow">EARTH APPEARANCE</p>
+          <label class="check-control"><input id="night-lights" type="checkbox" checked /> Night lights in Earth view</label>
+          <p id="visual-status" class="input-help" role="status">Loading local Earth maps…</p>
+          <p class="input-help">Day and night maps: <a href="https://www.solarsystemscope.com/textures/" target="_blank" rel="noopener noreferrer">Solar System Scope</a> / <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC BY 4.0</a>, resized by three.js. Fixed geography and lights, not a response to tilt. Decorative lights and atmosphere are hidden in science modes.</p>
         </section>
         <section class="guide-controls">
           <label class="check-control"><input id="show-guides" type="checkbox" checked /> Show science guides</label>
