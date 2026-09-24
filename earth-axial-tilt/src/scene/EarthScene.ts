@@ -1,8 +1,9 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { dailyMeanInsolation, dayLengthHours, orbitalLongitudeRad } from '../physics/solar';
+import { dailyMeanInsolation, dayLengthHours, SOLAR_CONSTANT } from '../physics/solar';
 import { temperatureEstimateC } from '../physics/climate';
 import type { LocationPreset } from '../data/locations';
+import { geographicToCartesian, cartesianToGeographic, sunDirection } from '../physics/geometry';
 
 export type SurfaceMode = 'normal' | 'insolation' | 'daylight' | 'temperature';
 
@@ -11,6 +12,7 @@ interface SceneState {
   day: number;
   mode: SurfaceMode;
   location: LocationPreset;
+  guides: boolean;
 }
 
 interface EarthSceneOptions {
@@ -38,6 +40,28 @@ export class EarthScene {
     new THREE.SphereGeometry(0.4, 32, 32),
     new THREE.MeshBasicMaterial({ color: 0xffdc7d }),
   );
+  private readonly guidesGroup = new THREE.Group();
+  private readonly subsolarMarker = new THREE.Mesh(
+    new THREE.SphereGeometry(0.06, 18, 18),
+    new THREE.MeshBasicMaterial({ color: 0xffdc7d, toneMapped: false }),
+  );
+  private readonly terminator = new THREE.LineLoop(
+    new THREE.BufferGeometry().setFromPoints(Array.from({ length: 180 }, (_, i) => {
+      const a = i * Math.PI * 2 / 180;
+      return new THREE.Vector3(Math.cos(a) * EARTH_RADIUS * 1.009, Math.sin(a) * EARTH_RADIUS * 1.009, 0);
+    })),
+    new THREE.LineBasicMaterial({ color: 0xcfddf0, transparent: true, opacity: 0.68 }),
+  );
+  private readonly tiltArc = new THREE.Line(
+    new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(new Float32Array(65 * 3), 3)),
+    new THREE.LineBasicMaterial({ color: 0xba9aff, transparent: true, opacity: 0.8 }),
+  );
+  private readonly sunDirectionVector = new THREE.Vector3();
+  private readonly ringNormal = new THREE.Vector3(0, 0, 1);
+  private pointerStart: { id: number; x: number; y: number; moved: boolean } | null = null;
+  private readonly activePointers = new Set<number>();
+  private frameId = 0;
+  private disposed = false;
   private readonly raycaster = new THREE.Raycaster();
   private readonly pointer = new THREE.Vector2();
   private readonly onLocationPick?: (location: LocationPreset) => void;
@@ -46,6 +70,7 @@ export class EarthScene {
     tilt: 23.44,
     day: 172,
     mode: 'normal',
+    guides: true,
     location: { id: 'taipei', name: 'Taipei', latitude: 25.033, longitude: 121.5654 },
   };
 
@@ -87,6 +112,7 @@ export class EarthScene {
     const texture = new THREE.TextureLoader().load(
       EARTH_TEXTURE,
       (loaded) => {
+        if (this.disposed) { loaded.dispose(); return; }
         loaded.colorSpace = THREE.SRGBColorSpace;
         earthMaterial.map = loaded;
         earthMaterial.color.set(0xffffff);
@@ -106,6 +132,7 @@ export class EarthScene {
       dataGeometry,
       new THREE.MeshBasicMaterial({
         vertexColors: true,
+        toneMapped: false,
         transparent: true,
         opacity: 0.78,
         depthWrite: false,
@@ -119,8 +146,13 @@ export class EarthScene {
     this.earthGroup.add(this.createLatitudeGrid());
     this.earthGroup.add(this.marker);
     this.scene.add(this.earthGroup);
+    this.scene.add(this.guidesGroup);
+    this.guidesGroup.add(this.subsolarMarker, this.terminator, this.tiltArc);
     this.createAxis();
 
+    canvas.addEventListener('pointerdown', this.handlePointerDown);
+    canvas.addEventListener('pointermove', this.handlePointerMove);
+    canvas.addEventListener('pointercancel', this.handlePointerCancel);
     canvas.addEventListener('pointerup', this.handlePointer);
     window.addEventListener('resize', this.resize);
 
@@ -130,22 +162,42 @@ export class EarthScene {
   }
 
   setState(next: Partial<SceneState>): void {
+    const previous = this.state;
     this.state = { ...this.state, ...next };
     this.earthGroup.rotation.x = THREE.MathUtils.degToRad(this.state.tilt);
-
-    const lambda = orbitalLongitudeRad(this.state.day);
-    const sunDirection = new THREE.Vector3(Math.cos(lambda), 0, Math.sin(lambda)).normalize();
-    this.sunLight.position.copy(sunDirection).multiplyScalar(10);
-    this.sunMesh.position.copy(sunDirection).multiplyScalar(7.2);
-
+    this.sunDirectionVector.fromArray(sunDirection(this.state.day));
+    this.sunLight.position.copy(this.sunDirectionVector).multiplyScalar(10);
+    this.sunMesh.position.copy(this.sunDirectionVector).multiplyScalar(7.2);
+    this.subsolarMarker.position.copy(this.sunDirectionVector).multiplyScalar(EARTH_RADIUS * 1.027);
+    this.terminator.quaternion.setFromUnitVectors(this.ringNormal, this.sunDirectionVector);
+    this.guidesGroup.visible = this.state.guides;
     this.updateAxis();
     this.updateMarker();
-    this.updateDataLayer();
+    if (next.mode !== undefined || previous.day !== this.state.day || previous.tilt !== this.state.tilt) {
+      this.updateDataLayer();
+    }
+    // Current world matrices are also needed for picking before the next frame.
+    this.earthGroup.updateMatrixWorld(true);
   }
 
   dispose(): void {
     window.removeEventListener('resize', this.resize);
+    this.disposed = true;
+    cancelAnimationFrame(this.frameId);
+    this.controls.dispose();
+    this.canvas.removeEventListener('pointerdown', this.handlePointerDown);
+    this.canvas.removeEventListener('pointermove', this.handlePointerMove);
+    this.canvas.removeEventListener('pointercancel', this.handlePointerCancel);
     this.canvas.removeEventListener('pointerup', this.handlePointer);
+    this.scene.traverse((object) => {
+      const mesh = object as THREE.Mesh;
+      mesh.geometry?.dispose();
+      const materials = mesh.material ? (Array.isArray(mesh.material) ? mesh.material : [mesh.material]) : [];
+      for (const material of materials) {
+        (material as THREE.MeshBasicMaterial).map?.dispose();
+        material.dispose();
+      }
+    });
     this.renderer.dispose();
   }
 
@@ -159,18 +211,21 @@ export class EarthScene {
   };
 
   private readonly animate = (): void => {
+    if (this.disposed) return;
     this.controls.update();
     this.renderer.render(this.scene, this.camera);
-    requestAnimationFrame(this.animate);
+    this.frameId = requestAnimationFrame(this.animate);
   };
 
   private createStars(): THREE.Points {
     const count = 1800;
     const positions = new Float32Array(count * 3);
+    let seed = 20260924;
+    const random = () => { seed = (1664525 * seed + 1013904223) >>> 0; return seed / 4294967296; };
     for (let i = 0; i < count; i += 1) {
-      const radius = 30 + Math.random() * 25;
-      const theta = Math.random() * Math.PI * 2;
-      const z = Math.random() * 2 - 1;
+      const radius = 30 + random() * 25;
+      const theta = random() * Math.PI * 2;
+      const z = random() * 2 - 1;
       const planar = Math.sqrt(1 - z * z);
       positions[i * 3] = radius * planar * Math.cos(theta);
       positions[i * 3 + 1] = radius * z;
@@ -202,20 +257,20 @@ export class EarthScene {
     const material = new THREE.ShaderMaterial({
       vertexShader: `
         varying vec3 vNormal;
-        varying vec3 vWorldPosition;
+        varying vec3 vViewPosition;
         void main() {
           vNormal = normalize(normalMatrix * normal);
-          vec4 worldPosition = modelMatrix * vec4(position, 1.0);
-          vWorldPosition = worldPosition.xyz;
-          gl_Position = projectionMatrix * viewMatrix * worldPosition;
+          vec4 viewPosition = modelViewMatrix * vec4(position, 1.0);
+          vViewPosition = viewPosition.xyz;
+          gl_Position = projectionMatrix * viewPosition;
         }
       `,
       fragmentShader: `
         varying vec3 vNormal;
-        varying vec3 vWorldPosition;
+        varying vec3 vViewPosition;
         void main() {
-          vec3 viewDir = normalize(cameraPosition - vWorldPosition);
-          float rim = pow(1.0 - max(dot(vNormal, viewDir), 0.0), 2.6);
+          vec3 viewDir = normalize(-vViewPosition);
+          float rim = pow(1.0 - max(dot(normalize(vNormal), viewDir), 0.0), 2.6);
           gl_FragColor = vec4(0.22, 0.62, 1.0, rim * 0.34);
         }
       `,
@@ -271,23 +326,46 @@ export class EarthScene {
     );
     north.position.y = 3.15;
     axisGroup.add(north);
-    this.scene.add(axisGroup);
+    axisGroup.add(this.createPoleLabel('N', 3.42), this.createPoleLabel('S', -3.30));
+    this.guidesGroup.add(axisGroup);
+    const reference = new THREE.Line(new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(0, EARTH_RADIUS * 1.02, 0), new THREE.Vector3(0, 3.35, 0),
+    ]), new THREE.LineBasicMaterial({ color: 0xba9aff, transparent: true, opacity: 0.3 }));
+    this.guidesGroup.add(reference);
+  }
+
+  private createPoleLabel(text: string, y: number): THREE.Sprite {
+    const label = document.createElement('canvas');
+    label.width = label.height = 64;
+    const context = label.getContext('2d');
+    if (context) {
+      context.font = 'bold 40px sans-serif'; context.textAlign = 'center'; context.textBaseline = 'middle';
+      context.fillStyle = '#a7ecff'; context.fillText(text, 32, 32);
+    }
+    const texture = new THREE.CanvasTexture(label);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false }));
+    sprite.scale.setScalar(0.28); sprite.position.y = y;
+    return sprite;
   }
 
   private updateAxis(): void {
     const axis = this.scene.getObjectByName('axis-indicator');
     if (axis) axis.rotation.x = THREE.MathUtils.degToRad(this.state.tilt);
+    const positions = this.tiltArc.geometry.attributes.position as THREE.BufferAttribute;
+    for (let i = 0; i <= 64; i += 1) {
+      const angle = THREE.MathUtils.degToRad(this.state.tilt) * i / 64;
+      positions.setXYZ(i, 0, 2.78 * Math.cos(angle), 2.78 * Math.sin(angle));
+    }
+    positions.needsUpdate = true;
+    this.tiltArc.geometry.computeBoundingSphere();
+    this.tiltArc.visible = this.state.tilt > 0;
   }
 
   private updateMarker(): void {
-    const lat = THREE.MathUtils.degToRad(this.state.location.latitude);
-    const lon = THREE.MathUtils.degToRad(this.state.location.longitude);
-    const r = EARTH_RADIUS * 1.025;
-    this.marker.position.set(
-      r * Math.cos(lat) * Math.sin(lon),
-      r * Math.sin(lat),
-      r * Math.cos(lat) * Math.cos(lon),
-    );
+    this.marker.position.fromArray(geographicToCartesian(
+      this.state.location.latitude, this.state.location.longitude, EARTH_RADIUS * 1.025,
+    ));
   }
 
   private updateDataLayer(): void {
@@ -297,35 +375,59 @@ export class EarthScene {
     const positions = this.dataMesh.geometry.attributes.position;
     const colors = this.dataMesh.geometry.attributes.color as THREE.BufferAttribute;
     const color = new THREE.Color();
+    const rowColors = new Map<number, THREE.Color>();
 
     for (let i = 0; i < positions.count; i += 1) {
       const y = positions.getY(i) / EARTH_RADIUS;
       const latitude = THREE.MathUtils.radToDeg(Math.asin(THREE.MathUtils.clamp(y, -1, 1)));
+      const cached = rowColors.get(latitude);
+      if (cached) { colors.setXYZ(i, cached.r, cached.g, cached.b); continue; }
       let t = 0;
 
       if (this.state.mode === 'insolation') {
         t = THREE.MathUtils.clamp(
-          dailyMeanInsolation(latitude, this.state.day, this.state.tilt) / 650,
+          dailyMeanInsolation(latitude, this.state.day, this.state.tilt) / SOLAR_CONSTANT,
           0,
           1,
         );
-        color.setHSL(0.66 - t * 0.55, 0.88, 0.22 + t * 0.42);
+        color.setHSL(0.66 - t * 0.55, 0.88, 0.22 + t * 0.42, THREE.SRGBColorSpace);
       } else if (this.state.mode === 'daylight') {
         t = dayLengthHours(latitude, this.state.day, this.state.tilt) / 24;
-        color.setHSL(0.68 - t * 0.53, 0.82, 0.2 + t * 0.48);
+        color.setHSL(0.68 - t * 0.53, 0.82, 0.2 + t * 0.48, THREE.SRGBColorSpace);
       } else {
         const temperature = temperatureEstimateC(latitude, this.state.day, this.state.tilt);
-        t = THREE.MathUtils.clamp((temperature + 45) / 90, 0, 1);
-        color.setHSL(0.65 - t * 0.65, 0.88, 0.24 + Math.sin(t * Math.PI) * 0.22);
+        t = THREE.MathUtils.clamp((temperature + 65) / 120, 0, 1);
+        color.setHSL(0.65 - t * 0.65, 0.88, 0.24 + Math.sin(t * Math.PI) * 0.22, THREE.SRGBColorSpace);
       }
 
+      rowColors.set(latitude, color.clone());
       colors.setXYZ(i, color.r, color.g, color.b);
     }
 
     colors.needsUpdate = true;
   }
 
+  private readonly handlePointerDown = (event: PointerEvent): void => {
+    this.activePointers.add(event.pointerId);
+    if (this.activePointers.size !== 1 || event.button !== 0) { this.pointerStart = null; return; }
+    this.pointerStart = { id: event.pointerId, x: event.clientX, y: event.clientY, moved: false };
+  };
+
+  private readonly handlePointerMove = (event: PointerEvent): void => {
+    const start = this.pointerStart;
+    if (start && start.id === event.pointerId && Math.hypot(event.clientX - start.x, event.clientY - start.y) > 6) start.moved = true;
+  };
+
+  private readonly handlePointerCancel = (event: PointerEvent): void => {
+    this.activePointers.delete(event.pointerId); this.pointerStart = null;
+  };
+
   private readonly handlePointer = (event: PointerEvent): void => {
+    const start = this.pointerStart;
+    this.activePointers.delete(event.pointerId);
+    this.pointerStart = null;
+    if (!start || start.id !== event.pointerId || start.moved || this.activePointers.size > 0
+      || Math.hypot(event.clientX - start.x, event.clientY - start.y) > 6) return;
     const rect = this.canvas.getBoundingClientRect();
     this.pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
     this.pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
@@ -335,8 +437,7 @@ export class EarthScene {
     if (!hit) return;
 
     const local = this.earthGroup.worldToLocal(hit.point.clone()).normalize();
-    const latitude = THREE.MathUtils.radToDeg(Math.asin(local.y));
-    const longitude = THREE.MathUtils.radToDeg(Math.atan2(local.x, local.z));
+    const { latitude, longitude } = cartesianToGeographic([local.x, local.y, local.z]);
     this.onLocationPick?.({
       id: 'custom',
       name: 'Custom point',
