@@ -1,6 +1,18 @@
 # Earth Axial Tilt Simulator
 
-Interactive 3D science toy for exploring how axial tilt changes sunlight, daylight and an illustrative seasonal temperature estimate. A self-contained project inside **Mizuki-Playground**.
+Interactive 3D science toy for exploring how axial tilt changes sunlight, daylight and seasonal temperature experiments. A self-contained project inside **Mizuki-Playground**.
+
+## v0.5 — heat storage and seasonal energy balance
+
+**Thermal EBM** is the new default temperature mode. Instead of a fixed 28-day shift, a small one-dimensional energy-balance solver computes heat storage, absorbed sunlight, outgoing radiation and diffusive exchange between latitude bands. Switch **Temperature model** to **Illustrative** to recover the exact earlier temperature calculations.
+
+Use **Heat storage → Fast / Mixed / Slow** to change the whole planet's effective heat capacity. At the same tilt, a larger heat capacity reduces seasonal variation and delays the warmest season. All three are experiments, not local land/ocean classifications. The globe's thermal colours, location readout and annual graph share one solved field. Earth-reference comparisons use the same model and heat capacity at 23.44 degrees.
+
+The solver works in a Web Worker, reuses a periodic year, and coalesces rapid edits. Pending or failed thermal values are never silently replaced by old temperatures. Astronomy, daylight and Sun now remain independent. Large-font controls and graph navigation from v0.4 are preserved.
+
+**Important:** this is still not a station-calibrated climate model. Fixed albedo, linear radiation and no ice/cloud/latent-heat feedback make extreme-tilt absolute temperatures highly illustrative. Large extrapolations are flagged; the solver does not secretly clip its output. Changing settings selects a new equilibrated climate, not the first real year after abruptly tilting Earth.
+
+Try **Taipei → Temp → Year**, change Heat storage from Fast to Slow, then switch tilt between Earth and 90 degrees. **Compare Earth** holds the chosen heat storage fixed. Details, numerical verification, parameter units and primary references: [science notes](docs/SCIENCE.md), [v0.5 notes](docs/V0.5.md).
 
 ## v0.4 — readable controls and hands-on graphs
 
@@ -41,7 +53,7 @@ The original Earth, atmosphere, star field, solar direction, orbit-plane guide, 
 
 ## Temperature is still an illustrative model
 
-Temperature is a latitude baseline plus a lagged solar anomaly, **not a calibrated Earth climate model or solved energy-balance model**. v0.4 retains the original coefficients; it does not silently change the meaning to match local daily highs. See [the science notes](docs/SCIENCE.md) for the exact formula, real-world mean-vs-maximum examples, and the deliberately limited Earth reference comparison.
+In **Illustrative** mode, temperature is a latitude baseline plus a lagged solar anomaly. **Thermal EBM** solves a seasonal energy-balance equation, but neither mode is a calibrated Earth climate model. v0.4 retains the original coefficients; it does not silently change the meaning to match local daily highs. See [the science notes](docs/SCIENCE.md) for the exact formula, real-world mean-vs-maximum examples, and the deliberately limited Earth reference comparison.
 
 ## Run locally
 
