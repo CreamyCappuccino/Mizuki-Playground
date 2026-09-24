@@ -12,12 +12,14 @@ export function annualMeanInsolation(latitudeDeg: number, obliquityDeg: number):
     total += dailyMeanInsolation(latitudeDeg, day, obliquityDeg);
   }
   const mean = total / 365;
+  // Bounded FIFO: dragging the tilt slider must not retain an unlimited history.
+  if (CACHE.size >= 256) CACHE.delete(CACHE.keys().next().value!);
   CACHE.set(key, mean);
   return mean;
 }
 
 function wrapDay(day: number): number {
-  return ((Math.round(day) - 1 + 365) % 365) + 1;
+  return (((day - 1) % 365 + 365) % 365) + 1;
 }
 
 export function temperatureEstimateC(
@@ -26,6 +28,7 @@ export function temperatureEstimateC(
   obliquityDeg: number,
 ): number {
   // Deliberately simple: latitude baseline + lagged daily-mean solar anomaly.
+  // A daily-mean-style latitude-band estimate, not daily maximum or station data.
   // This is designed to communicate relative seasonal change, not forecast climate.
   const absLat = Math.abs(latitudeDeg);
   const latitudeBaseline = 27 - 0.22 * absLat - 0.0018 * absLat * absLat;
@@ -48,7 +51,7 @@ export interface AnnualPoint {
 export function annualProfile(latitudeDeg: number, obliquityDeg: number): AnnualPoint[] {
   const points: AnnualPoint[] = [];
 
-  for (let day = 1; day <= 365; day += 2) {
+  for (let day = 1; day <= 365; day += 1) {
     points.push({
       day,
       insolation: dailyMeanInsolation(latitudeDeg, day, obliquityDeg),
