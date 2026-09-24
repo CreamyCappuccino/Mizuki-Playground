@@ -1,5 +1,8 @@
 import { expect, test } from '@playwright/test';
 
+// Software-rendered WebGL on hosted CI is slower than a desktop GPU.
+test.setTimeout(60_000);
+
 test.beforeEach(async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
@@ -8,7 +11,7 @@ test.beforeEach(async ({ page }) => {
   });
   // Store actual application / renderer failures, not optional external-texture HTTP errors.
   (page as typeof page & { appErrors: string[] }).appErrors = errors;
-  await page.goto('/');
+  await page.goto('/', { waitUntil: 'domcontentloaded' });
   await expect(page.locator('#metric-temp')).not.toHaveText('—');
 });
 
