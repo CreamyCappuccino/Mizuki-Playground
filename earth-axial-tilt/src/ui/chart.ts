@@ -5,6 +5,7 @@ export type ChartMetric = 'temperature' | 'insolation' | 'daylight';
 interface ChartOptions {
   metric: ChartMetric;
   activeDay: number;
+  reference?: AnnualPoint[];
 }
 
 const MONTHS = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
@@ -18,7 +19,7 @@ export function renderAnnualChart(
   const height = 190;
   const pad = { left: 34, right: 18, top: 18, bottom: 28 };
 
-  const values = points.map((point) => point[options.metric]);
+  const values = [...points, ...(options.reference ?? [])].map((point) => point[options.metric]);
   let min = Math.min(...values);
   let max = Math.max(...values);
 
@@ -42,6 +43,10 @@ export function renderAnnualChart(
   const path = points
     .map((point, index) => `${index === 0 ? 'M' : 'L'} ${x(point.day).toFixed(2)} ${y(point[options.metric]).toFixed(2)}`)
     .join(' ');
+
+  const referencePath = (options.reference ?? []).map((point, index) =>
+    `${index === 0 ? 'M' : 'L'} ${x(point.day).toFixed(2)} ${y(point[options.metric]).toFixed(2)}`).join(' ');
+  container.setAttribute('aria-label', `Annual ${options.metric} profile${options.reference ? '; solid: selected tilt, dashed: Earth 23.44 degrees using the same model' : ''}`);
 
   const area = `${path} L ${x(points.at(-1)?.day ?? 365)} ${height - pad.bottom} L ${x(1)} ${height - pad.bottom} Z`;
   const activeX = x(options.activeDay);
@@ -72,6 +77,7 @@ export function renderAnnualChart(
       </defs>
       ${grid}
       <path d="${area}" fill="url(#chart-fill)" />
+      ${referencePath ? `<path d="${referencePath}" class="chart-reference" />` : ''}
       <path d="${path}" class="chart-line" />
       <line x1="${activeX}" y1="${pad.top}" x2="${activeX}" y2="${height - pad.bottom}" class="chart-active" />
       ${monthLabels}
@@ -83,4 +89,12 @@ function formatAxis(value: number, metric: ChartMetric): string {
   if (metric === 'temperature') return `${Math.round(value)}°`;
   if (metric === 'daylight') return `${Math.round(value)}h`;
   return `${Math.round(value)}`;
+}
+
+/** Playback moves only the cursor; the annual curves need not be rebuilt. */
+export function updateChartDay(container: HTMLElement, day: number): void {
+  const x = 34 + ((day - 1) / 364) * (720 - 34 - 18);
+  const line = container.querySelector('.chart-active');
+  line?.setAttribute('x1', String(x));
+  line?.setAttribute('x2', String(x));
 }
