@@ -120,6 +120,8 @@ test('unavailable thermal worker leaves the astronomy atlas usable and clears te
   await expect(page.locator('#atlas-plot')).toHaveAttribute('aria-busy','true');
   await expect(page.locator('#atlas-status')).toContainText('unavailable');
   await expect(page.locator('#atlas-legend')).toBeHidden();
+  await expect(page.locator('#atlas-scale-note')).toContainText('No matching temperature field yet');
+  await expect(page.locator('#atlas-scale-note')).not.toContainText('Sampled range:');
   await expect(page.locator('#atlas-selection')).toContainText('temperature not available');
   await page.locator('#atlas-metric').selectOption('daylight'); await ready(page);
   await expect(page.locator('#atlas-selection')).toContainText('h');
