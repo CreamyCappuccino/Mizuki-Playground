@@ -15,7 +15,7 @@
 
       <header class="topbar glass">
         <div>
-          <p class="eyebrow">MIZUKI PLAYGROUND / PLANET LAB · v0.3</p>
+          <p class="eyebrow">MIZUKI PLAYGROUND / PLANET LAB · v0.4</p>
           <h1>Earth Axial Tilt</h1>
         </div>
         <div class="topbar__readout" aria-live="polite">
@@ -109,7 +109,7 @@
         </section>
       </aside>
 
-      <section class="location-panel glass" aria-live="polite">
+      <section class="location-panel glass" aria-label="Selected location details">
         <div class="location-title">
           <div>
             <p class="eyebrow">SELECTED LOCATION</p>
@@ -118,9 +118,15 @@
           <span id="location-coords">25.03° N · 121.57° E</span>
         </div>
 
-        <div class="location-actions">
-          <button id="focus-location">View location</button><button id="reset-view">Reset view</button>
+        <div class="panel-toolbar">
+          <div class="location-actions">
+            <button id="focus-location">View location</button><button id="reset-view">Reset view</button>
+          </div>
+          <label class="text-size-control" for="text-size">Text size
+            <select id="text-size"><option value="comfortable">Comfort</option><option value="large">Large</option></select>
+          </label>
         </div>
+        <button id="jump-chart" class="jump-chart">Explore the graph ↓</button>
         <div class="solar-moment">
           <div class="moment-heading"><p class="eyebrow">SUN AT THIS MOMENT</p><span id="illumination-state">—</span></div>
           <div class="moment-metrics">
@@ -137,7 +143,7 @@
           <article><span>Declination</span><strong id="metric-declination">—</strong></article>
         </div>
 
-        <div class="segmented period-buttons" aria-label="Graph timescale">
+        <div id="profile-section" class="segmented period-buttons" aria-label="Graph timescale">
           <button data-period="year" class="active" aria-pressed="true">Year</button>
           <button data-period="day" aria-pressed="false">Day</button>
         </div>
@@ -154,7 +160,10 @@
         </div>
         <label class="check-control compare-control"><input id="compare-earth" type="checkbox" /> Compare Earth 23.44° (same model)</label>
         <p id="profile-summary" class="profile-summary"></p>
-        <div id="annual-chart" class="chart" role="img" aria-label="Annual climate profile"></div>
+        <div id="annual-chart" class="chart" tabindex="0" role="slider" aria-orientation="horizontal"
+          aria-label="Annual profile: select model day" aria-valuemin="1" aria-valuemax="365" aria-valuenow="172" aria-describedby="chart-help"></div>
+        <p id="chart-selection" class="chart-selection"></p>
+        <p id="chart-help" class="input-help chart-help">Click or drag the graph to select. Arrow keys also work.</p>
         <p class="model-note">
           Mean temperature estimate, not the daytime high. Illustrative latitude-band model; not fitted to local weather.
         </p>
