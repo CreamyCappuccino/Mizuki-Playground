@@ -15,7 +15,7 @@
 
       <header class="topbar glass">
         <div>
-          <p class="eyebrow">MIZUKI PLAYGROUND / PLANET LAB · v0.4</p>
+          <p class="eyebrow">MIZUKI PLAYGROUND / PLANET LAB · v0.5</p>
           <h1>Earth Axial Tilt</h1>
         </div>
         <div class="topbar__readout" aria-live="polite">
@@ -96,6 +96,21 @@
           </div>
         </section>
 
+        <section class="thermal-controls" aria-label="Temperature model controls">
+          <p class="eyebrow">CLIMATE LAB</p>
+          <label for="temperature-model">Temperature model</label>
+          <select id="temperature-model">
+            <option value="energy-balance" selected>Thermal EBM · experimental</option>
+            <option value="illustrative">Illustrative · v0.1–v0.4</option>
+          </select>
+          <label for="heat-storage">Heat storage</label>
+          <select id="heat-storage" aria-describedby="heat-help">
+            <option value="2.5">Fast · 2.5 m equivalent</option>
+            <option value="10" selected>Mixed · 10 m equivalent</option>
+            <option value="50">Slow · 50 m equivalent</option>
+          </select>
+          <p id="heat-help" class="input-help">Equivalent water depth measures heat capacity, not actual ocean depth. This experiment changes the whole planet.</p>
+        </section>
         <section>
           <p class="eyebrow">LOCATION</p>
           <select id="location-select" aria-label="Choose a location"></select>
@@ -136,6 +151,11 @@
           </div>
           <p>Solar time is not your clock time. TOA = above the atmosphere.</p>
         </div>
+        <div class="climate-status-box">
+          <p id="climate-status" role="status" data-status="loading">Calculating a repeating thermal year…</p>
+          <button id="retry-climate" hidden>Retry thermal model</button>
+          <p id="climate-warning" hidden></p>
+        </div>
         <div class="metrics">
           <article><span>Daylight</span><strong id="metric-daylight">—</strong></article>
           <article><span>Daily solar (TOA)</span><strong id="metric-solar">—</strong></article>
@@ -164,13 +184,14 @@
           aria-label="Annual profile: select model day" aria-valuemin="1" aria-valuemax="365" aria-valuenow="172" aria-describedby="chart-help"></div>
         <p id="chart-selection" class="chart-selection"></p>
         <p id="chart-help" class="input-help chart-help">Click or drag the graph to select. Arrow keys also work.</p>
-        <p class="model-note">
-          Mean temperature estimate, not the daytime high. Illustrative latitude-band model; not fitted to local weather.
+        <p id="temperature-model-note" class="model-note">
+          Thermal EBM: experimental latitude-band temperature driven by daily-mean sunlight. Not calibrated to local weather.
         </p>
         <details class="model-details">
           <summary>What do these numbers mean?</summary>
-          <p>Temperature represents a typical daily-mean-style estimate including both day and night. It is not a maximum, minimum, or feels-like temperature. Places at the same latitude share the same estimate: oceans, altitude, clouds, and city effects are not modelled.</p>
-          <p>The annual summary averages all 365 model days. The comparison line uses the same simplified model at 23.44°, not observed climate normals. This version retains v0.1's illustrative temperature coefficients; it is not calibrated to Taipei or Singapore.</p>
+          <p>Temperature represents a typical daily-mean-style estimate including both day and night. It is not a maximum, minimum, or feels-like temperature. Places at the same latitude share the same estimate. Thermal EBM solves heat storage, absorbed sunlight, outgoing radiation and heat exchange between latitude bands. Oceans, altitude, clouds, ice feedback and city effects are not resolved.</p>
+          <p>The annual summary averages all 365 model days. The comparison line uses the same simplified model at 23.44°, not observed climate normals. Thermal EBM compares the same heat-storage setting at both tilts. Illustrative mode retains v0.1's coefficients. The selected model is not calibrated to Taipei or Singapore.</p>
+          <p>Changing tilt or heat storage solves a new repeating annual climate, not the first year after a sudden change. Thermal EBM uses 90 latitude bands and a half-day numerical timestep; temperatures are interpolated from the converged year. Heat capacity is uniform, albedo is fixed by latitude, and outgoing radiation is linear in temperature. Extreme results are model extrapolations, not habitability or weather predictions. Display colours saturate at the legend limits; numerical temperatures are not clipped.</p>
           <p>Solar is daily-mean incoming energy at the top of the atmosphere (TOA), not ground-level sunlight. Daylight uses a point Sun without refraction. At an exact all-day horizon, 12 h is a reporting convention and incoming energy is zero.</p>
           <p>The globe is Earth-centred: the moving Sun indicates direction, not a scale orbit. The circular 365-day model does not reproduce exact calendar dates of the equinoxes. Rotation is an independently controlled phase around the tilted axis. A day experiment holds the orbital date fixed; a year experiment holds the rotational phase fixed. Neither is a civil-time calendar or a sidereal clock.</p>
           <p>Sun now is instantaneous incoming flux on a horizontal surface at TOA, not weather-dependent sunlight at the ground. The Day graph holds declination fixed; its dashed line is the 24-hour mean used by Daily solar. Spinning the globe cannot change the daily-mean temperature or the annual profile.</p>
