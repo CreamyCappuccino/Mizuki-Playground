@@ -11,6 +11,7 @@ test.beforeEach(async ({ page }) => {
   });
   await page.goto('/', { waitUntil: 'domcontentloaded' });
   await expect(page.locator('#metric-temp')).not.toHaveText('—');
+  await expect(page.locator('#climate-status')).toHaveAttribute('data-status', 'ready');
 });
 test.afterEach(async ({ page }) => { expect(errors.get(page)).toEqual([]); });
 
@@ -58,6 +59,7 @@ test('large typography persists and reflows without shrinking graph labels', asy
   await page.reload({ waitUntil: 'domcontentloaded' });
   await expect(page.locator('#text-size')).toHaveValue('large');
   await expect(page.locator('#metric-temp')).not.toHaveText('—');
+  await expect(page.locator('#climate-status')).toHaveAttribute('data-status', 'ready');
   for (const width of [1024, 760, 390, 320]) {
     await page.setViewportSize({ width, height: 844 });
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
