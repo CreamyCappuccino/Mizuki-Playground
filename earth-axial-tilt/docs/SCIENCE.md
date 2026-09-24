@@ -1,4 +1,4 @@
-# What the numbers mean (v0.2)
+# What the numbers mean (v0.3)
 
 ## Temperature is not the daytime maximum
 
@@ -32,14 +32,41 @@ These historical normals are not current weather observations and do not validat
 - Daylight uses an ideal point Sun without atmospheric refraction. The sunset calculation uses `cos(zenith) = a + b*cos(hour angle)` rather than singular tangents. When the Sun is exactly on the horizon all day, 12 h is an explicit reporting convention; effective incoming energy is zero. This occurs at the equator at an exact 90-degree-obliquity solstice, and at a pole at an exact equinox.
 - The golden subsolar marker is aligned with the light direction. The terminator is a great circle perpendicular to that direction. The axis, angle arc and N/S labels expose the geometry.
 - The scene keeps Earth at the origin and moves the Sun direction around it for inspection. Sizes and distances are not to scale; this is not a claim that the Sun orbits Earth.
-- There is no time-of-day spin simulation yet. Subsolar latitude is physical in the model, but subsolar longitude is an illustrative scene orientation.
+- Rotation is a freely controlled phase around the tilted local axis. Geographic longitude, the rotating surface, the selected marker and the subsolar meridian are consistent. The phase is not tied to UTC or a historical ephemeris.
 - Geographic markers now follow the equirectangular texture convention of Three.js SphereGeometry: +Y is north, +X is longitude 0 and -Z is longitude 90 E.
+
+## Diurnal experiment (v0.3)
+
+The scene uses `Rx(obliquity) * Ry(rotation)`; its polar axis therefore does not precess or swing around the orbit-plane normal as the surface spins. A geographic surface normal `n` and the rotating-frame unit Sun vector `s` give:
+
+```
+mu = dot(n, s)
+elevation = asin(clamp(mu, -1, 1))
+instantaneous horizontal TOA flux = 1361 * max(0, mu) W/m2
+```
+
+The independent hour-angle expression used for the Day graph is
+`mu = sin(latitude)*sin(declination) + cos(latitude)*cos(declination)*cos(hour angle)`.
+Here hour angle is `15 * (local apparent solar hours - 12)` degrees. For a defined subsolar meridian, local solar hours are `wrap24(12 + (longitude - subsolar longitude)/15)`. No equation-of-time or time-zone conversion is claimed. Solar-noon buttons set this geometric hour, not a civil clock. The noon position need not be overhead unless latitude equals declination.
+
+The displayed Sun position, instantaneous shader and selected-point computation all use the same rotating-frame direction. Their agreement with actual Three.js rotations is tested. Numerically averaging instantaneous flux over 1,440 evenly spaced rotation phases agrees with the existing analytic daily-mean insolation within 0.01 W/m2 across the tested tilts, latitudes and seasons. This is a mathematical consistency check, not climate calibration.
+
+**Frozen-date convention:** a diurnal experiment makes one full turn while holding the orbital date and declination fixed. At x1 that takes 30 real seconds, not 24 real hours. Year playback instead changes only the seasonal date. These independent experiments intentionally do not implement a sidereal clock, real-time ephemeris or a coupled 365-day continuous spin animation. Manual date or rotation changes pause playback, and hidden-tab elapsed time is not accumulated.
+
+**Degeneracies:** at a geographic pole there is no unique local longitude/time meridian. When the Sun is exactly over a pole, the subsolar longitude is likewise undefined for the entire globe. These cases display `Undefined`, disable solar-noon/midnight targeting and use nominal 0–24 rotation hours on the flat Day graph. At an exact geometric horizon the direct horizontal flux is zero. Numerical cosine residuals below 1e-12 are snapped to zero.
+
+The daily temperature estimate has no hourly component. Moving the rotation control must not change temperature, geometric day length, daily solar or annual profiles. No diurnal temperature cycle is inferred from the instantaneous flux.
+
+Background references (definitions / implementation conventions, not a claim to implement NOAA's full calculator):
+- NOAA/GML Solar Calculator glossary, solar time, solar noon and zenith angle: https://gml.noaa.gov/grad/solcalc/glossary.html
+- Three.js Euler (intrinsic rotations): https://threejs.org/docs/pages/Euler.html
+- Three.js matrix transformations and local/world matrices: https://threejs.org/manual/pages/matrix-transformations.html
 
 ## Comparison and colour scales
 
 The optional dashed annual curve runs the **same** model at Earth's 23.44 degrees. It is not a measured-climate curve. Both curves use the same chart scale.
 
-Surface legends use the same numerical ranges as the geometry: solar 0–1361 W/m2, daylight 0–24 h, and temperature -65–55 C. The solar scale therefore does not saturate prematurely near 90-degree obliquity.
+Surface legends use the same numerical ranges as the geometry: daily and instantaneous solar 0–1361 W/m2, daylight 0–24 h, and temperature -65–55 C. The solar scale therefore does not saturate prematurely near 90-degree obliquity.
 
 ## Visual resources and remaining limits
 
