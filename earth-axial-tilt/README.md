@@ -2,6 +2,18 @@
 
 Interactive 3D science toy for exploring how axial tilt changes sunlight, daylight and an illustrative seasonal temperature estimate. A self-contained project inside **Mizuki-Playground**.
 
+## v0.4 — readable controls and hands-on graphs
+
+- **Larger text by default:** right-panel metric values are 22 CSS px; ordinary labels and explanations are 14–15 px at the browser's default 16 px root size. Text size → **Large** raises values to 24 px and explanations to 16–17 px. This local display preference persists when browser storage is available.
+- **Readable graph labels:** annual and daily SVGs are laid out at the actual container dimensions. Tick labels remain 14 px (16 px in Large) instead of being scaled down with a fixed 720-pixel drawing. Narrow graphs omit some labels rather than shrink the text.
+- **Direct graph selection:** click/tap or drag horizontally on Year to select a whole model day, or on Day to choose local solar time to the nearest minute. Selection pauses either transport and leaves the chosen graph's curve intact.
+- **Keyboard:** focus the graph and use arrows (1 day / 15 minutes), Page Up/Down (30 days / 1 hour), Home or End. The last selectable solar time is 23:59, avoiding an unexpected wrap to 00:00 at the right edge. Existing native sliders remain available.
+- **Polar semantics:** when a local solar meridian is undefined, the daily chart explicitly selects nominal rotation time. It does not invent a clock time at a geographic or subsolar pole.
+- **Responsive panels:** phone/tablet layouts put Earth above the panels; narrow metric cards wrap without ellipsis. **Explore the graph** scrolls directly to the graph controls. Vertical touch gestures on a graph scroll rather than seek.
+- The selected graph position is also shown as readable text with units and an accessible slider value. Calendar month/day labels are conveniences for the existing circular model, not a new astronomical ephemeris.
+
+The astronomy, temperature coefficients, Three.js scene and external Earth-texture policy are unchanged from v0.3. This release does not calibrate city climates or add daily maximum/minimum temperatures. See [v0.4 implementation notes](docs/V0.4.md).
+
 ## v0.3 — a day inside the year
 
 - **Earth rotation** is a real surface rotation around the tilted local axis, separate from mouse/touch camera orbit. A 0–360-degree phase slider and **Play day** hold the seasonal date fixed. **Play year** holds the rotational phase fixed. Only one transport runs at a time; the existing speed buttons apply to both.
@@ -29,7 +41,7 @@ The original Earth, atmosphere, star field, solar direction, orbit-plane guide, 
 
 ## Temperature is still an illustrative model
 
-Temperature is a latitude baseline plus a lagged solar anomaly, **not a calibrated Earth climate model or solved energy-balance model**. v0.3 retains the original coefficients; it does not silently change the meaning to match local daily highs. See [the science notes](docs/SCIENCE.md) for the exact formula, real-world mean-vs-maximum examples, and the deliberately limited Earth reference comparison.
+Temperature is a latitude baseline plus a lagged solar anomaly, **not a calibrated Earth climate model or solved energy-balance model**. v0.4 retains the original coefficients; it does not silently change the meaning to match local daily highs. See [the science notes](docs/SCIENCE.md) for the exact formula, real-world mean-vs-maximum examples, and the deliberately limited Earth reference comparison.
 
 ## Run locally
 
