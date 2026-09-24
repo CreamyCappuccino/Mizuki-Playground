@@ -1,3 +1,4 @@
+import { SeasonAtlas } from './ui/seasonAtlas';
 import { solarMoment, subsolarLongitude, formatSolarClock, rotationAtSolarHour, wrapRotation, diurnalProfile } from './physics/diurnal';
 import { renderDayChart, updateSolarCursor } from './ui/dayChart';
 import { advanceSimulation, togglePlayback, type Playback } from './ui/playback';
@@ -94,11 +95,12 @@ function temperatureSource(reference = false): TemperatureSource {
     solution: reference ? thermalReference : thermalSolution };
 }
 function syncThermalModel(): void {
-  const key = `${state.temperatureModel}:${state.tilt}:${state.heatDepth}:${state.compare}`;
+  const compare = state.compare || atlas.needsReference;
+  const key = `${state.temperatureModel}:${state.tilt}:${state.heatDepth}:${compare}`;
   if (key === thermalKey) return;
   thermalKey = key; thermalError = ''; thermalRevision += 1;
   thermalSolution = null; thermalReference = null;
-  if (state.temperatureModel === 'energy-balance') thermalClient.request(state.tilt, state.heatDepth, state.compare);
+  if (state.temperatureModel === 'energy-balance') thermalClient.request(state.tilt, state.heatDepth, compare);
   else thermalClient.cancel();
 }
 function temperatureAt(latitude: number, day: number): number | null {
@@ -124,6 +126,25 @@ function updateThermalStatus(): void {
 }
 let reference: AnnualPoint[] = [];
 let chartKey = '';
+const atlas = new SeasonAtlas({
+  onOpen: () => { state.playback = 'paused'; update(); },
+  onSettings: () => update(),
+  onSelect: (day, latitude) => {
+    state.playback = 'paused'; state.day = day;
+    if (Math.abs(latitude - state.location.latitude) > 1e-9) {
+      state.location = { id: 'custom', name: 'Custom latitude', latitude, longitude: state.location.longitude };
+      locationSelect.value = 'custom';
+    }
+    update();
+  },
+  onTilt: tilt => { state.tilt = tilt; state.playback = 'paused'; update(); },
+  onHeat: depth => {
+    state.heatDepth = depth; state.playback = 'paused';
+    $<HTMLSelectElement>('#heat-storage').value = String(depth); update();
+  },
+  onFocus: () => scene.focusLocation(),
+});
+
 
 function update(): void {
   syncThermalModel();
@@ -153,6 +174,9 @@ function update(): void {
 }
 
 function updateReadouts(): void {
+  atlas.update({ source: temperatureSource(), reference: temperatureSource(true), revision: thermalRevision,
+    day: state.day, latitude: state.location.latitude, longitude: state.location.longitude,
+    locationName: state.location.name, error: thermalError });
   rotationInput.value = String(state.rotation);
   $('#rotation-readout').textContent = `${state.rotation.toFixed(1)}°`;
   dayInput.value = String(Math.floor(state.day));
