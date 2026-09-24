@@ -15,7 +15,7 @@
 
       <header class="topbar glass">
         <div>
-          <p class="eyebrow">MIZUKI PLAYGROUND / PLANET LAB · v0.2</p>
+          <p class="eyebrow">MIZUKI PLAYGROUND / PLANET LAB · v0.3</p>
           <h1>Earth Axial Tilt</h1>
         </div>
         <div class="topbar__readout" aria-live="polite">
@@ -66,11 +66,26 @@
           </div>
         </section>
 
+        <section class="rotation-controls">
+          <div class="control-heading">
+            <div><p class="eyebrow">DAY / NIGHT</p><h2>Earth rotation</h2></div>
+            <output id="rotation-readout" for="rotation">0.0°</output>
+          </div>
+          <input id="rotation" aria-label="Earth rotation angle" type="range" min="0" max="360" step="0.1" value="0" />
+          <div class="rotation-actions">
+            <button id="play-day" class="primary" aria-pressed="false">▶ Play day</button>
+            <button id="noon-here">Noon here</button>
+            <button id="midnight-here">Midnight here</button>
+          </div>
+          <p class="input-help">Play day holds the date; Play year holds rotation. Speed ×1 / ×4 / ×12 above applies to both.</p>
+        </section>
+
         <section>
           <p class="eyebrow">SURFACE LAYER</p>
           <div class="segmented" id="mode-buttons">
             <button class="active" data-mode="normal">Earth</button>
-            <button data-mode="insolation">Solar</button>
+            <button data-mode="instant">Sun now</button>
+            <button data-mode="insolation">Daily solar</button>
             <button data-mode="daylight">Daylight</button>
             <button data-mode="temperature">Temp</button>
           </div>
@@ -90,6 +105,7 @@
           <p><span class="key axis-key"></span> Axis / N–S <span class="key sun-key"></span> Subsolar point</p>
           <p><span class="key terminator-key"></span> Day–night boundary <span class="key arc-key"></span> Tilt arc</p>
           <p>Subsolar latitude: <strong id="subsolar-readout">—</strong></p>
+          <p>Subsolar longitude: <strong id="subsolar-longitude">—</strong></p>
         </section>
       </aside>
 
@@ -102,6 +118,18 @@
           <span id="location-coords">25.03° N · 121.57° E</span>
         </div>
 
+        <div class="location-actions">
+          <button id="focus-location">View location</button><button id="reset-view">Reset view</button>
+        </div>
+        <div class="solar-moment">
+          <div class="moment-heading"><p class="eyebrow">SUN AT THIS MOMENT</p><span id="illumination-state">—</span></div>
+          <div class="moment-metrics">
+            <article><span>Local solar time</span><strong id="metric-solar-time">—</strong></article>
+            <article><span>Sun elevation</span><strong id="metric-elevation">—</strong></article>
+            <article><span>Solar now (TOA)</span><strong id="metric-instant">—</strong></article>
+          </div>
+          <p>Solar time is not your clock time. TOA = above the atmosphere.</p>
+        </div>
         <div class="metrics">
           <article><span>Daylight</span><strong id="metric-daylight">—</strong></article>
           <article><span>Daily solar (TOA)</span><strong id="metric-solar">—</strong></article>
@@ -109,9 +137,13 @@
           <article><span>Declination</span><strong id="metric-declination">—</strong></article>
         </div>
 
+        <div class="segmented period-buttons" aria-label="Graph timescale">
+          <button data-period="year" class="active" aria-pressed="true">Year</button>
+          <button data-period="day" aria-pressed="false">Day</button>
+        </div>
         <div class="chart-heading">
           <div>
-            <p class="eyebrow">ANNUAL PROFILE</p>
+            <p id="profile-period" class="eyebrow">ANNUAL PROFILE</p>
             <h3 id="chart-title">Temperature estimate</h3>
           </div>
           <div class="segmented compact" id="chart-buttons">
@@ -131,7 +163,9 @@
           <p>Temperature represents a typical daily-mean-style estimate including both day and night. It is not a maximum, minimum, or feels-like temperature. Places at the same latitude share the same estimate: oceans, altitude, clouds, and city effects are not modelled.</p>
           <p>The annual summary averages all 365 model days. The comparison line uses the same simplified model at 23.44°, not observed climate normals. This version retains v0.1's illustrative temperature coefficients; it is not calibrated to Taipei or Singapore.</p>
           <p>Solar is daily-mean incoming energy at the top of the atmosphere (TOA), not ground-level sunlight. Daylight uses a point Sun without refraction. At an exact all-day horizon, 12 h is a reporting convention and incoming energy is zero.</p>
-          <p>The globe is Earth-centred: the moving Sun indicates direction, not a scale orbit. The circular 365-day model does not reproduce exact calendar dates of the equinoxes. No time-of-day rotation is simulated, so subsolar longitude is illustrative.</p>
+          <p>The globe is Earth-centred: the moving Sun indicates direction, not a scale orbit. The circular 365-day model does not reproduce exact calendar dates of the equinoxes. Rotation is an independently controlled phase around the tilted axis. A day experiment holds the orbital date fixed; a year experiment holds the rotational phase fixed. Neither is a civil-time calendar or a sidereal clock.</p>
+          <p>Sun now is instantaneous incoming flux on a horizontal surface at TOA, not weather-dependent sunlight at the ground. The Day graph holds declination fixed; its dashed line is the 24-hour mean used by Daily solar. Spinning the globe cannot change the daily-mean temperature or the annual profile.</p>
+          <p>Local solar noon is 12:00 on a Sun-based clock, not necessarily 12:00 in a time zone. At a geographic pole, or when the Sun is exactly above a pole, that solar meridian is undefined. The Day graph then uses nominal rotation hours. A geometric horizon has zero direct horizontal flux.</p>
         </details>
       </section>
 
