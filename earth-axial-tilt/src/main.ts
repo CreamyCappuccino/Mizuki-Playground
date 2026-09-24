@@ -4,7 +4,10 @@ import { advanceSimulation, togglePlayback, type Playback } from './ui/playback'
 import './style.css';
 import { DEFAULT_LOCATION, LOCATIONS, type LocationPreset } from './data/locations';
 import { EarthScene, type SurfaceMode } from './scene/EarthScene';
-import { annualProfile, temperatureEstimateC, type AnnualPoint } from './physics/climate';
+import { annualProfile, type AnnualPoint } from './physics/climate';
+import { type ThermalSolution } from './physics/energyBalance';
+import { isThermalReady, profileFromSource, temperatureFromSource, temperatureScale, type TemperatureModel, type TemperatureSource } from './physics/temperatureModel';
+import { ThermalClient } from './ui/thermalClient';
 import { dailyMeanInsolation, dayLengthHours, seasonLabel, solarDeclinationDeg, SOLAR_CONSTANT } from './physics/solar';
 import { renderAnnualChart, updateChartDay, formatModelDate, type ChartMetric } from './ui/chart';
 import { parseTiltInput } from './ui/tiltInput';
@@ -22,12 +25,14 @@ interface AppState {
   location: LocationPreset;
   guides: boolean;
   compare: boolean;
+  temperatureModel: TemperatureModel;
+  heatDepth: number;
 }
 
 const state: AppState = {
   tilt: 23.44, day: 172, speed: 1, playback: 'paused', rotation: 0, period: 'year',
   surfaceMode: 'normal', chartMetric: 'temperature', location: DEFAULT_LOCATION,
-  guides: true, compare: false,
+  guides: true, compare: false, temperatureModel: 'energy-balance', heatDepth: 10,
 };
 const $ = <T extends Element>(selector: string): T => {
   const element = document.querySelector<T>(selector);
@@ -69,11 +74,60 @@ locationSelect.value = state.location.id;
 
 let profileKey = '';
 let profile: AnnualPoint[] = [];
-let referenceLatitude = NaN;
+let referenceKey = '';
+let thermalKey = '';
+let thermalRevision = 0;
+let thermalSolution: ThermalSolution | null = null;
+let thermalReference: ThermalSolution | null = null;
+let thermalError = '';
+const thermalClient = new ThermalClient(
+  () => new Worker(new URL('./physics/climate.worker.ts', import.meta.url), { type: 'module' }),
+  reply => {
+    if ('error' in reply) thermalError = reply.error;
+    else { thermalSolution = reply.current; thermalReference = reply.reference; thermalError = ''; }
+    thermalRevision += 1;
+    update();
+  },
+);
+function temperatureSource(reference = false): TemperatureSource {
+  return { model: state.temperatureModel, tilt: reference ? 23.44 : state.tilt, depth: state.heatDepth,
+    solution: reference ? thermalReference : thermalSolution };
+}
+function syncThermalModel(): void {
+  const key = `${state.temperatureModel}:${state.tilt}:${state.heatDepth}:${state.compare}`;
+  if (key === thermalKey) return;
+  thermalKey = key; thermalError = ''; thermalRevision += 1;
+  thermalSolution = null; thermalReference = null;
+  if (state.temperatureModel === 'energy-balance') thermalClient.request(state.tilt, state.heatDepth, state.compare);
+  else thermalClient.cancel();
+}
+function temperatureAt(latitude: number, day: number): number | null {
+  return temperatureFromSource(temperatureSource(), latitude, day);
+}
+function updateThermalStatus(): void {
+  const thermal = state.temperatureModel === 'energy-balance';
+  const ready = isThermalReady(temperatureSource());
+  const status = $('#climate-status');
+  status.setAttribute('data-status', thermalError ? 'error' : ready ? 'ready' : 'loading');
+  status.textContent = !thermal ? 'Illustrative model · original fixed 28-day lag.'
+    : thermalError ? thermalError
+      : ready ? `Thermal EBM · ${state.heatDepth} m equivalent heat storage · periodic year solved.`
+        : 'Calculating a repeating thermal year… Solar controls remain live.';
+  $<HTMLButtonElement>('#retry-climate').hidden = !thermalError;
+  $<HTMLSelectElement>('#heat-storage').disabled = !thermal;
+  const warning = $('#climate-warning');
+  warning.hidden = !thermal || !ready || !(thermalSolution!.minimum < -60 || thermalSolution!.maximum > 60);
+  warning.textContent = 'Large model extrapolation: linear radiation and fixed reflectivity omit ice, evaporation and climate feedbacks. Extreme temperatures are not predictions.';
+  $('#temperature-model-note').textContent = thermal
+    ? 'Thermal EBM: experimental latitude-band temperature driven by daily-mean sunlight. Heat storage is uniform across the planet, not a local land/ocean map. Not calibrated to local weather.'
+    : 'Mean temperature estimate, not the daytime high. Original illustrative latitude-band model; not fitted to local weather.';
+}
 let reference: AnnualPoint[] = [];
 let chartKey = '';
 
 function update(): void {
+  syncThermalModel();
+  updateThermalStatus();
   tiltInput.value = String(state.tilt);
   tiltNumber.value = String(state.tilt);
   tiltNumber.removeAttribute('aria-invalid');
@@ -93,7 +147,7 @@ function update(): void {
   $('#chart-buttons').toggleAttribute('hidden', state.period === 'day');
   document.querySelector<HTMLElement>('.compare-control')!.hidden = state.period === 'day';
   $('#profile-period').textContent = state.period === 'year' ? 'ANNUAL PROFILE' : 'ONE SOLAR DAY';
-  scene.setState({ tilt: state.tilt, day: state.day, mode: state.surfaceMode, location: state.location, guides: state.guides, rotation: state.rotation });
+  scene.setState({ tilt: state.tilt, day: state.day, mode: state.surfaceMode, location: state.location, guides: state.guides, rotation: state.rotation, temperatureModel: state.temperatureModel, heatDepth: state.heatDepth, thermal: thermalSolution });
   updateSurfaceLegend();
   updateReadouts();
 }
@@ -112,7 +166,9 @@ function updateReadouts(): void {
   $('#metric-daylight').textContent = `${daylight.toFixed(1)} h`;
   $('#metric-daylight').setAttribute('title', daylight === 24 ? 'Polar day' : daylight === 0 ? 'Polar night' : 'Geometric day length');
   $('#metric-solar').textContent = `${Math.round(dailyMeanInsolation(latitude, state.day, state.tilt))} W/m²`;
-  $('#metric-temp').textContent = `${temperatureEstimateC(latitude, state.day, state.tilt).toFixed(1)} °C`;
+  const temperature = temperatureAt(latitude, state.day);
+  $('#metric-temp').textContent = temperature === null ? (thermalError ? 'Unavailable' : 'Calculating…') : `${temperature.toFixed(1)} °C`;
+  $('#metric-temp').setAttribute('data-model', state.temperatureModel);
   const declination = solarDeclinationDeg(state.day, state.tilt);
   $('#metric-declination').textContent = `${declination >= 0 ? '+' : ''}${declination.toFixed(1)}°`;
   $('#subsolar-readout').textContent = formatCoordinate(declination, 'N', 'S');
@@ -130,6 +186,16 @@ function updateReadouts(): void {
     button.disabled = moment.solarHours === null;
     button.title = button.disabled ? 'Solar meridian is undefined at this geometry.' : 'Use local apparent solar time, not clock time.';
   }
+  const pendingTemperature = state.period === 'year' && state.chartMetric === 'temperature' &&
+    (!isThermalReady(temperatureSource()) || (state.compare && !isThermalReady(temperatureSource(true))));
+  chartContainer.classList.toggle('thermal-pending', pendingTemperature);
+  chartContainer.setAttribute('aria-busy', String(pendingTemperature));
+  if (pendingTemperature) {
+    if (chartKey !== 'pending') { chartContainer.replaceChildren(); chartKey = 'pending'; }
+    $('#chart-title').textContent = 'Thermal temperature · calculating';
+    $('#profile-summary').textContent = thermalError ? 'Thermal model unavailable; no substitute temperatures are shown.' : 'Solving heat storage, radiation and heat exchange between latitude bands…';
+    updateChartSelection(); return;
+  }
   if (state.period === 'day') {
     const key = `day:${latitude}:${state.day}:${state.tilt}:${moment.solarHours === null}`;
     const hour = moment.solarHours ?? state.rotation / 15;
@@ -146,26 +212,32 @@ function updateReadouts(): void {
   }
 
 
-  const nextKey = `${latitude}:${state.tilt}`;
+  const thermalChart = state.chartMetric === 'temperature' && state.temperatureModel === 'energy-balance';
+  const nextKey = `${latitude}:${state.tilt}:${thermalChart ? `${state.heatDepth}:${thermalRevision}` : 'original'}`;
   if (nextKey !== profileKey) {
-    profile = annualProfile(latitude, state.tilt);
+    profile = thermalChart ? profileFromSource(temperatureSource(), latitude)! : annualProfile(latitude, state.tilt);
     profileKey = nextKey;
   }
-  if (state.compare && referenceLatitude !== latitude) {
-    reference = annualProfile(latitude, 23.44);
-    referenceLatitude = latitude;
+  const nextReferenceKey = `${latitude}:${thermalChart ? `${state.heatDepth}:${thermalRevision}` : 'original'}`;
+  if (state.compare && referenceKey !== nextReferenceKey) {
+    reference = thermalChart ? profileFromSource(temperatureSource(true), latitude)! : annualProfile(latitude, 23.44);
+    referenceKey = nextReferenceKey;
   }
   const nextChartKey = `year:${profileKey}:${state.chartMetric}:${state.compare}`;
   if (nextChartKey !== chartKey) {
     const titles: Record<ChartMetric, string> = {
-      temperature: 'Daily-mean temperature estimate', insolation: 'Daily mean solar (TOA)', daylight: 'Day length',
+      temperature: state.temperatureModel === 'energy-balance' ? 'Thermal temperature · daily forcing' : 'Daily-mean temperature estimate', insolation: 'Daily mean solar (TOA)', daylight: 'Day length',
     };
     $('#chart-title').textContent = titles[state.chartMetric];
     renderAnnualChart(chartContainer, profile, { metric: state.chartMetric, activeDay: state.day, reference: state.compare ? reference : undefined });
     const values = profile.map((point) => point[state.chartMetric]);
     const unit = { temperature: '°C', insolation: 'W/m²', daylight: 'h' }[state.chartMetric];
     const mean = values.reduce((sum, value) => sum + value, 0) / values.length;
-    $('#profile-summary').textContent = `Annual mean ${mean.toFixed(1)} ${unit} · Daily-curve range ${Math.min(...values).toFixed(1)}–${Math.max(...values).toFixed(1)} ${unit}${state.compare ? ' · Dashed: Earth reference' : ''}`;
+    $('#profile-summary').textContent = `Annual mean ${mean.toFixed(1)} ${unit} · Daily-curve range ${Math.min(...values).toFixed(1)}–${Math.max(...values).toFixed(1)} ${unit}${state.compare ? ' · Dashed: Earth reference' : ''}${thermalChart ? ` · Thermal EBM / ${state.heatDepth} m` : ''}`;
+    if (thermalChart) {
+      const warmest = Math.max(...values);
+      if (warmest - Math.min(...values) > 0.05) $('#profile-summary').textContent += ` · Warmest: ${formatModelDate(values.indexOf(warmest) + 1)}`;
+    }
     chartKey = nextChartKey;
   } else {
     updateChartDay(chartContainer, state.day);
@@ -184,7 +256,10 @@ function updateChartSelection(): void {
   let description: string;
   if (state.period === 'year') {
     const selected = {
-      temperature: () => `${temperatureEstimateC(state.location.latitude, state.day, state.tilt).toFixed(1)} °C · daily-mean estimate`,
+      temperature: () => {
+        const t = temperatureAt(state.location.latitude, state.day);
+        return t === null ? 'Temperature calculating / unavailable' : `${t.toFixed(1)} °C · ${state.temperatureModel === 'energy-balance' ? 'thermal EBM' : 'daily-mean estimate'}`;
+      },
       insolation: () => `${dailyMeanInsolation(state.location.latitude, state.day, state.tilt).toFixed(1)} W/m² · daily mean`,
       daylight: () => `${dayLengthHours(state.location.latitude, state.day, state.tilt).toFixed(1)} h · daylight`,
     }[state.chartMetric]();
@@ -257,7 +332,7 @@ function updateSurfaceLegend(): void {
     insolation: { title: 'Daily mean solar · TOA · W/m²', min: 0, max: SOLAR_CONSTANT },
     instant: { title: 'Sun now · TOA · W/m²', min: 0, max: SOLAR_CONSTANT },
     daylight: { title: 'Geometric day length · h', min: 0, max: 24 },
-    temperature: { title: 'Daily-mean estimate · °C', min: -65, max: 55 },
+    temperature: { title: state.temperatureModel === 'energy-balance' ? 'Daily-mean thermal EBM · °C' : 'Daily-mean estimate · °C', ...temperatureScale(state.temperatureModel) },
   }[state.surfaceMode];
   $('#surface-legend-title').textContent = scale.title;
   const stops = Array.from({ length: 9 }, (_, i) => {
@@ -270,7 +345,7 @@ function updateSurfaceLegend(): void {
   });
   $<HTMLElement>('#surface-legend-ramp').style.background = `linear-gradient(90deg, ${stops.join(',')})`;
   $('#surface-legend-ticks').replaceChildren(...[scale.min, (scale.min + scale.max) / 2, scale.max].map((value) => {
-    const span = document.createElement('span'); span.textContent = String(value); return span;
+    const span = document.createElement('span'); span.textContent = `${state.surfaceMode === 'temperature' ? (value === scale.min ? '≤ ' : value === scale.max ? '≥ ' : '') : ''}${value}`; return span;
   }));
 }
 
@@ -344,6 +419,17 @@ document.querySelectorAll<HTMLButtonElement>('[data-period]').forEach(button => 
 $('#focus-location').addEventListener('click', () => scene.focusLocation());
 $('#reset-view').addEventListener('click', () => scene.resetView());
 
+
+$('#temperature-model').addEventListener('change', event => {
+  state.temperatureModel = (event.target as HTMLSelectElement).value as TemperatureModel;
+  state.playback = 'paused'; update();
+});
+$('#heat-storage').addEventListener('change', event => {
+  state.heatDepth = Number((event.target as HTMLSelectElement).value);
+  state.playback = 'paused'; update();
+});
+$('#retry-climate').addEventListener('click', () => { thermalKey = ''; update(); });
+window.addEventListener('pagehide', event => { if (!event.persisted) thermalClient.dispose(); });
 
 let lastTime = performance.now();
 let lastReadout = 0;
