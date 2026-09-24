@@ -49,7 +49,7 @@ export function renderAnnualChart(
   container.setAttribute('aria-label', `Annual ${options.metric} profile${options.reference ? '; solid: selected tilt, dashed: Earth 23.44 degrees using the same model' : ''}`);
 
   const area = `${path} L ${x(points.at(-1)?.day ?? 365)} ${height - pad.bottom} L ${x(1)} ${height - pad.bottom} Z`;
-  const activeX = x(options.activeDay);
+  const activeX = x(Math.min(365, options.activeDay));
 
   const monthLabels = MONTHS.map((month, index) => {
     const monthX = pad.left + ((index + 0.5) / 12) * (width - pad.left - pad.right);
@@ -93,7 +93,7 @@ function formatAxis(value: number, metric: ChartMetric): string {
 
 /** Playback moves only the cursor; the annual curves need not be rebuilt. */
 export function updateChartDay(container: HTMLElement, day: number): void {
-  const x = 34 + ((day - 1) / 364) * (720 - 34 - 18);
+  const x = 34 + ((Math.min(365, day) - 1) / 364) * (720 - 34 - 18);
   const line = container.querySelector('.chart-active');
   line?.setAttribute('x1', String(x));
   line?.setAttribute('x2', String(x));
