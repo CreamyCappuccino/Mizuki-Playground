@@ -115,7 +115,7 @@ function updateThermalStatus(): void {
         : 'Calculating a repeating thermal year… Solar controls remain live.';
   $<HTMLButtonElement>('#retry-climate').hidden = !thermalError;
   $<HTMLSelectElement>('#heat-storage').disabled = !thermal;
-  const warning = $('#climate-warning');
+  const warning = $<HTMLElement>('#climate-warning');
   warning.hidden = !thermal || !ready || !(thermalSolution!.minimum < -60 || thermalSolution!.maximum > 60);
   warning.textContent = 'Large model extrapolation: linear radiation and fixed reflectivity omit ice, evaporation and climate feedbacks. Extreme temperatures are not predictions.';
   $('#temperature-model-note').textContent = thermal
