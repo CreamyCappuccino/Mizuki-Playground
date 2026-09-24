@@ -1,5 +1,19 @@
 # Earth Axial Tilt Simulator
 
+## v0.6 — season atlas
+
+Open **Season atlas** in the location panel to see a full latitude-by-year map in a roomy dialog. It preserves Comfort/Large typography and the original globe layout.
+
+- Daily solar, daylight and temperature across all 365 model days, north at the top.
+- **Difference from 23.44°** subtracts the same metric at the same latitude/day, with the same temperature model and heat storage. It is not a measured-climate baseline. Blue is lower, pale is zero, warm is higher.
+- Change obliquity (including exact numeric input and 90° preset) or heat storage inside the atlas. Temperature reuses the existing worker solution; astronomy remains usable while it is pending or unavailable.
+- Click/tap a location on the map or use the labelled day and latitude sliders. Selection changes the model day and latitude, retaining longitude and rotation. Changing the latitude selects a custom point, not a different city. **View this selection on Earth** closes the atlas and points the camera at it.
+- The dashed curve is the Sun's subsolar latitude, not a temperature boundary. Hovering and scrolling never seek; native sliders supply a keyboard equivalent.
+- Cached raster: moving a selection changes only its crosshair, not the entire field. No new dependencies or climate coefficients.
+
+Try **90° → Daylight**, then **Temperature → Difference from 23.44°**, and compare Fast/Mixed/Slow heat storage. Read each legend: thermal and difference scales adapt to the whole sampled field. See [v0.6 notes](docs/V0.6.md) for sampling, exact-value semantics and verification.
+
+
 Interactive 3D science toy for exploring how axial tilt changes sunlight, daylight and seasonal temperature experiments. A self-contained project inside **Mizuki-Playground**.
 
 ## v0.5 — heat storage and seasonal energy balance
