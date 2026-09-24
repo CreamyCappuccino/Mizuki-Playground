@@ -1,7 +1,7 @@
 {
   "name": "earth-axial-tilt",
   "private": true,
-  "version": "0.4.0",
+  "version": "0.5.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -12,7 +12,9 @@
     "test:watch": "vitest tests",
     "test:e2e": "playwright test"
   },
-  "dependencies": { "three": "^0.186.0" },
+  "dependencies": {
+    "three": "^0.186.0"
+  },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
     "@types/node": "^24.10.0",
