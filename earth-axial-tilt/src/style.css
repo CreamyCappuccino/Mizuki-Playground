@@ -516,3 +516,138 @@ button:disabled { opacity: .42; cursor: default; }
   .solar-moment { padding: 10px; }
   .moment-metrics strong { font-size: .82rem; }
 }
+
+/* v0.4 — readable by default; panel text never shrinks to fit a narrow card. */
+:root {
+  --ui-label: .875rem;
+  --ui-body: .9375rem;
+  --ui-value: 1.375rem;
+  --chart-label: .875rem;
+  --chart-height: 14rem;
+  --muted: #b0c4d6;
+}
+:root[data-text-size="large"] {
+  --ui-label: 1rem;
+  --ui-body: 1.0625rem;
+  --ui-value: 1.5rem;
+  --chart-label: 1rem;
+  --chart-height: 16rem;
+}
+body { line-height: 1.45; }
+button, input, select { font-size: max(1rem, var(--ui-label)); }
+.eyebrow { color: #a9c8dd; font-size: .75rem; letter-spacing: .09em; }
+h2 { font-size: 1.125rem; }
+h3 { font-size: 1.125rem; line-height: 1.4; }
+.topbar__readout span { font-size: var(--ui-label); }
+.topbar__readout strong { font-size: 1.125rem; font-variant-numeric: tabular-nums; }
+.controls { width: 350px; }
+.control-heading output { font-size: 1.25rem; }
+.presets button, .transport button, .segmented button, .rotation-actions button,
+.location-actions button {
+  font-size: var(--ui-label);
+  min-height: 42px;
+  padding: 7px 8px;
+  line-height: 1.3;
+}
+.transport { grid-template-columns: 1.7fr repeat(3, minmax(0,.7fr)); }
+.rotation-actions { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
+select { min-height: 44px; }
+.numeric-tilt, .check-control { font-size: var(--ui-body); }
+.check-control { min-height: 38px; line-height: 1.5; }
+.check-control input { flex: 0 0 18px; width: 18px; height: 18px; }
+.input-help, .guide-controls p, .surface-legend { font-size: var(--ui-label); line-height: 1.55; }
+.guide-controls p { overflow-wrap: anywhere; }
+.location-panel { width: 560px; padding: 20px; background: linear-gradient(180deg, rgba(12,24,42,.97), rgba(5,12,23,.96)); }
+.location-title { flex-wrap: wrap; row-gap: 8px; }
+#location-name { font-size: 1.5rem; }
+.location-title > span { font-size: var(--ui-label); white-space: normal; }
+.panel-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin: 12px 0; }
+.location-actions { margin: 0; flex-wrap: wrap; }
+.text-size-control { display: flex; align-items: center; gap: 8px; font-size: var(--ui-label); color: var(--muted); }
+.text-size-control select { width: 108px; }
+.jump-chart { width: 100%; padding: 8px 12px; margin: 0 0 14px; min-height: 40px; color: var(--cyan); font-size: var(--ui-label); text-align: left; }
+.solar-moment { padding: 14px; }
+.moment-heading { flex-wrap: wrap; }
+.moment-heading .eyebrow { color: #e8d196; }
+#illumination-state { font-size: var(--ui-label); }
+.moment-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.moment-metrics article { min-width: 0; }
+.moment-metrics span, .metrics span { color: var(--muted); font-size: var(--ui-label); line-height: 1.5; }
+.moment-metrics strong, .metrics strong {
+  font-size: var(--ui-value);
+  line-height: 1.35;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  font-variant-numeric: tabular-nums;
+}
+.solar-moment > p { font-size: var(--ui-label); color: #d8cba9; }
+.metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 14px 0 18px; }
+.metrics article { padding: 10px 12px; }
+.period-buttons { width: 190px; }
+.chart-heading { flex-wrap: wrap; gap: 10px; }
+.segmented.compact { width: 100%; }
+.segmented.compact button { font-size: var(--ui-label); min-height: 40px; }
+.profile-summary { font-size: var(--ui-body); color: #c6d9e8; line-height: 1.6; }
+.chart {
+  height: var(--chart-height);
+  font-size: var(--chart-label);
+  cursor: crosshair;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+  border-radius: 8px;
+  outline-offset: 3px;
+  /* SVG dimensions follow this box in CSS pixels. No CSS scale/zoom transform. */
+}
+.chart:focus-visible { outline: 2px solid var(--cyan); }
+.chart.scrubbing { background: rgba(107,220,255,.045); }
+.chart svg { display: block; overflow: visible; }
+.chart-axis, .chart-month { fill: #bfd3e5; font-size: 1em; }
+.chart-grid { stroke: rgba(162,206,236,.23); }
+.chart-line { stroke-width: 2.4; }
+.chart-active { stroke: #f5f9ff; stroke-width: 1.5; }
+.chart-selection { margin: 8px 0; padding: 10px 12px; border-left: 3px solid var(--cyan); border-radius: 5px; color: #eef8ff; background: rgba(107,220,255,.08); font-size: var(--ui-body); font-variant-numeric: tabular-nums; }
+.chart-help { margin-bottom: 14px; }
+.model-note, .model-details { color: #b5c9db; font-size: var(--ui-label); line-height: 1.7; }
+.model-details summary { color: #dfebf6; min-height: 38px; }
+.axis-legend { font-size: var(--ui-label); }
+#profile-section { scroll-margin-top: 12px; }
+@media (min-width: 1500px) {
+  .location-panel { width: 600px; }
+  .metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .metrics article { padding: 10px; }
+}
+/* Tablets/reflow: put the Earth above the panels, rather than overlap both panels. */
+@media (max-width: 1100px) {
+  body { overflow: auto; }
+  #app { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); align-items: start; gap: 12px; height: auto; min-height: 100svh; padding: 0 12px 12px; }
+  #earth-canvas { position: relative; inset: auto; grid-column: 1 / -1; height: max(480px, 60svh); width: 100%; }
+  .controls, .location-panel { position: relative; inset: auto; width: 100%; max-height: none; overflow: visible; margin: 0; }
+  .controls { padding: 16px; }
+  .location-panel { padding: 16px; }
+  .moment-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .moment-metrics article:last-child { grid-column: 1 / -1; }
+  .axis-legend { display: none; }
+}
+@media (max-width: 760px) {
+  #app { grid-template-columns: minmax(0,1fr); padding: 0 10px 10px; gap: 10px; }
+  #earth-canvas { height: max(430px, 58svh); }
+  .topbar { top: 10px; left: 10px; right: 10px; flex-wrap: wrap; gap: 8px; pointer-events: none; padding: 12px 14px; }
+  .topbar .eyebrow { display: none; }
+  .topbar__readout span { font-size: var(--ui-label); max-width: none; }
+  .topbar__readout { justify-items: start; }
+  .location-panel { padding: 16px; }
+  .moment-metrics strong { font-size: var(--ui-value); }
+}
+/* Flex minimums also respect browser text enlargement (including unbroken values). */
+.metrics, .moment-metrics { display: flex; flex-wrap: wrap; }
+.metrics article { flex: 1 1 calc(50% - 10px); min-width: min(100%, 8rem); }
+.moment-metrics article { flex: 1 1 calc(33.333% - 12px); min-width: min(100%, 8rem); }
+.presets { display: flex; flex-wrap: wrap; }
+.presets button { flex: 1 1 3.25rem; min-width: min(100%, 3.25rem); }
+@media (min-width: 1500px) { .metrics article { flex-basis: calc(25% - 10px); } }
+@media (max-width: 1100px) {
+  .moment-metrics article { flex-basis: calc(50% - 12px); }
+  .moment-metrics article:last-child { flex-basis: 100%; }
+}
