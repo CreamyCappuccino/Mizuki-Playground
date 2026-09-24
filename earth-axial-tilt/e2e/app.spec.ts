@@ -99,3 +99,107 @@ test('mobile viewport supports precise entry without horizontal overflow', async
   await page.screenshot({ path: mobile, fullPage: true });
   await testInfo.attach('Mobile viewport', { path: mobile, contentType: 'image/png' });
 });
+
+test('solar noon and midnight change the scene but not daily or annual averages', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  const annualPath = await page.locator('.chart-line').getAttribute('d');
+  const meanTemp = await page.locator('#metric-temp').textContent();
+  const meanSolar = await page.locator('#metric-solar').textContent();
+  await page.locator('[data-mode="instant"]').click();
+  await page.locator('#noon-here').click();
+  await expect(page.locator('#metric-solar-time')).toHaveText('12:00');
+  await expect(page.locator('#illumination-state')).toHaveText('Daytime');
+  await expect(page.locator('#surface-legend-title')).toContainText('Sun now');
+  await page.locator('#focus-location').click();
+  const before = await page.locator('#earth-canvas').screenshot();
+  const noon = testInfo.outputPath('v03-taipei-noon.png');
+  await page.screenshot({ path: noon });
+  await testInfo.attach('Taipei solar noon', { path: noon, contentType: 'image/png' });
+  await page.locator('#midnight-here').click();
+  await expect(page.locator('#metric-solar-time')).toHaveText('00:00');
+  await expect(page.locator('#illumination-state')).toHaveText('Night');
+  await expect(page.locator('#metric-instant')).toHaveText('0 W/m²');
+  await page.locator('#focus-location').click();
+  const after = await page.locator('#earth-canvas').screenshot();
+  expect(before.equals(after)).toBe(false);
+  expect(await page.locator('.chart-line').getAttribute('d')).toBe(annualPath);
+  await expect(page.locator('#metric-temp')).toHaveText(meanTemp!);
+  await expect(page.locator('#metric-solar')).toHaveText(meanSolar!);
+  const midnight = testInfo.outputPath('v03-taipei-midnight.png');
+  await page.screenshot({ path: midnight });
+  await testInfo.attach('Taipei solar midnight', { path: midnight, contentType: 'image/png' });
+});
+
+test('day graph uses a daily mean reference and keeps its curve while spinning', async ({ page }) => {
+  await page.locator('#compare-earth').check();
+  await page.locator('[data-period="day"]').click();
+  await expect(page.locator('#chart-title')).toHaveText('Instantaneous solar (TOA)');
+  await expect(page.locator('.day-chart-mean')).toBeVisible();
+  await page.locator('#noon-here').click();
+  const path = await page.locator('.day-chart-line').getAttribute('d');
+  const cursor = await page.locator('.day-chart-active').getAttribute('x1');
+  await page.locator('.day-chart-line').evaluate(el => el.setAttribute('data-retained', 'yes'));
+  const day = await page.locator('#day-readout').textContent();
+  await page.locator('#play-day').click();
+  await expect.poll(() => page.locator('.day-chart-active').getAttribute('x1')).not.toBe(cursor);
+  await page.locator('#play-day').click();
+  await expect(page.locator('#day-readout')).toHaveText(day!);
+  expect(await page.locator('.day-chart-line').getAttribute('d')).toBe(path);
+  await expect(page.locator('.day-chart-line')).toHaveAttribute('data-retained', 'yes');
+  await page.locator('[data-period="year"]').click();
+  await expect(page.locator('.chart-reference')).toBeVisible();
+});
+
+test('year and day transport are mutually exclusive and slider edits pause', async ({ page }) => {
+  await page.locator('#play-year').click();
+  await page.locator('#play-day').click();
+  await expect(page.locator('#play-year')).toHaveAttribute('aria-pressed', 'false');
+  await expect(page.locator('#play-day')).toHaveAttribute('aria-pressed', 'true');
+  await page.locator('#rotation').evaluate((el: HTMLInputElement) => {
+    el.value = '90'; el.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await expect(page.locator('#rotation-readout')).toHaveText('90.0°');
+  await expect(page.locator('#play-day')).toHaveAttribute('aria-pressed', 'false');
+  await page.locator('#play-day').click();
+  await page.locator('#play-year').click();
+  await expect(page.locator('#play-day')).toHaveAttribute('aria-pressed', 'false');
+  await expect(page.locator('#play-year')).toHaveAttribute('aria-pressed', 'true');
+  await page.locator('#play-year').click();
+});
+
+test('polar day remains illuminated throughout a rotation and winter becomes night', async ({ page }, testInfo) => {
+  await page.locator('[data-tilt="90"]').click();
+  await page.locator('#location-select').selectOption('north-pole');
+  await page.locator('[data-period="day"]').click();
+  await page.locator('[data-mode="instant"]').click();
+  await expect(page.locator('#metric-solar-time')).toHaveText('Undefined');
+  await expect(page.locator('#noon-here')).toBeDisabled();
+  await expect(page.locator('#illumination-state')).toHaveText('Daytime');
+  const flux = await page.locator('#metric-instant').textContent();
+  for (const rotation of [90, 180, 270]) {
+    await page.locator('#rotation').evaluate((el: HTMLInputElement, value) => {
+      el.value = String(value); el.dispatchEvent(new Event('input', { bubbles: true }));
+    }, rotation);
+    await expect(page.locator('#metric-instant')).toHaveText(flux!);
+  }
+  await page.locator('#day').evaluate((el: HTMLInputElement) => {
+    el.value = '355'; el.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await expect(page.locator('#illumination-state')).toHaveText('Night');
+  await expect(page.locator('#metric-instant')).toHaveText('0 W/m²');
+  const polar = testInfo.outputPath('v03-polar-night.png');
+  await page.screenshot({ path: polar });
+  await testInfo.attach('90 degree polar winter', { path: polar, contentType: 'image/png' });
+});
+
+test('location picking in a rotated frame still returns the geographic point', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.locator('#location-select').selectOption('singapore');
+  await page.locator('#rotation').evaluate((el: HTMLInputElement) => {
+    el.value = '137'; el.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await page.locator('#focus-location').click();
+  await page.mouse.click(720, 500);
+  await expect(page.locator('#location-name')).toHaveText('Custom point');
+  await expect(page.locator('#location-coords')).toHaveText('1.35° N · 103.82° E');
+});
