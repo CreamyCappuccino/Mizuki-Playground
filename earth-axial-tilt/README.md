@@ -1,36 +1,43 @@
 # Earth Axial Tilt Simulator
 
-Interactive 3D visualization for exploring how Earth's axial tilt changes seasons, sunlight, day length, and simplified climate patterns.
+Interactive 3D science toy for exploring how axial tilt changes sunlight, daylight and an illustrative seasonal temperature estimate. A self-contained project inside **Mizuki-Playground**.
 
-This project lives inside **Mizuki-Playground** but remains self-contained.
+## v0.2 — precise controls and science guides
 
-## Current milestone
+- **Exact angle input** beside the slider and presets: enter 0–90 degrees to two decimal places, then Enter or leave the field. Invalid/empty values keep the previous angle; Escape cancels uncommitted input.
+- **Science guides:** golden subsolar point, day–night boundary, N/S axis labels and tilt arc. Toggle the guides as a group.
+- **Honest units and scales:** daily-mean estimated temperature (not daytime maximum), TOA daily solar energy, colour legends, all-365-day annual averages and daily-curve ranges. Expand the explanation panel for model limits.
+- **Compare Earth:** optional dashed 23.44-degree annual curve using the same model, with a shared chart scale.
+- **Interaction fixes:** dragging/pinching does not select a new location; clicked coordinates/markers follow the globe texture convention.
+- **Playback:** reuse annual curves and move the chart cursor; cache latitude rows for scientific globe colours and bound the climate cache. Metrics update at 10 Hz while the scene continues rendering each frame.
+- **Geometry fixes:** robust exact-pole / exact-90-degree handling and consistent view-space atmosphere normals.
+- **Responsive UI:** scrollable desktop panels, precise numeric entry on small viewports, no unnecessary blank mobile footer, system-font fallbacks.
 
-- Three.js 3D Earth with atmosphere, star field, sunlight direction, orbital plane, and visible rotation axis
-- Adjustable axial tilt from 0° to 90°
-- Day-of-year control and animated yearly playback
-- Surface modes for normal Earth, daily mean insolation, day length, and estimated temperature
-- Location presets including Taipei, Tokyo, Singapore, London, New York, Reykjavík, Tromsø, and the North Pole
-- Click/tap the globe to inspect an arbitrary latitude/longitude
-- Annual graphs for temperature estimate, insolation, and daylight
-- Unit tests for solar geometry, symmetry, polar day/night, extreme tilt, and climate-model invariants
-- Playwright browser smoke test
-- Project-scoped GitHub Actions CI
+The existing 3D Earth, atmosphere, star field, solar direction, orbit-plane guide, location presets, custom picking, four surface modes and yearly playback are retained.
 
-## Physics
+## Temperature is still an illustrative model
 
-The solar layer uses a circular-orbit approximation and computes solar declination from obliquity and orbital longitude. Day length follows the sunset-hour-angle relation, and daily mean top-of-atmosphere insolation uses the standard latitude/declination/hour-angle formulation.
-
-The temperature layer is intentionally different: it is a compact educational estimate built from a latitude baseline, daily-mean solar anomaly, and a fixed seasonal thermal lag. It is meant to show **relative seasonal response to axial tilt**, not reproduce real-world weather or a general circulation model.
+Temperature is a latitude baseline plus a lagged solar anomaly, **not a calibrated Earth climate model or solved energy-balance model**. v0.2 retains the original coefficients; it does not silently change the meaning to match local daily highs. See [the science notes](docs/SCIENCE.md) for the exact formula, real-world mean-vs-maximum examples, and the deliberately limited Earth reference comparison.
 
 ## Run locally
+
+From this directory (not the repository root), with Node 22:
 
 ```bash
 npm install
 npm run dev
 ```
 
-Verification:
+Open the local address shown by Vite. For a production preview:
+
+```bash
+npm run build
+npm run preview
+```
+
+Stop the server with Ctrl+C.
+
+## Verification
 
 ```bash
 npm run typecheck
@@ -40,6 +47,6 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-## First demo to try
+The project-scoped GitHub Actions workflow runs typechecking, unit tests, production build and Chromium browser tests. The v0.2 suites add exact-angle validation, actual SphereGeometry coordinate checks, solar/subsolar agreement, global incoming-energy conservation, polar edge cases, 365-day statistics, drag-vs-click interaction, comparison curves, playback cursor reuse and mobile-layout checks. Browser screenshots/traces are retained as CI artifacts; these captures are not yet a pixel-baseline regression suite.
 
-Set **Axial tilt = 90°**, then move the day-of-year slider between the June and December solstices. The extreme polar-season geometry is the point of the project. 🌍
+The dependency ranges are unchanged from v0.1. A committed package lock and `npm ci` migration remain follow-up work. The Earth texture still has a runtime external URL dependency; fonts no longer do.
