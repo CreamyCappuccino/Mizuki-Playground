@@ -1,34 +1,35 @@
 import type { DiurnalPoint } from '../physics/diurnal';
-
-const LEFT = 44;
-const RIGHT = 702;
-const TOP = 18;
-const BOTTOM = 162;
-const x = (hour: number) => LEFT + hour / 24 * (RIGHT - LEFT);
+import { chartX, getChartLayout, measureChart } from './chartLayout';
 
 export function updateSolarCursor(container: HTMLElement, hour: number): void {
+  const x = chartX(hour, 0, 24, getChartLayout(container));
   const cursor = container.querySelector('.day-chart-active');
-  cursor?.setAttribute('x1', String(x(hour)));
-  cursor?.setAttribute('x2', String(x(hour)));
+  cursor?.setAttribute('x1', String(x));
+  cursor?.setAttribute('x2', String(x));
 }
 
 export function renderDayChart(
   container: HTMLElement, points: DiurnalPoint[], mean: number, activeHour: number, meridianDefined: boolean,
 ): void {
+  const layout = measureChart(container);
+  const { width, height, left, right, top, bottom, fontSize } = layout;
   const maximum = Math.max(200, Math.ceil(Math.max(...points.map(p => p.insolation)) / 200) * 200);
-  const y = (value: number) => BOTTOM - value / maximum * (BOTTOM - TOP);
+  const x = (hour: number) => chartX(hour, 0, 24, layout);
+  const y = (value: number) => bottom - value / maximum * (bottom - top);
   const path = points.map((p, i) => `${i ? 'L' : 'M'} ${x(p.hour).toFixed(2)} ${y(p.insolation).toFixed(2)}`).join(' ');
   const grid = [0, 0.5, 1].map(t => `
-    <line x1="${LEFT}" y1="${y(t * maximum)}" x2="${RIGHT}" y2="${y(t * maximum)}" class="chart-grid"/>
-    <text x="${LEFT - 7}" y="${y(t * maximum) + 4}" text-anchor="end" class="chart-axis">${t * maximum}</text>`).join('');
-  const ticks = [0, 6, 12, 18, 24].map(hour => `<text x="${x(hour)}" y="183" text-anchor="middle" class="chart-month">${hour === 0 || hour === 24 ? `${hour}:00` : `${String(hour).padStart(2, '0')}:00`}</text>`).join('');
-  container.setAttribute('aria-label', `One day of top-of-atmosphere insolation in watts per square metre. Daily mean ${mean.toFixed(1)}. ${meridianDefined ? 'Local apparent solar hours' : 'Nominal rotation hours; solar meridian undefined'}.`);
-  container.innerHTML = `<svg viewBox="0 0 720 190" preserveAspectRatio="none" aria-hidden="true">
+    <line x1="${left}" y1="${y(t * maximum)}" x2="${right}" y2="${y(t * maximum)}" class="chart-grid"/>
+    <text x="${left - 9}" y="${y(t * maximum) + fontSize * .34}" text-anchor="end" class="chart-axis">${t * maximum}</text>`).join('');
+  const hours = (right - left) / 4 >= fontSize * 3.3 ? [0, 6, 12, 18, 24] : [0, 12, 24];
+  const ticks = hours.map(hour => `<text x="${x(hour)}" y="${height - 10}" text-anchor="middle" class="chart-month">${String(hour).padStart(2, '0')}:00</text>`).join('');
+  // This data attribute describes the graph without replacing the slider's accessible name.
+  container.dataset.timeBasis = meridianDefined ? 'solar' : 'nominal';
+  container.innerHTML = `<svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" aria-hidden="true">
     ${grid}
-    <path d="${path} L ${RIGHT} ${BOTTOM} L ${LEFT} ${BOTTOM} Z" fill="currentColor" opacity=".1"/>
+    <path d="${path} L ${right} ${bottom} L ${left} ${bottom} Z" fill="currentColor" opacity=".1"/>
     <path d="${path}" class="day-chart-line chart-line"/>
-    <line x1="${LEFT}" x2="${RIGHT}" y1="${y(mean)}" y2="${y(mean)}" class="day-chart-mean"/>
-    <line x1="${x(activeHour)}" x2="${x(activeHour)}" y1="${TOP}" y2="${BOTTOM}" class="day-chart-active chart-active"/>
+    <line x1="${left}" x2="${right}" y1="${y(mean)}" y2="${y(mean)}" class="day-chart-mean"/>
+    <line x1="${x(activeHour)}" x2="${x(activeHour)}" y1="${top}" y2="${bottom}" class="day-chart-active chart-active"/>
     ${ticks}
   </svg>`;
 }
