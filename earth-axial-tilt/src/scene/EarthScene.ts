@@ -4,8 +4,10 @@ import { dailyMeanInsolation, dayLengthHours, SOLAR_CONSTANT } from '../physics/
 import { temperatureEstimateC } from '../physics/climate';
 import type { LocationPreset } from '../data/locations';
 import { geographicToCartesian, cartesianToGeographic, sunDirection } from '../physics/geometry';
+import { rotatingSunDirection, wrapRotation } from '../physics/diurnal';
+import { createInstantSolarLayer } from './instantSolar';
 
-export type SurfaceMode = 'normal' | 'insolation' | 'daylight' | 'temperature';
+export type SurfaceMode = 'normal' | 'insolation' | 'daylight' | 'temperature' | 'instant';
 
 interface SceneState {
   tilt: number;
@@ -13,6 +15,7 @@ interface SceneState {
   mode: SurfaceMode;
   location: LocationPreset;
   guides: boolean;
+  rotation: number;
 }
 
 interface EarthSceneOptions {
@@ -31,6 +34,7 @@ export class EarthScene {
   private readonly earthGroup = new THREE.Group();
   private readonly earthMesh: THREE.Mesh<THREE.SphereGeometry, THREE.MeshPhongMaterial>;
   private readonly dataMesh: THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial>;
+  private readonly instantMesh: THREE.Mesh<THREE.SphereGeometry, THREE.ShaderMaterial>;
   private readonly marker = new THREE.Mesh(
     new THREE.SphereGeometry(0.045, 18, 18),
     new THREE.MeshBasicMaterial({ color: 0xffffff }),
@@ -71,6 +75,7 @@ export class EarthScene {
     day: 172,
     mode: 'normal',
     guides: true,
+    rotation: 0,
     location: { id: 'taipei', name: 'Taipei', latitude: 25.033, longitude: 121.5654 },
   };
 
@@ -141,6 +146,8 @@ export class EarthScene {
     this.dataMesh.scale.setScalar(1.002);
     this.dataMesh.visible = false;
     this.earthGroup.add(this.dataMesh);
+    this.instantMesh = createInstantSolarLayer(earthGeometry);
+    this.earthGroup.add(this.instantMesh);
 
     this.earthGroup.add(this.createAtmosphere());
     this.earthGroup.add(this.createLatitudeGrid());
@@ -164,20 +171,49 @@ export class EarthScene {
   setState(next: Partial<SceneState>): void {
     const previous = this.state;
     this.state = { ...this.state, ...next };
-    this.earthGroup.rotation.x = THREE.MathUtils.degToRad(this.state.tilt);
-    this.sunDirectionVector.fromArray(sunDirection(this.state.day));
-    this.sunLight.position.copy(this.sunDirectionVector).multiplyScalar(10);
-    this.sunMesh.position.copy(this.sunDirectionVector).multiplyScalar(7.2);
-    this.subsolarMarker.position.copy(this.sunDirectionVector).multiplyScalar(EARTH_RADIUS * 1.027);
-    this.terminator.quaternion.setFromUnitVectors(this.ringNormal, this.sunDirectionVector);
-    this.guidesGroup.visible = this.state.guides;
-    this.updateAxis();
-    this.updateMarker();
-    if (next.mode !== undefined || previous.day !== this.state.day || previous.tilt !== this.state.tilt) {
-      this.updateDataLayer();
+    this.state.rotation = wrapRotation(this.state.rotation);
+    // Intrinsic XYZ yields Rx(tilt) * Ry(spin): spin around the tilted LOCAL axis,
+    // never the orbit-plane normal. All geographic children share this frame.
+    this.earthGroup.rotation.set(THREE.MathUtils.degToRad(this.state.tilt),
+      THREE.MathUtils.degToRad(this.state.rotation), 0, 'XYZ');
+    const seasonChanged = previous.day !== this.state.day || previous.tilt !== this.state.tilt;
+    const rotationChanged = previous.rotation !== this.state.rotation;
+    if (seasonChanged || next.day !== undefined) {
+      this.sunDirectionVector.fromArray(sunDirection(this.state.day));
+      this.sunLight.position.copy(this.sunDirectionVector).multiplyScalar(10);
+      this.sunMesh.position.copy(this.sunDirectionVector).multiplyScalar(7.2);
+      this.subsolarMarker.position.copy(this.sunDirectionVector).multiplyScalar(EARTH_RADIUS * 1.027);
+      this.terminator.quaternion.setFromUnitVectors(this.ringNormal, this.sunDirectionVector);
     }
+    this.guidesGroup.visible = this.state.guides;
+    if (previous.tilt !== this.state.tilt || next.tilt !== undefined) this.updateAxis();
+    if (next.location !== undefined) this.updateMarker();
+    this.instantMesh.visible = this.state.mode === 'instant';
+    if (seasonChanged || rotationChanged || next.mode !== undefined) {
+      this.instantMesh.material.uniforms.sunLocal.value.fromArray(
+        rotatingSunDirection(this.state.day, this.state.tilt, this.state.rotation),
+      );
+    }
+    // Daily-mean maps do not depend on rotational phase. No CPU recoloring on spin.
+    if (seasonChanged || next.mode !== undefined) this.updateDataLayer();
     // Current world matrices are also needed for picking before the next frame.
     this.earthGroup.updateMatrixWorld(true);
+  }
+
+  focusLocation(): void {
+    // Move only the observer, not the time or geographic location.
+    const position = this.earthGroup.localToWorld(new THREE.Vector3(...geographicToCartesian(
+      this.state.location.latitude, this.state.location.longitude,
+    ))).normalize();
+    this.camera.position.copy(position).multiplyScalar(8.2);
+    this.controls.target.set(0, 0, 0);
+    this.controls.update();
+  }
+
+  resetView(): void {
+    this.camera.position.set(0.4, 1.3, 8.2);
+    this.controls.target.set(0, 0, 0);
+    this.controls.update();
   }
 
   dispose(): void {
@@ -212,8 +248,10 @@ export class EarthScene {
 
   private readonly animate = (): void => {
     if (this.disposed) return;
-    this.controls.update();
-    this.renderer.render(this.scene, this.camera);
+    if (!document.hidden) {
+      this.controls.update();
+      this.renderer.render(this.scene, this.camera);
+    }
     this.frameId = requestAnimationFrame(this.animate);
   };
 
@@ -369,7 +407,7 @@ export class EarthScene {
   }
 
   private updateDataLayer(): void {
-    this.dataMesh.visible = this.state.mode !== 'normal';
+    this.dataMesh.visible = this.state.mode !== 'normal' && this.state.mode !== 'instant';
     if (!this.dataMesh.visible) return;
 
     const positions = this.dataMesh.geometry.attributes.position;
