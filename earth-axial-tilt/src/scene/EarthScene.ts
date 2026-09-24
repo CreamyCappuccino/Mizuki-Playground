@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { dailyMeanInsolation, dayLengthHours, SOLAR_CONSTANT } from '../physics/solar';
-import { temperatureEstimateC } from '../physics/climate';
+import { isThermalReady, temperatureFromSource, temperatureScale, type TemperatureModel } from '../physics/temperatureModel';
+import type { ThermalSolution } from '../physics/energyBalance';
 import type { LocationPreset } from '../data/locations';
 import { geographicToCartesian, cartesianToGeographic, sunDirection } from '../physics/geometry';
 import { rotatingSunDirection, wrapRotation } from '../physics/diurnal';
@@ -16,6 +17,9 @@ interface SceneState {
   location: LocationPreset;
   guides: boolean;
   rotation: number;
+  temperatureModel: TemperatureModel;
+  heatDepth: number;
+  thermal: ThermalSolution | null;
 }
 
 interface EarthSceneOptions {
@@ -79,6 +83,7 @@ export class EarthScene {
     mode: 'normal',
     guides: true,
     rotation: 0,
+    temperatureModel: 'illustrative', heatDepth: 10, thermal: null,
     location: { id: 'taipei', name: 'Taipei', latitude: 25.033, longitude: 121.5654 },
   };
 
@@ -198,7 +203,7 @@ export class EarthScene {
       );
     }
     // Daily-mean maps do not depend on rotational phase. No CPU recoloring on spin.
-    if (seasonChanged || next.mode !== undefined) this.updateDataLayer();
+    if (seasonChanged || next.mode !== undefined || previous.thermal !== this.state.thermal || previous.temperatureModel !== this.state.temperatureModel || previous.heatDepth !== this.state.heatDepth) this.updateDataLayer();
     // Current world matrices are also needed for picking before the next frame.
     this.earthGroup.updateMatrixWorld(true);
   }
@@ -418,7 +423,9 @@ export class EarthScene {
   }
 
   private updateDataLayer(): void {
-    this.dataMesh.visible = this.state.mode !== 'normal' && this.state.mode !== 'instant';
+    this.dataMesh.visible = this.state.mode !== 'normal' && this.state.mode !== 'instant' &&
+      (this.state.mode !== 'temperature' || isThermalReady({ model: this.state.temperatureModel, tilt: this.state.tilt, depth: this.state.heatDepth, solution: this.state.thermal }));
+    this.canvas.dataset.temperatureLayer = this.state.mode === 'temperature' ? (this.dataMesh.visible ? this.state.temperatureModel : 'pending') : 'off';
     if (!this.dataMesh.visible) return;
 
     const positions = this.dataMesh.geometry.attributes.position;
@@ -444,8 +451,9 @@ export class EarthScene {
         t = dayLengthHours(latitude, this.state.day, this.state.tilt) / 24;
         color.setHSL(0.68 - t * 0.53, 0.82, 0.2 + t * 0.48, THREE.SRGBColorSpace);
       } else {
-        const temperature = temperatureEstimateC(latitude, this.state.day, this.state.tilt);
-        t = THREE.MathUtils.clamp((temperature + 65) / 120, 0, 1);
+        const temperature = temperatureFromSource({ model: this.state.temperatureModel, tilt: this.state.tilt, depth: this.state.heatDepth, solution: this.state.thermal }, latitude, this.state.day)!;
+        const scale = temperatureScale(this.state.temperatureModel);
+        t = THREE.MathUtils.clamp((temperature - scale.min) / (scale.max - scale.min), 0, 1);
         color.setHSL(0.65 - t * 0.65, 0.88, 0.24 + Math.sin(t * Math.PI) * 0.22, THREE.SRGBColorSpace);
       }
 
