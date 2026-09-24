@@ -6,8 +6,9 @@ import { DEFAULT_LOCATION, LOCATIONS, type LocationPreset } from './data/locatio
 import { EarthScene, type SurfaceMode } from './scene/EarthScene';
 import { annualProfile, temperatureEstimateC, type AnnualPoint } from './physics/climate';
 import { dailyMeanInsolation, dayLengthHours, seasonLabel, solarDeclinationDeg, SOLAR_CONSTANT } from './physics/solar';
-import { renderAnnualChart, updateChartDay, type ChartMetric } from './ui/chart';
+import { renderAnnualChart, updateChartDay, formatModelDate, type ChartMetric } from './ui/chart';
 import { parseTiltInput } from './ui/tiltInput';
+import { bindChartScrubber, LAST_SOLAR_MINUTE } from './ui/chartScrubber';
 
 interface AppState {
   tilt: number;
@@ -43,6 +44,12 @@ const playDayButton = $<HTMLButtonElement>('#play-day');
 const rotationInput = $<HTMLInputElement>('#rotation');
 const locationSelect = $<HTMLSelectElement>('#location-select');
 const chartContainer = $<HTMLElement>('#annual-chart');
+const textSize = $<HTMLSelectElement>('#text-size');
+// A local display preference only. The app still works when storage is blocked.
+try {
+  textSize.value = localStorage.getItem('earth-lab:text-size') === 'large' ? 'large' : 'comfortable';
+} catch { textSize.value = 'comfortable'; }
+document.documentElement.dataset.textSize = textSize.value;
 const TILT_HELP = '0–90° · Enter or leave the field to apply.';
 const scene = new EarthScene(canvas, {
   onLocationPick: (location) => {
@@ -96,7 +103,7 @@ function updateReadouts(): void {
   $('#rotation-readout').textContent = `${state.rotation.toFixed(1)}°`;
   dayInput.value = String(Math.floor(state.day));
   $('#day-readout').textContent = String(Math.floor(state.day));
-  $('#date-readout').textContent = `Day ${Math.floor(state.day)}`;
+  $('#date-readout').textContent = `${formatModelDate(state.day)} · Day ${Math.floor(state.day)}`;
   $('#season-label').textContent = seasonLabel(state.day);
   const { latitude, longitude } = state.location;
   $('#location-name').textContent = state.location.name;
@@ -134,6 +141,7 @@ function updateReadouts(): void {
       $('#profile-summary').textContent = `Dashed: daily mean ${mean.toFixed(1)} W/m² · Peak ${Math.max(...daily.map(p => p.insolation)).toFixed(1)} W/m² · ${moment.solarHours === null ? 'Nominal rotation hours; no defined solar meridian.' : 'Local solar time, not civil time.'}`;
       chartKey = key;
     } else updateSolarCursor(chartContainer, hour);
+    updateChartSelection();
     return;
   }
 
@@ -162,7 +170,80 @@ function updateReadouts(): void {
   } else {
     updateChartDay(chartContainer, state.day);
   }
+  updateChartSelection();
 }
+
+function selectedChartValue(): number {
+  if (state.period === 'year') return Math.min(365, Math.max(1, state.day));
+  return solarMoment(state.location.latitude, state.location.longitude, state.day, state.tilt, state.rotation).solarHours
+    ?? state.rotation / 15;
+}
+
+function updateChartSelection(): void {
+  const value = selectedChartValue();
+  let description: string;
+  if (state.period === 'year') {
+    const selected = {
+      temperature: () => `${temperatureEstimateC(state.location.latitude, state.day, state.tilt).toFixed(1)} °C · daily-mean estimate`,
+      insolation: () => `${dailyMeanInsolation(state.location.latitude, state.day, state.tilt).toFixed(1)} W/m² · daily mean`,
+      daylight: () => `${dayLengthHours(state.location.latitude, state.day, state.tilt).toFixed(1)} h · daylight`,
+    }[state.chartMetric]();
+    description = `${formatModelDate(state.day)} · Day ${Math.floor(state.day)} · ${selected}`;
+    chartContainer.setAttribute('aria-label', 'Annual profile: select model day');
+    $('#chart-help').textContent = 'Click or drag to choose a day. Arrow keys: 1 day; Page keys: 30 days; Home / End: first / last day.';
+  } else {
+    const moment = solarMoment(state.location.latitude, state.location.longitude, state.day, state.tilt, state.rotation);
+    const nominal = moment.solarHours === null;
+    description = `${formatSolarClock(value)} · ${nominal ? 'nominal rotation time' : 'local solar time'} · ${moment.insolation.toFixed(1)} W/m² now`;
+    chartContainer.setAttribute('aria-label', nominal ? 'Daily profile: select nominal rotation time' : 'Daily profile: select local solar time');
+    $('#chart-help').textContent = 'Click or drag to choose a time. Arrow keys: 15 min; Page keys: 1 hour; Home / End: 00:00 / 23:59. Swipe vertically to scroll.';
+  }
+  chartContainer.setAttribute('aria-valuemin', state.period === 'year' ? '1' : '0');
+  chartContainer.setAttribute('aria-valuemax', state.period === 'year' ? '365' : String(LAST_SOLAR_MINUTE));
+  chartContainer.setAttribute('aria-valuenow', String(Math.min(value, state.period === 'year' ? 365 : LAST_SOLAR_MINUTE)));
+  chartContainer.setAttribute('aria-valuetext', description);
+  $('#chart-selection').textContent = description;
+}
+
+bindChartScrubber(chartContainer, {
+  getPeriod: () => state.period,
+  getValue: selectedChartValue,
+  onSelect: (value) => {
+    state.playback = 'paused';
+    if (state.period === 'year') state.day = value;
+    else {
+      const moment = solarMoment(state.location.latitude, state.location.longitude, state.day, state.tilt, state.rotation);
+      state.rotation = moment.solarHours === null ? wrapRotation(value * 15)
+        : rotationAtSolarHour(state.location.longitude, state.day, state.tilt, value) ?? state.rotation;
+    }
+    update();
+  },
+});
+
+let lastChartSize = '';
+let resizeFrame = 0;
+function refreshChartSize(): void {
+  const box = chartContainer.getBoundingClientRect();
+  const key = `${box.width.toFixed(2)}:${box.height.toFixed(2)}:${getComputedStyle(chartContainer).fontSize}`;
+  if (box.width <= 0 || box.height <= 0 || key === lastChartSize) return;
+  lastChartSize = key;
+  chartKey = '';
+  updateReadouts();
+}
+const chartObserver = new ResizeObserver(() => {
+  cancelAnimationFrame(resizeFrame);
+  resizeFrame = requestAnimationFrame(refreshChartSize);
+});
+chartObserver.observe(chartContainer);
+textSize.addEventListener('change', () => {
+  document.documentElement.dataset.textSize = textSize.value;
+  try { localStorage.setItem('earth-lab:text-size', textSize.value); } catch { /* session-only preference */ }
+  refreshChartSize();
+});
+$('#jump-chart').addEventListener('click', () => {
+  $('#profile-section').scrollIntoView({ block: 'start', behavior: 'auto' });
+  chartContainer.focus({ preventScroll: true });
+});
 
 function formatCoordinate(value: number, positive: string, negative: string): string {
   return `${Math.abs(value).toFixed(2)}° ${value >= 0 ? positive : negative}`;
