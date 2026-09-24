@@ -484,3 +484,35 @@ button:focus-visible, select:focus-visible, input:focus-visible, summary:focus-v
   .chart-heading { flex-wrap: wrap; gap: 8px; }
   .location-title { flex-wrap: wrap; gap: 6px; }
 }
+
+/* v0.3: separate rotational phase from the observer's camera and the model year. */
+.rotation-actions { display: grid; grid-template-columns: 1.15fr 1fr 1.15fr; gap: 5px; }
+.rotation-actions button { min-height: 35px; padding: 5px 4px; font-size: .66rem; }
+button:disabled { opacity: .42; cursor: default; }
+.rotation-controls .input-help { line-height: 1.5; }
+#mode-buttons { grid-auto-flow: row; grid-template-columns: repeat(3, minmax(0,1fr)); }
+.location-actions { display: flex; gap: 7px; margin: 10px 0; }
+.location-actions button { min-height: 28px; font-size: .67rem; padding: 4px 10px; }
+.solar-moment { border: 1px solid rgba(255,220,125,.2); border-radius: 12px; padding: 12px; background: rgba(255,210,116,.035); }
+.moment-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.moment-heading .eyebrow { color: #b5a16c; margin: 0; }
+#illumination-state { color: #ffdc7d; font-size: .68rem; white-space: nowrap; }
+#illumination-state[data-illumination="night"] { color: #98bfff; }
+.moment-metrics { display: grid; grid-template-columns: 1fr 1fr 1.15fr; gap: 8px; margin: 12px 0 8px; }
+.moment-metrics span, .moment-metrics strong { display: block; }
+.moment-metrics span { color: var(--muted); font-size: .61rem; margin-bottom: 5px; }
+.moment-metrics strong { font-size: .89rem; font-variant-numeric: tabular-nums; }
+.solar-moment > p { font-size: .6rem; line-height: 1.5; color: #9e967e; margin: 0; }
+.period-buttons { width: 142px; margin: 0 0 12px; }
+.period-buttons button { min-height: 30px; }
+.day-chart-mean { stroke: #ffdc7d; stroke-width: 1; stroke-dasharray: 5 4; vector-effect: non-scaling-stroke; }
+#rotation-readout { font-variant-numeric: tabular-nums; }
+@media (min-width: 681px) and (max-width: 1100px) {
+  .location-panel { width: min(415px, calc(100vw - 325px)); }
+  .metrics { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .chart-heading, .location-title { flex-wrap: wrap; }
+}
+@media (max-width: 680px) {
+  .solar-moment { padding: 10px; }
+  .moment-metrics strong { font-size: .82rem; }
+}
