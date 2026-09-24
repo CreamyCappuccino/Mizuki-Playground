@@ -80,9 +80,9 @@ function update(): void {
 }
 
 function updateReadouts(): void {
-  dayInput.value = String(Math.round(state.day));
-  $('#day-readout').textContent = String(Math.round(state.day));
-  $('#date-readout').textContent = `Day ${Math.round(state.day)}`;
+  dayInput.value = String(Math.floor(state.day));
+  $('#day-readout').textContent = String(Math.floor(state.day));
+  $('#date-readout').textContent = `Day ${Math.floor(state.day)}`;
   $('#season-label').textContent = seasonLabel(state.day);
   const { latitude, longitude } = state.location;
   $('#location-name').textContent = state.location.name;
