@@ -1,3 +1,6 @@
+import { solarMoment, subsolarLongitude, formatSolarClock, rotationAtSolarHour, wrapRotation, diurnalProfile } from './physics/diurnal';
+import { renderDayChart, updateSolarCursor } from './ui/dayChart';
+import { advanceSimulation, togglePlayback, type Playback } from './ui/playback';
 import './style.css';
 import { DEFAULT_LOCATION, LOCATIONS, type LocationPreset } from './data/locations';
 import { EarthScene, type SurfaceMode } from './scene/EarthScene';
@@ -10,7 +13,9 @@ interface AppState {
   tilt: number;
   day: number;
   speed: number;
-  playing: boolean;
+  playback: Playback;
+  rotation: number;
+  period: 'year' | 'day';
   surfaceMode: SurfaceMode;
   chartMetric: ChartMetric;
   location: LocationPreset;
@@ -19,7 +24,7 @@ interface AppState {
 }
 
 const state: AppState = {
-  tilt: 23.44, day: 172, speed: 1, playing: false,
+  tilt: 23.44, day: 172, speed: 1, playback: 'paused', rotation: 0, period: 'year',
   surfaceMode: 'normal', chartMetric: 'temperature', location: DEFAULT_LOCATION,
   guides: true, compare: false,
 };
@@ -34,6 +39,8 @@ const tiltNumber = $<HTMLInputElement>('#tilt-number');
 const tiltHelp = $<HTMLElement>('#tilt-help');
 const dayInput = $<HTMLInputElement>('#day');
 const playButton = $<HTMLButtonElement>('#play-year');
+const playDayButton = $<HTMLButtonElement>('#play-day');
+const rotationInput = $<HTMLInputElement>('#rotation');
 const locationSelect = $<HTMLSelectElement>('#location-select');
 const chartContainer = $<HTMLElement>('#annual-chart');
 const TILT_HELP = '0–90° · Enter or leave the field to apply.';
@@ -64,22 +71,29 @@ function update(): void {
   tiltNumber.value = String(state.tilt);
   tiltNumber.removeAttribute('aria-invalid');
   $('#tilt-readout').textContent = `${Number.isInteger(state.tilt) ? state.tilt : state.tilt.toFixed(2)}°`;
-  for (const attribute of ['tilt', 'speed', 'mode', 'chart'] as const) {
+  for (const attribute of ['tilt', 'speed', 'mode', 'chart', 'period'] as const) {
     document.querySelectorAll<HTMLButtonElement>(`[data-${attribute}]`).forEach((button) => {
-      const expected = { tilt: String(state.tilt), speed: String(state.speed), mode: state.surfaceMode, chart: state.chartMetric }[attribute];
+      const expected = { tilt: String(state.tilt), speed: String(state.speed), mode: state.surfaceMode, chart: state.chartMetric, period: state.period }[attribute];
       const active = button.dataset[attribute] === expected;
       button.classList.toggle('active', active);
       button.setAttribute('aria-pressed', String(active));
     });
   }
-  playButton.textContent = state.playing ? '❚❚ Pause' : '▶ Play year';
-  playButton.setAttribute('aria-pressed', String(state.playing));
-  scene.setState({ tilt: state.tilt, day: state.day, mode: state.surfaceMode, location: state.location, guides: state.guides });
+  playButton.textContent = state.playback === 'year' ? '❚❚ Pause year' : '▶ Play year';
+  playButton.setAttribute('aria-pressed', String(state.playback === 'year'));
+  playDayButton.textContent = state.playback === 'day' ? '❚❚ Pause day' : '▶ Play day';
+  playDayButton.setAttribute('aria-pressed', String(state.playback === 'day'));
+  $('#chart-buttons').toggleAttribute('hidden', state.period === 'day');
+  document.querySelector<HTMLElement>('.compare-control')!.hidden = state.period === 'day';
+  $('#profile-period').textContent = state.period === 'year' ? 'ANNUAL PROFILE' : 'ONE SOLAR DAY';
+  scene.setState({ tilt: state.tilt, day: state.day, mode: state.surfaceMode, location: state.location, guides: state.guides, rotation: state.rotation });
   updateSurfaceLegend();
   updateReadouts();
 }
 
 function updateReadouts(): void {
+  rotationInput.value = String(state.rotation);
+  $('#rotation-readout').textContent = `${state.rotation.toFixed(1)}°`;
   dayInput.value = String(Math.floor(state.day));
   $('#day-readout').textContent = String(Math.floor(state.day));
   $('#date-readout').textContent = `Day ${Math.floor(state.day)}`;
@@ -95,6 +109,34 @@ function updateReadouts(): void {
   const declination = solarDeclinationDeg(state.day, state.tilt);
   $('#metric-declination').textContent = `${declination >= 0 ? '+' : ''}${declination.toFixed(1)}°`;
   $('#subsolar-readout').textContent = formatCoordinate(declination, 'N', 'S');
+  const sunLongitude = subsolarLongitude(state.day, state.tilt, state.rotation);
+  $('#subsolar-longitude').textContent = sunLongitude === null ? 'Undefined at solar pole' : formatCoordinate(sunLongitude, 'E', 'W');
+  const moment = solarMoment(latitude, longitude, state.day, state.tilt, state.rotation);
+  $('#metric-solar-time').textContent = formatSolarClock(moment.solarHours);
+  $('#metric-elevation').textContent = `${moment.elevationDeg.toFixed(1)}°`;
+  $('#metric-instant').textContent = `${Math.round(moment.insolation)} W/m²`;
+  const status = $('#illumination-state');
+  status.textContent = { day: 'Daytime', night: 'Night', horizon: 'On the horizon' }[moment.illumination];
+  status.setAttribute('data-illumination', moment.illumination);
+  for (const hour of ['noon', 'midnight']) {
+    const button = $<HTMLButtonElement>(`#${hour}-here`);
+    button.disabled = moment.solarHours === null;
+    button.title = button.disabled ? 'Solar meridian is undefined at this geometry.' : 'Use local apparent solar time, not clock time.';
+  }
+  if (state.period === 'day') {
+    const key = `day:${latitude}:${state.day}:${state.tilt}:${moment.solarHours === null}`;
+    const hour = moment.solarHours ?? state.rotation / 15;
+    if (key !== chartKey) {
+      const daily = diurnalProfile(latitude, state.day, state.tilt);
+      const mean = dailyMeanInsolation(latitude, state.day, state.tilt);
+      renderDayChart(chartContainer, daily, mean, hour, moment.solarHours !== null);
+      $('#chart-title').textContent = 'Instantaneous solar (TOA)';
+      $('#profile-summary').textContent = `Dashed: daily mean ${mean.toFixed(1)} W/m² · Peak ${Math.max(...daily.map(p => p.insolation)).toFixed(1)} W/m² · ${moment.solarHours === null ? 'Nominal rotation hours; no defined solar meridian.' : 'Local solar time, not civil time.'}`;
+      chartKey = key;
+    } else updateSolarCursor(chartContainer, hour);
+    return;
+  }
+
 
   const nextKey = `${latitude}:${state.tilt}`;
   if (nextKey !== profileKey) {
@@ -105,7 +147,7 @@ function updateReadouts(): void {
     reference = annualProfile(latitude, 23.44);
     referenceLatitude = latitude;
   }
-  const nextChartKey = `${profileKey}:${state.chartMetric}:${state.compare}`;
+  const nextChartKey = `year:${profileKey}:${state.chartMetric}:${state.compare}`;
   if (nextChartKey !== chartKey) {
     const titles: Record<ChartMetric, string> = {
       temperature: 'Daily-mean temperature estimate', insolation: 'Daily mean solar (TOA)', daylight: 'Day length',
@@ -132,6 +174,7 @@ function updateSurfaceLegend(): void {
   if (state.surfaceMode === 'normal') return;
   const scale = {
     insolation: { title: 'Daily mean solar · TOA · W/m²', min: 0, max: SOLAR_CONSTANT },
+    instant: { title: 'Sun now · TOA · W/m²', min: 0, max: SOLAR_CONSTANT },
     daylight: { title: 'Geometric day length · h', min: 0, max: 24 },
     temperature: { title: 'Daily-mean estimate · °C', min: -65, max: 55 },
   }[state.surfaceMode];
@@ -179,7 +222,7 @@ tiltNumber.addEventListener('keydown', (event) => {
 tiltInput.addEventListener('input', () => {
   state.tilt = Number(tiltInput.value); tiltHelp.textContent = TILT_HELP; update();
 });
-dayInput.addEventListener('input', () => { state.day = Number(dayInput.value); update(); });
+dayInput.addEventListener('input', () => { state.playback = 'paused'; state.day = Number(dayInput.value); update(); });
 document.querySelectorAll<HTMLButtonElement>('[data-tilt]').forEach((button) => {
   button.addEventListener('click', () => { state.tilt = Number(button.dataset.tilt); tiltHelp.textContent = TILT_HELP; update(); });
 });
@@ -202,17 +245,34 @@ $<HTMLInputElement>('#show-guides').addEventListener('change', (event) => {
 $<HTMLInputElement>('#compare-earth').addEventListener('change', (event) => {
   state.compare = (event.target as HTMLInputElement).checked; update();
 });
-playButton.addEventListener('click', () => { state.playing = !state.playing; update(); });
+playButton.addEventListener('click', () => { state.playback = togglePlayback(state.playback, 'year'); update(); });
+playDayButton.addEventListener('click', () => { state.playback = togglePlayback(state.playback, 'day'); update(); });
+rotationInput.addEventListener('input', () => {
+  state.playback = 'paused'; state.rotation = wrapRotation(Number(rotationInput.value)); update();
+});
+for (const [id, hour] of [['noon-here', 12], ['midnight-here', 0]] as const) {
+  $<HTMLButtonElement>(`#${id}`).addEventListener('click', () => {
+    const rotation = rotationAtSolarHour(state.location.longitude, state.day, state.tilt, hour);
+    if (rotation === null) return;
+    state.rotation = rotation; state.playback = 'paused'; update();
+  });
+}
+document.querySelectorAll<HTMLButtonElement>('[data-period]').forEach(button => {
+  button.addEventListener('click', () => { state.period = button.dataset.period as 'year' | 'day'; update(); });
+});
+$('#focus-location').addEventListener('click', () => scene.focusLocation());
+$('#reset-view').addEventListener('click', () => scene.resetView());
+
 
 let lastTime = performance.now();
 let lastReadout = 0;
 function tick(now: number): void {
-  const elapsedSeconds = Math.min((now - lastTime) / 1000, 0.1);
+  const elapsedSeconds = (now - lastTime) / 1000;
   lastTime = now;
-  if (state.playing && !document.hidden) {
-    state.day = ((state.day - 1 + elapsedSeconds * state.speed * 7) % 365) + 1;
-    scene.setState({ day: state.day });
-    // Metrics update at 10 Hz; the 3D view is still rendered every frame.
+  if (state.playback !== 'paused' && !document.hidden) {
+    const next = advanceSimulation(state.day, state.rotation, state.playback, elapsedSeconds, state.speed);
+    state.day = next.day; state.rotation = next.rotation;
+    scene.setState(state.playback === 'year' ? { day: state.day } : { rotation: state.rotation });
     if (now - lastReadout >= 100) { updateReadouts(); lastReadout = now; }
   }
   requestAnimationFrame(tick);
