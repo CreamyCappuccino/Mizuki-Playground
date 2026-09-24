@@ -1,3 +1,4 @@
+import { bindViewControls } from './ui/viewControls';
 import { SeasonAtlas } from './ui/seasonAtlas';
 import { solarMoment, subsolarLongitude, formatSolarClock, rotationAtSolarHour, wrapRotation, diurnalProfile } from './physics/diurnal';
 import { renderDayChart, updateSolarCursor } from './ui/dayChart';
@@ -64,6 +65,7 @@ const scene = new EarthScene(canvas, {
     update();
   },
 });
+bindViewControls({ quality: value => scene.setQuality(value), lights: value => scene.setNightLights(value), refresh: () => scene.refreshView() });
 for (const location of LOCATIONS) {
   const option = new Option(location.name, location.id);
   locationSelect.append(option);
