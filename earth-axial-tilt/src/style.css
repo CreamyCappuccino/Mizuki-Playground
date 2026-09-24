@@ -651,3 +651,15 @@ select { min-height: 44px; }
   .moment-metrics article { flex-basis: calc(50% - 12px); }
   .moment-metrics article:last-child { flex-basis: 100%; }
 }
+
+/* v0.5: retain the readable v0.4 scale for climate controls and model provenance. */
+.thermal-controls { display: grid; gap: 8px; }
+.thermal-controls label { font-size: var(--ui-body); color: #c6d9e8; }
+.thermal-controls select { width: 100%; min-width: 0; }
+.climate-status-box { margin-top: 14px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: rgba(107,220,255,.045); }
+#climate-status, #climate-warning { margin: 0; font-size: var(--ui-label); line-height: 1.6; color: #c6d9e8; }
+#climate-status[data-status="loading"] { color: #ffdc7d; }
+#climate-status[data-status="error"], #climate-warning { color: #ffd0a1; }
+#climate-warning { margin-top: 8px; }
+#retry-climate { min-height: 44px; margin-top: 8px; padding: 8px 12px; }
+.thermal-pending { border: 1px dashed var(--line); background: rgba(107,220,255,.03); }
