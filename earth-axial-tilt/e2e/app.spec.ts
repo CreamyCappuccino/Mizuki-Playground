@@ -13,6 +13,7 @@ test.beforeEach(async ({ page }) => {
   (page as typeof page & { appErrors: string[] }).appErrors = errors;
   await page.goto('/', { waitUntil: 'domcontentloaded' });
   await expect(page.locator('#metric-temp')).not.toHaveText('—');
+  await expect(page.locator('#climate-status')).toHaveAttribute('data-status', 'ready');
 });
 
 test.afterEach(async ({ page }) => {
