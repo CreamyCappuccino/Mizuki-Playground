@@ -194,7 +194,10 @@ export class SeasonAtlas {
       this.el('atlas-scale-note').textContent = `${config.view === 'difference' ? 'Selected tilt − Earth 23.44°, same model and heat storage. Blue: lower · pale: no change · warm: higher. Symmetric scale adapts.'
         : config.metric === 'temperature' ? 'Temperature scale adapts to the full sampled field. Read the legend when changing settings.' : 'Fixed scale for direct comparisons between tilts.'} Sampled range: ${field.minimum.toFixed(1)} to ${field.maximum.toFixed(1)} ${ATLAS_UNITS[config.metric]}.`;
       this.el('atlas-legend').hidden = false;
-    } else this.el('atlas-legend').hidden = true;
+    } else {
+      this.el('atlas-legend').hidden = true;
+      this.el('atlas-scale-note').textContent = 'No matching temperature field yet. The colour scale and sampled range appear only after the selected model is ready.';
+    }
     this.canvas.dataset.fieldRevision = String(++this.paintCount);
     this.canvas.setAttribute('aria-label', `${TITLES[config.metric]} across the model year, north at top and south at bottom. ${config.view === 'difference' ? 'Difference from Earth 23.44 degrees.' : ''} ${this.field ? 'Use the day and latitude controls for exact readings.' : 'No matching temperature data yet.'}`);
     const lines = [90, 60, 30, 0, -30, -60, -90].map(lat => `<line class="atlas-grid" x1="${l.left}" x2="${l.right}" y1="${y(lat)}" y2="${y(lat)}"/><text x="${l.left - 10}" y="${y(lat) + l.fontSize * .34}" text-anchor="end" class="atlas-axis">${lat === 0 ? '0°' : `${Math.abs(lat)}°${lat > 0 ? 'N' : 'S'}`}</text>`).join('');
