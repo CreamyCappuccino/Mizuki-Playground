@@ -1,5 +1,15 @@
 # Earth Axial Tilt Simulator
 
+## v0.7 — an unobstructed observatory
+
+Use **Focus view** in the header to hide the panels; **Show controls** or Escape brings them back without changing the planet. The large-text preference remains in place. Portrait views keep the globe comfortably framed.
+
+**Quality → Eco / Balanced / High** controls real drawing-buffer resolution and texture filtering only; the climate model does not change. The preference is saved when browser storage is available. Settled views stop submitting identical WebGL frames while live camera/playback changes still render.
+
+Day and night images are now **local 4K assets**. Earth view adds Sun-masked fixed night lights and a Sun-facing atmospheric limb. Night lights can be switched off; lights and the decorative atmosphere are hidden on scientific layers. There is no cloud/weather/city evolution model. Missing image status is visible and the numerical tools remain usable.
+
+Earth artwork: **Solar System Scope / INOVE, CC BY 4.0**, redistributed from the three.js texture collection. [Attribution and exact asset hashes](src/assets/ATTRIBUTION.md), [v0.7 details](docs/V0.7.md).
+
 ## v0.6 — season atlas
 
 Open **Season atlas** in the location panel to see a full latitude-by-year map in a roomy dialog. It preserves Comfort/Large typography and the original globe layout.
@@ -99,4 +109,4 @@ npm run test:e2e
 
 The project-scoped GitHub Actions workflow runs typechecking, unit tests, production build and Chromium browser tests. The v0.2/v0.3 suites cover exact-angle validation, actual SphereGeometry coordinate checks, solar/subsolar agreement, global incoming-energy conservation, polar edge cases, 365-day statistics, drag-vs-click interaction, comparison curves, playback cursor reuse and mobile-layout checks. Browser screenshots/traces are retained as CI artifacts; these captures are not yet a pixel-baseline regression suite.
 
-The dependency ranges are unchanged from v0.1. A committed package lock and `npm ci` migration remain follow-up work. The Earth texture still has a runtime external URL dependency; fonts no longer do.
+The dependency ranges are unchanged from v0.1. A committed package lock and `npm ci` migration remain follow-up work. Since v0.7, Earth imagery is also bundled locally; neither images nor fonts require a runtime third-party host.
