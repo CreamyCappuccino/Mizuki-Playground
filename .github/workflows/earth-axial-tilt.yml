@@ -15,36 +15,43 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: earth-axial-tilt-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   verify:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: earth-axial-tilt
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
+        with:
+          persist-credentials: false
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
-
       - name: Install dependencies
         run: npm install
-
       - name: Typecheck
         run: npm run typecheck
-
       - name: Unit tests
         run: npm test
-
       - name: Production build
         run: npm run build
-
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
-
-      - name: Browser smoke test
+      - name: Browser interaction tests
         run: npm run test:e2e
+      - name: Save browser screenshots and traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: earth-axial-tilt-browser-${{ github.run_number }}
+          path: earth-axial-tilt/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
