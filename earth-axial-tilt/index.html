@@ -15,7 +15,7 @@
 
       <header class="topbar glass">
         <div>
-          <p class="eyebrow">MIZUKI PLAYGROUND / PLANET LAB</p>
+          <p class="eyebrow">MIZUKI PLAYGROUND / PLANET LAB · v0.2</p>
           <h1>Earth Axial Tilt</h1>
         </div>
         <div class="topbar__readout" aria-live="polite">
@@ -33,7 +33,7 @@
             </div>
             <output id="tilt-readout" for="tilt">23.44°</output>
           </div>
-          <input id="tilt" type="range" min="0" max="90" value="23.44" step="0.01" />
+          <input id="tilt" aria-label="Axial tilt slider" type="range" min="0" max="90" value="23.44" step="0.01" />
           <div class="presets" aria-label="Axial tilt presets">
             <button data-tilt="0">0°</button>
             <button class="active" data-tilt="23.44">Earth</button>
@@ -41,6 +41,12 @@
             <button data-tilt="60">60°</button>
             <button data-tilt="90">90°</button>
           </div>
+          <div class="numeric-tilt">
+            <label for="tilt-number">Exact angle</label>
+            <div><input id="tilt-number" type="number" min="0" max="90" step="0.01"
+              value="23.44" inputmode="decimal" aria-describedby="tilt-help" /><span>°</span></div>
+          </div>
+          <p id="tilt-help" class="input-help" role="status">0–90° · Enter or leave the field to apply.</p>
         </section>
 
         <section>
@@ -51,7 +57,7 @@
             </div>
             <output id="day-readout" for="day">172</output>
           </div>
-          <input id="day" type="range" min="1" max="365" value="172" step="1" />
+          <input id="day" aria-label="Day of year" type="range" min="1" max="365" value="172" step="1" />
           <div class="transport">
             <button id="play-year" class="primary" aria-pressed="false">▶ Play year</button>
             <button class="speed active" data-speed="1">×1</button>
@@ -68,11 +74,22 @@
             <button data-mode="daylight">Daylight</button>
             <button data-mode="temperature">Temp</button>
           </div>
+          <div id="surface-legend" class="surface-legend" hidden>
+            <span id="surface-legend-title"></span>
+            <div id="surface-legend-ramp" class="color-ramp"></div>
+            <div id="surface-legend-ticks" class="legend-ticks"></div>
+          </div>
         </section>
 
         <section>
           <p class="eyebrow">LOCATION</p>
           <select id="location-select" aria-label="Choose a location"></select>
+        </section>
+        <section class="guide-controls">
+          <label class="check-control"><input id="show-guides" type="checkbox" checked /> Show science guides</label>
+          <p><span class="key axis-key"></span> Axis / N–S <span class="key sun-key"></span> Subsolar point</p>
+          <p><span class="key terminator-key"></span> Day–night boundary <span class="key arc-key"></span> Tilt arc</p>
+          <p>Subsolar latitude: <strong id="subsolar-readout">—</strong></p>
         </section>
       </aside>
 
@@ -87,8 +104,8 @@
 
         <div class="metrics">
           <article><span>Daylight</span><strong id="metric-daylight">—</strong></article>
-          <article><span>Daily solar</span><strong id="metric-solar">—</strong></article>
-          <article><span>Temp estimate</span><strong id="metric-temp">—</strong></article>
+          <article><span>Daily solar (TOA)</span><strong id="metric-solar">—</strong></article>
+          <article><span>Mean temp (est.)</span><strong id="metric-temp">—</strong></article>
           <article><span>Declination</span><strong id="metric-declination">—</strong></article>
         </div>
 
@@ -103,10 +120,19 @@
             <button data-chart="daylight">Daylight</button>
           </div>
         </div>
+        <label class="check-control compare-control"><input id="compare-earth" type="checkbox" /> Compare Earth 23.44° (same model)</label>
+        <p id="profile-summary" class="profile-summary"></p>
         <div id="annual-chart" class="chart" role="img" aria-label="Annual climate profile"></div>
         <p class="model-note">
-          Solar geometry is astronomical. Temperature is a deliberately simple energy-balance-style estimate for intuition, not a weather forecast.
+          Mean temperature estimate, not the daytime high. Illustrative latitude-band model; not fitted to local weather.
         </p>
+        <details class="model-details">
+          <summary>What do these numbers mean?</summary>
+          <p>Temperature represents a typical daily-mean-style estimate including both day and night. It is not a maximum, minimum, or feels-like temperature. Places at the same latitude share the same estimate: oceans, altitude, clouds, and city effects are not modelled.</p>
+          <p>The annual summary averages all 365 model days. The comparison line uses the same simplified model at 23.44°, not observed climate normals. This version retains v0.1's illustrative temperature coefficients; it is not calibrated to Taipei or Singapore.</p>
+          <p>Solar is daily-mean incoming energy at the top of the atmosphere (TOA), not ground-level sunlight. Daylight uses a point Sun without refraction. At an exact all-day horizon, 12 h is a reporting convention and incoming energy is zero.</p>
+          <p>The globe is Earth-centred: the moving Sun indicates direction, not a scale orbit. The circular 365-day model does not reproduce exact calendar dates of the equinoxes. No time-of-day rotation is simulated, so subsolar longitude is illustrative.</p>
+        </details>
       </section>
 
       <div class="axis-legend" aria-hidden="true">
