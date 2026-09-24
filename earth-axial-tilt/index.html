@@ -15,7 +15,7 @@
 
       <header class="topbar glass">
         <div>
-          <p class="eyebrow">MIZUKI PLAYGROUND / PLANET LAB · v0.5</p>
+          <p class="eyebrow">MIZUKI PLAYGROUND / PLANET LAB · v0.6</p>
           <h1>Earth Axial Tilt</h1>
         </div>
         <div class="topbar__readout" aria-live="polite">
@@ -141,6 +141,7 @@
             <select id="text-size"><option value="comfortable">Comfort</option><option value="large">Large</option></select>
           </label>
         </div>
+        <button id="open-atlas" class="jump-chart atlas-launch" aria-haspopup="dialog">Season atlas · explore every latitude ↗</button>
         <button id="jump-chart" class="jump-chart">Explore the graph ↓</button>
         <div class="solar-moment">
           <div class="moment-heading"><p class="eyebrow">SUN AT THIS MOMENT</p><span id="illumination-state">—</span></div>
@@ -204,6 +205,43 @@
         <span>Rotation axis</span>
       </div>
     </div>
+
+
+    <dialog id="season-atlas" class="season-atlas" aria-labelledby="atlas-title" aria-describedby="atlas-intro">
+      <header class="atlas-heading">
+        <div><p class="eyebrow">PLANET LAB / A YEAR AT EVERY LATITUDE</p><h2 id="atlas-title">Season atlas</h2></div>
+        <button id="atlas-close" type="button" autofocus aria-label="Close season atlas">Back to globe ×</button>
+      </header>
+      <p id="atlas-intro">North at the top. South at the bottom. One repeating model year from left to right.</p>
+      <p id="atlas-context" class="atlas-context"></p>
+      <div class="atlas-settings">
+        <label>Layer<select id="atlas-metric"><option value="insolation">Daily solar</option><option value="daylight">Daylight</option><option value="temperature">Temperature</option></select></label>
+        <label>View<select id="atlas-view"><option value="absolute">Model values</option><option value="difference">Difference from 23.44°</option></select></label>
+        <label>Heat storage<select id="atlas-heat"><option value="2.5">Fast</option><option value="10" selected>Mixed</option><option value="50">Slow</option></select></label>
+      </div>
+      <div class="atlas-angle-row">
+        <label for="atlas-tilt">Tilt <input id="atlas-tilt" type="number" min="0" max="90" step="0.01" value="23.44" inputmode="decimal" aria-label="Atlas exact angle"/> °</label>
+        <div class="atlas-presets"><button type="button" data-atlas-tilt="0">0°</button><button type="button" data-atlas-tilt="23.44">Earth</button><button type="button" data-atlas-tilt="45">45°</button><button type="button" data-atlas-tilt="90">90°</button></div>
+        <label class="check-control"><input id="atlas-trace" type="checkbox" checked/> Sun's latitude (dashed)</label>
+      </div>
+      <p id="atlas-input-status" class="input-help" role="status"></p>
+      <div id="atlas-plot" class="atlas-plot">
+        <canvas id="atlas-field" role="img" aria-label="Season atlas" aria-describedby="atlas-map-help atlas-scale-note atlas-selection"></canvas>
+        <svg id="atlas-overlay" aria-hidden="true" preserveAspectRatio="none"></svg>
+        <p id="atlas-status" role="status" hidden></p>
+      </div>
+      <div id="atlas-legend" class="atlas-legend"><div id="atlas-ramp" class="color-ramp"></div><div id="atlas-scale-labels" class="legend-ticks"></div></div>
+      <p id="atlas-scale-note" class="atlas-note"></p>
+      <div class="atlas-navigation">
+        <label for="atlas-day">Model day <output id="atlas-day-output" for="atlas-day"></output><input id="atlas-day" type="range" min="1" max="365" step="1" value="172"/></label>
+        <label for="atlas-latitude">Latitude <output id="atlas-latitude-output" for="atlas-latitude"></output><input id="atlas-latitude" type="range" min="-90" max="90" step="0.1" value="25.033"/></label>
+      </div>
+      <p id="atlas-selection" class="chart-selection" aria-live="polite"></p>
+      <p id="atlas-location-note" class="atlas-note"></p>
+      <button id="atlas-focus" type="button" class="primary">View this selection on Earth ↗</button>
+      <p id="atlas-map-help" class="atlas-note">Tap/click the map to change the day and latitude. Or use the labelled sliders with a keyboard. Vertical swipes scroll; hovering never changes the planet. Longitude is retained; these daily-mean fields do not depend on it. Colours sample every 2° and one day; the exact reading uses the same model sampling as the globe. Latitude is not an equal-area axis.</p>
+      <p id="atlas-warning" class="atlas-warning" hidden>Extreme temperature extrapolation: this simplified model omits ice, evaporation and climate feedbacks. Values are not weather or habitability predictions.</p>
+    </dialog>
 
     <script type="module" src="/src/main.ts"></script>
   </body>
