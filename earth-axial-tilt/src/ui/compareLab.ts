@@ -82,8 +82,7 @@ export class CompareLab {
     this.el('compare-controls').hidden=!this.enabled;
     this.el('compare-results').hidden=!this.enabled;
     this.el('comparison-labels').hidden=!this.enabled;
-    // Focus remains a single-globe feature; comparison already has an unobstructed stage.
-    this.el<HTMLButtonElement>('focus-view').disabled=this.enabled;
+    // Focus hides controls in either mode; it never changes A/B science.
     if(!this.enabled){this.worker.cancel();this.solution=null;this.key='';this.actions.scene(null);}
     this.actions.change();
     this.el('compare-toggle').focus({preventScroll:true});
