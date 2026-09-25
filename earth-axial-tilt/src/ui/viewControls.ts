@@ -20,7 +20,7 @@ export function bindViewControls(actions: ViewActions): () => void {
     const focusButton = get<HTMLButtonElement>('focus-view');
     const root = document.documentElement;
     let focused = false, scrollX = 0, scrollY = 0;
-    let frame = 0;
+    let frame = 0, chromeFrame = 0;
     try {
         quality.value = parseVisualQuality(localStorage.getItem('earth-lab:quality'));
     }
@@ -78,14 +78,20 @@ export function bindViewControls(actions: ViewActions): () => void {
     const header = document.querySelector<HTMLElement>('.topbar')!;
     const orbitToolbar = get<HTMLElement>('orbit-toolbar');
     const focusNote = get<HTMLElement>('focus-view-note');
+    const setVariable = (name: string, value: string) => {
+        if (root.style.getPropertyValue(name) !== value) root.style.setProperty(name, value);
+    };
     const measureChrome = () => {
         const bottom = header.offsetTop + header.offsetHeight + 12;
-        root.style.setProperty('--topbar-bottom', `${bottom}px`);
-        root.style.setProperty('--orbit-bottom', `${bottom + orbitToolbar.offsetHeight + 12}px`);
+        setVariable('--topbar-bottom', `${bottom}px`);
+        setVariable('--orbit-bottom', `${bottom + orbitToolbar.offsetHeight + 12}px`);
         const noteSpace = focusNote.hidden ? 0 : Math.max(0, Math.ceil(window.innerHeight - focusNote.getBoundingClientRect().top + 12));
-        root.style.setProperty('--focus-note-space', `${noteSpace}px`);
+        setVariable('--focus-note-space', `${noteSpace}px`);
     };
-    const chromeObserver = new ResizeObserver(measureChrome);
+    const chromeObserver = new ResizeObserver(() => {
+        cancelAnimationFrame(chromeFrame);
+        chromeFrame = requestAnimationFrame(() => { measureChrome(); actions.refresh(); });
+    });
     chromeObserver.observe(header);
     chromeObserver.observe(orbitToolbar);
     chromeObserver.observe(focusNote);
@@ -93,5 +99,5 @@ export function bindViewControls(actions: ViewActions): () => void {
     canvas.addEventListener('visualstatus', status, { signal: events.signal });
     status();
     const unsubscribe = onLanguageChange(() => { focusButton.textContent = tr(focused ? 'Show controls' : 'Focus view'); status(); });
-    return () => { events.abort(); chromeObserver.disconnect(); cancelAnimationFrame(frame); unsubscribe(); };
+    return () => { events.abort(); chromeObserver.disconnect(); cancelAnimationFrame(frame); cancelAnimationFrame(chromeFrame); unsubscribe(); };
 }
