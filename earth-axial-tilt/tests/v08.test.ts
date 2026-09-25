@@ -36,7 +36,7 @@ describe('bilingual presentation', () => {
   it('provides a meaning, experiment, observation and limitation for every help topic', () => {
     expect(Object.keys(HELP).length).toBeGreaterThanOrEqual(10);
     for(const help of Object.values(HELP)) for(const text of Object.values(help)) {
-      expect(text).toHaveLength(2); expect(text.every(s=>s.length>0)).toBe(true);
+      expect(text).toHaveLength(2); expect(text.every((s: string)=>s.length>0)).toBe(true);
     }
   });
 });
