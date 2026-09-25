@@ -132,7 +132,7 @@ test('unavailable thermal worker leaves the astronomy atlas usable and clears te
 
 test.describe('mobile atlas', () => {
   test.use({hasTouch:true,isMobile:true,viewport:{width:390,height:844}});
-  test('large text stays readable, taps select, vertical swipes only scroll', async ({ page }, info) => {
+  test('large text and taps stay usable; scrolling never changes the selection', async ({ page }, info) => {
     await page.locator('#text-size').selectOption('large');
     await page.locator('#open-atlas').click();
     const p=await point(page);await page.touchscreen.tap(p.x,p.y);
@@ -146,14 +146,21 @@ test.describe('mobile atlas', () => {
     });
     expect(font).toBeGreaterThanOrEqual(15.9);
     const before=await page.locator('#season-atlas').evaluate(e=>e.scrollTop);
-    const session=await page.context().newCDPSession(page);
-    await session.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:p.x,y:p.y,id:1}]});
-    for (const distance of [12,30,60,90]) await session.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:p.x,y:p.y+distance,id:1}]});
-    await session.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+    if (info.project.name === 'chromium') {
+      // CDP provides a real native swipe, but is deliberately Chromium-only.
+      const session=await page.context().newCDPSession(page);
+      await session.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:p.x,y:p.y,id:1}]});
+      for (const distance of [12,30,60,90]) await session.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:p.x,y:p.y+distance,id:1}]});
+      await session.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+      await session.detach();
+    } else {
+      // WebKit checks real wheel scrolling + tap. This is NOT an on-device swipe claim.
+      await page.mouse.move(p.x,p.y);
+      await page.mouse.wheel(0,-120);
+    }
     await expect.poll(()=>page.locator('#season-atlas').evaluate(e=>e.scrollTop)).toBeLessThan(before);
     await expect(page.locator('#atlas-day')).toHaveValue('183');
     await expect(page.locator('#atlas-latitude')).toHaveValue('0');
-    await session.detach();
     await page.locator('#atlas-plot').scrollIntoViewIfNeeded();
     const shot=info.outputPath('v06-atlas-large-mobile.png');await page.screenshot({path:shot});
     await info.attach('Large-type mobile atlas with touch selection',{path:shot,contentType:'image/png'});
