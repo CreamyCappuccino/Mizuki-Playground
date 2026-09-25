@@ -11,6 +11,13 @@ interface Help {
     limit: Bilingual;
 }
 export const HELP: Readonly<Record<string, Help>> = {
+    experiments: {
+        title: ['Experiments and sharing', '実験の再現と共有'],
+        meaning: ['Presets prepare a question; links and settings files record scientific conditions. They never start playback.', 'プリセットは問いを準備し、リンクと設定ファイルは実験条件を記録します。自動再生はしません。'],
+        experiment: ['Prepare Earth vs 90°, inspect the result, then save a file or copy its link. Open it again and compare the numbers.', '23.44°対90°を準備して数値を確認し、ファイルを保存するかリンクをコピーします。開き直して数値を比べます。'],
+        observe: ['Date, angles, location, layers and the thermal model return. Language, large text and quality stay your own preferences.', '日付・角度・地点・レイヤー・気温モデルを復元します。言語・文字の大きさ・画質は個人設定のままです。'],
+        limit: ['A localhost link is local to each device. A settings file works in another installation. Files contain settings, not cached temperatures or pictures.', 'localhostは各端末自身を指します。別環境へは設定ファイルを渡せます。ファイルに気温の計算結果や画像は含みません。'],
+    },
     dual: {
         title: ['Compare Lab', '比較ラボ'],
         meaning: ['A and B share the date, rotational phase, location, model and heat storage. Only obliquity differs.', 'A・B は日付、自転角、地点、モデル、蓄熱を共有し、傾きだけが違います。'],
