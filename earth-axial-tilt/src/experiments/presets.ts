@@ -12,6 +12,19 @@ function world(overrides: Partial<ExperimentState>): Readonly<ExperimentState> {
 }
 const taipei=LOCATIONS.find(place=>place.id==='taipei')!;
 export const EXPERIMENT_PRESETS: readonly ExperimentPreset[] = [
+  { id:'orbit-contrast',title:['Same tilt, different orbit','同じ傾き、違う軌道'],
+    question:['Can distance change a season without changing the tilt?','傾きを変えず、距離で季節は変わる？'],
+    watch:['A is circular; B has e=0.2 and perihelion in northern summer. Compare at the same elapsed day from each equinox; seasonal longitudes need not match.','Aは円、Bは離心率0.2で北半球の夏に近日点へ。各世界の春分から同じ経過日数で比べるので、季節の角度は一致しない場合があります。'],
+    state:world({dual:true,tiltB:23.44,eccentricityB:.2,perihelionB:90,sceneView:'orbit',surfaceMode:'insolation',chartMetric:'insolation'}) },
+  { id:'perihelion-seasons',title:['Perihelion: summer or winter?','近日点が夏か、冬か？'],
+    question:['What changes when the closest approach moves to the opposite season?','一番近づく時期を反対の季節にしたら？'],
+    watch:['Both tilts and eccentricities match. A approaches the Sun in northern summer, B in winter. Seasonal lengths and incoming sunlight change together.','両方の傾きと離心率は同じ。Aは北半球の夏、Bは冬に太陽へ近づきます。季節の長さと日射が一緒に変わります。'],
+    state:world({dual:true,tiltB:23.44,eccentricity:.2,eccentricityB:.2,perihelion:90,perihelionB:270,sceneView:'orbit',surfaceMode:'insolation',chartMetric:'insolation'}) },
+  { id:'upright-ellipse',title:['Upright Earth on an ellipse','傾きゼロでも、楕円なら？'],
+    question:['Can sunlight change while day length stays constant?','昼の長さが同じでも、日射は変わる？'],
+    watch:['With tilt 0° the subsolar latitude stays at the equator. Play year: the changing distance still changes incoming energy.','傾き0°では太陽直下点の緯度は赤道のままです。「一年を再生」で、距離の変化だけでも日射が変わることを確かめます。'],
+    state:world({tilt:0,eccentricity:.2,perihelion:90,sceneView:'orbit',surfaceMode:'insolation',chartMetric:'insolation'}) },
+
   { id:'polar-contrast', title:['Earth vs 90°: polar summer','23.44° 対 90°：北極の夏'],
     question:['How does tilt change polar sunlight?','傾きで北極の日射はどれだけ変わる？'],
     watch:['Compare A/B daily sunlight at the North Pole, then step to December. Both worlds share heat storage.','北極の日平均日射をA・Bで読み、12月へ進めます。二つの世界の蓄熱設定は同じです。'],
