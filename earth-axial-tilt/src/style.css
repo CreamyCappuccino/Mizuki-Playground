@@ -465,8 +465,9 @@ button:focus-visible, select:focus-visible, input:focus-visible, summary:focus-v
 .guide-controls p { font-size: .63rem; color: var(--muted); margin: 9px 0 0; }
 .guide-controls strong { color: #ffdc7d; }
 .key { display: inline-block; vertical-align: middle; width: 9px; height: 3px; margin: 0 3px; }
+.location-key { width: 0; height: 0; background: transparent; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 9px solid #f7fbff; filter: drop-shadow(0 0 3px #8fe8ff); }
 .axis-key { background: #66d8ff; }
-.sun-key { background: #ffdc7d; border-radius: 50%; height: 7px; width: 7px; }
+.sun-key { width: 9px; height: 9px; background: transparent; border: 2px solid #ffdc7d; border-radius: 50%; box-shadow: 0 0 5px rgba(255,220,125,.55); }
 .terminator-key { background: #cfddf0; }
 .arc-key { background: #ba9aff; }
 .surface-legend { margin-top: 10px; color: #a3b6c9; font-size: .63rem; }
