@@ -51,7 +51,7 @@ describe('Sun-centred presentation frame', () => {
   it('retains axis direction through the full orbit, even at extreme tilt', () => {
     for(const tilt of [0,23.44,45,90]) for(const s of MODEL_SEASONS) {
       expect(orbitLayout(s.day,tilt).axis).toEqual(orbitLayout(1,tilt).axis);
-      const normal=new Vector3(0,1,0).transformDirection(new Matrix4().makeRotationFromEuler(new Euler(tilt*Math.PI/180,137*Math.PI/180,0,'XYZ')));
+      const normal=new Vector3(0,1,0).transformDirection(new Matrix4().makeRotationFromEuler(new Euler(-tilt*Math.PI/180,137*Math.PI/180,0,'XYZ')));
       normal.toArray().forEach((v,i)=>expect(v).toBeCloseTo(orbitLayout(s.day,tilt).axis[i],12));
     }
   });
