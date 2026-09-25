@@ -2,7 +2,8 @@ import type { CompareLab } from './ui/compareLab';
 import { bindContextHelp } from './ui/contextHelp';
 import { t as tr, msg, initLanguageControl, onLanguageChange, solarClockLabel } from './ui/i18n';
 import { bindViewControls } from './ui/viewControls';
-import { SeasonAtlas } from './ui/seasonAtlas';
+import { LazyAtlas } from './ui/lazyAtlas';
+import { bindReleaseControls } from './ui/releaseControls';
 import { solarMoment, subsolarLongitude, formatSolarClock, rotationAtSolarHour, wrapRotation, diurnalProfile } from './physics/diurnal';
 import { renderDayChart, updateSolarCursor } from './ui/dayChart';
 import { advanceSimulation, togglePlayback, type Playback } from './ui/playback';
@@ -17,6 +18,9 @@ import { dailyMeanInsolation, dayLengthHours, seasonLabel, solarDeclinationDeg, 
 import { renderAnnualChart, updateChartDay, formatModelDate, type ChartMetric } from './ui/chart';
 import { parseTiltInput } from './ui/tiltInput';
 import { bindChartScrubber, LAST_SOLAR_MINUTE } from './ui/chartScrubber';
+const applicationEvents = new AbortController();
+let applicationDisposed = false;
+let tickFrame = 0;
 interface AppState {
     tilt: number;
     day: number;
@@ -62,7 +66,7 @@ catch {
     textSize.value = 'comfortable';
 }
 document.documentElement.dataset.textSize = textSize.value;
-initLanguageControl();
+const disposeLanguageControl = initLanguageControl();
 const TILT_HELP = '0–90° · Enter or leave the field to apply.';
 let compareLab: CompareLab | null = null;
 let compareLoading = false;
@@ -73,15 +77,17 @@ const scene = new EarthScene(canvas, {
         update();
     },
 });
-bindViewControls({ quality: value => scene.setQuality(value), lights: value => scene.setNightLights(value), refresh: () => scene.refreshView() });
+const disposeView = bindViewControls({ quality: value => scene.setQuality(value), lights: value => scene.setNightLights(value), refresh: () => scene.refreshView() });
+const disposeRelease = bindReleaseControls(() => scene.refreshView());
 const sceneView = $<HTMLSelectElement>('#scene-view');
 const syncSceneView = () => {
     sceneView.value = canvas.dataset.sceneView ?? 'earth';
     $<HTMLElement>('#orbit-toolbar').hidden = sceneView.value !== 'orbit';
+    refreshExperimentLabel();
 };
-sceneView.addEventListener('change', () => { scene.setOrbitView(sceneView.value === 'orbit'); syncSceneView(); });
-canvas.addEventListener('sceneviewchange', syncSceneView);
-$('#fit-orbit').addEventListener('click', () => scene.fitOrbit());
+sceneView.addEventListener('change', () => { scene.setOrbitView(sceneView.value === 'orbit'); syncSceneView(); }, { signal: applicationEvents.signal });
+canvas.addEventListener('sceneviewchange', syncSceneView, { signal: applicationEvents.signal });
+$('#fit-orbit').addEventListener('click', () => scene.fitOrbit(), { signal: applicationEvents.signal });
 syncSceneView();
 for (const location of LOCATIONS) {
     const option = new Option(tr(location.name), location.id);
@@ -149,7 +155,7 @@ function updateThermalStatus(): void {
 }
 let reference: AnnualPoint[] = [];
 let chartKey = '';
-const atlas = new SeasonAtlas({
+const atlas = new LazyAtlas({
     onOpen: () => { state.playback = 'paused'; update(); },
     onSettings: () => update(),
     onSelect: (day, latitude) => {
@@ -171,8 +177,8 @@ const atlas = new SeasonAtlas({
     onFocus: () => scene.focusLocation(),
 });
 function compareSnapshot() {
-  return { source: temperatureSource(), latitude: state.location.latitude, longitude: state.location.longitude,
-    locationName: state.location.name, day: state.day, rotation: state.rotation, mode: state.surfaceMode, playback: state.playback };
+    return { source: temperatureSource(), latitude: state.location.latitude, longitude: state.location.longitude,
+        locationName: state.location.name, day: state.day, rotation: state.rotation, mode: state.surfaceMode, playback: state.playback };
 }
 function chartReferenceSource(): TemperatureSource { return compareLab?.enabled ? compareLab.sourceB : temperatureSource(true); }
 function chartComparison(): boolean { return state.compare || !!compareLab?.enabled; }
@@ -196,8 +202,8 @@ function update(): void {
     playDayButton.textContent = state.playback === 'day' ? tr('❚❚ Pause day') : tr('▶ Play day');
     playDayButton.setAttribute('aria-pressed', String(state.playback === 'day'));
     $('#play-coupled').textContent = tr(state.playback === 'coupled' ? 'Pause coupled motion' : 'Coupled motion');
-    $('#play-coupled').setAttribute('aria-pressed',String(state.playback === 'coupled'));
-    $('#play-coupled').classList.toggle('active',state.playback === 'coupled');
+    $('#play-coupled').setAttribute('aria-pressed', String(state.playback === 'coupled'));
+    $('#play-coupled').classList.toggle('active', state.playback === 'coupled');
     $('#chart-buttons').toggleAttribute('hidden', state.period === 'day');
     document.querySelector<HTMLElement>('.compare-control')!.hidden = state.period === 'day' || !!compareLab?.enabled;
     $('#profile-period').textContent = state.period === 'year' ? tr('ANNUAL PROFILE') : tr('ONE SOLAR DAY');
@@ -205,7 +211,13 @@ function update(): void {
     updateSurfaceLegend();
     updateReadouts();
 }
+function refreshExperimentLabel(): void {
+    const mode = tr(state.playback === 'paused' ? 'Paused' : state.playback === 'year' ? 'Year experiment' : state.playback === 'day' ? 'Day experiment' : 'Coupled motion');
+    $('#experiment-status').textContent = `${tr(compareLab?.enabled ? 'Compare Lab' : 'Single Earth')} · ${tr(canvas.dataset.sceneView === 'orbit' ? 'Orbit overview' : 'Earth close-up')} · ${mode}`;
+}
 function updateReadouts(): void {
+    refreshExperimentLabel();
+    $<HTMLElement>('#atlas-comparison-note').hidden = !compareLab?.enabled;
     compareLab?.update(compareSnapshot());
     atlas.update({ source: temperatureSource(), reference: temperatureSource(true), revision: thermalRevision,
         day: state.day, latitude: state.location.latitude, longitude: state.location.longitude,
@@ -342,7 +354,7 @@ function updateChartSelection(): void {
     chartContainer.setAttribute('aria-valuetext', description);
     $('#chart-selection').textContent = description;
 }
-bindChartScrubber(chartContainer, {
+const disposeScrubber = bindChartScrubber(chartContainer, {
     getPeriod: () => state.period,
     getValue: selectedChartValue,
     onSelect: (value) => {
@@ -380,11 +392,11 @@ textSize.addEventListener('change', () => {
     }
     catch { /* session-only preference */ }
     refreshChartSize();
-});
+}, { signal: applicationEvents.signal });
 $('#jump-chart').addEventListener('click', () => {
     $('#profile-section').scrollIntoView({ block: 'start', behavior: 'auto' });
     chartContainer.focus({ preventScroll: true });
-});
+}, { signal: applicationEvents.signal });
 function formatCoordinate(value: number, positive: string, negative: string): string {
     return `${Math.abs(value).toFixed(2)}° ${value >= 0 ? positive : negative}`;
 }
@@ -429,8 +441,8 @@ function commitTilt(): void {
 }
 tiltNumber.addEventListener('input', () => {
     tiltNumber.setAttribute('aria-invalid', String(parseTiltInput(tiltNumber.value) === null));
-});
-tiltNumber.addEventListener('change', commitTilt);
+}, { signal: applicationEvents.signal });
+tiltNumber.addEventListener('change', commitTilt, { signal: applicationEvents.signal });
 tiltNumber.addEventListener('keydown', (event) => {
     if (event.key === 'Enter') {
         event.preventDefault();
@@ -442,24 +454,24 @@ tiltNumber.addEventListener('keydown', (event) => {
         tiltHelp.textContent = tr(TILT_HELP);
         tiltNumber.blur();
     }
-});
+}, { signal: applicationEvents.signal });
 tiltInput.addEventListener('input', () => {
     state.tilt = Number(tiltInput.value);
     tiltHelp.textContent = tr(TILT_HELP);
     update();
-});
-dayInput.addEventListener('input', () => { state.playback = 'paused'; state.day = Number(dayInput.value); update(); });
+}, { signal: applicationEvents.signal });
+dayInput.addEventListener('input', () => { state.playback = 'paused'; state.day = Number(dayInput.value); update(); }, { signal: applicationEvents.signal });
 document.querySelectorAll<HTMLButtonElement>('[data-tilt]').forEach((button) => {
-    button.addEventListener('click', () => { state.tilt = Number(button.dataset.tilt); tiltHelp.textContent = tr(TILT_HELP); update(); });
+    button.addEventListener('click', () => { state.tilt = Number(button.dataset.tilt); tiltHelp.textContent = tr(TILT_HELP); update(); }, { signal: applicationEvents.signal });
 });
 document.querySelectorAll<HTMLButtonElement>('[data-speed]').forEach((button) => {
-    button.addEventListener('click', () => { state.speed = Number(button.dataset.speed); update(); });
+    button.addEventListener('click', () => { state.speed = Number(button.dataset.speed); update(); }, { signal: applicationEvents.signal });
 });
 document.querySelectorAll<HTMLButtonElement>('[data-mode]').forEach((button) => {
-    button.addEventListener('click', () => { state.surfaceMode = button.dataset.mode as SurfaceMode; update(); });
+    button.addEventListener('click', () => { state.surfaceMode = button.dataset.mode as SurfaceMode; update(); }, { signal: applicationEvents.signal });
 });
 document.querySelectorAll<HTMLButtonElement>('[data-chart]').forEach((button) => {
-    button.addEventListener('click', () => { state.chartMetric = button.dataset.chart as ChartMetric; update(); });
+    button.addEventListener('click', () => { state.chartMetric = button.dataset.chart as ChartMetric; update(); }, { signal: applicationEvents.signal });
 });
 locationSelect.addEventListener('change', () => {
     const location = LOCATIONS.find((candidate) => candidate.id === locationSelect.value);
@@ -467,22 +479,22 @@ locationSelect.addEventListener('change', () => {
         state.location = location;
         update();
     }
-});
+}, { signal: applicationEvents.signal });
 $<HTMLInputElement>('#show-guides').addEventListener('change', (event) => {
     state.guides = (event.target as HTMLInputElement).checked;
     update();
-});
+}, { signal: applicationEvents.signal });
 $<HTMLInputElement>('#compare-earth').addEventListener('change', (event) => {
     state.compare = (event.target as HTMLInputElement).checked;
     update();
-});
-playButton.addEventListener('click', () => { state.playback = togglePlayback(state.playback, 'year'); update(); });
-playDayButton.addEventListener('click', () => { state.playback = togglePlayback(state.playback, 'day'); update(); });
+}, { signal: applicationEvents.signal });
+playButton.addEventListener('click', () => { state.playback = togglePlayback(state.playback, 'year'); update(); }, { signal: applicationEvents.signal });
+playDayButton.addEventListener('click', () => { state.playback = togglePlayback(state.playback, 'day'); update(); }, { signal: applicationEvents.signal });
 rotationInput.addEventListener('input', () => {
     state.playback = 'paused';
     state.rotation = wrapRotation(Number(rotationInput.value));
     update();
-});
+}, { signal: applicationEvents.signal });
 for (const [id, hour] of [['noon-here', 12], ['midnight-here', 0]] as const) {
     $<HTMLButtonElement>(`#${id}`).addEventListener('click', () => {
         const rotation = rotationAtSolarHour(state.location.longitude, state.day, state.tilt, hour);
@@ -491,79 +503,114 @@ for (const [id, hour] of [['noon-here', 12], ['midnight-here', 0]] as const) {
         state.rotation = rotation;
         state.playback = 'paused';
         update();
-    });
+    }, { signal: applicationEvents.signal });
 }
 document.querySelectorAll<HTMLButtonElement>('[data-period]').forEach(button => {
-    button.addEventListener('click', () => { state.period = button.dataset.period as 'year' | 'day'; update(); });
+    button.addEventListener('click', () => { state.period = button.dataset.period as 'year' | 'day'; update(); }, { signal: applicationEvents.signal });
 });
-$('#focus-location').addEventListener('click', () => scene.focusLocation());
-$('#reset-view').addEventListener('click', () => scene.resetView());
+$('#focus-location').addEventListener('click', () => scene.focusLocation(), { signal: applicationEvents.signal });
+$('#reset-view').addEventListener('click', () => scene.resetView(), { signal: applicationEvents.signal });
 $('#temperature-model').addEventListener('change', event => {
     state.temperatureModel = (event.target as HTMLSelectElement).value as TemperatureModel;
     state.playback = 'paused';
     update();
-});
+}, { signal: applicationEvents.signal });
 $('#heat-storage').addEventListener('change', event => {
     state.heatDepth = Number((event.target as HTMLSelectElement).value);
     state.playback = 'paused';
     update();
-});
-$('#play-coupled').addEventListener('click', () => { state.playback = togglePlayback(state.playback, 'coupled'); update(); });
-$('#retry-climate').addEventListener('click', () => { thermalKey = ''; update(); });
-window.addEventListener('pagehide', event => { if (!event.persisted)
-    { thermalClient.dispose(); compareLab?.dispose(); scene.dispose(); } });
+}, { signal: applicationEvents.signal });
+$('#play-coupled').addEventListener('click', () => { state.playback = togglePlayback(state.playback, 'coupled'); update(); }, { signal: applicationEvents.signal });
+$('#retry-climate').addEventListener('click', () => { thermalKey = ''; update(); }, { signal: applicationEvents.signal });
+window.addEventListener('pagehide', event => {
+    if (event.persisted)
+        return; // A bfcache page must remain resumable.
+    applicationDisposed = true;
+    cancelAnimationFrame(tickFrame);
+    cancelAnimationFrame(resizeFrame);
+    chartObserver.disconnect();
+    disposeScrubber();
+    disposeHelp();
+    disposeView();
+    disposeRelease();
+    disposeLanguage();
+    disposeLanguageControl();
+    thermalClient.dispose();
+    compareLab?.dispose();
+    atlas.dispose();
+    scene.dispose();
+    applicationEvents.abort();
+}, { signal: applicationEvents.signal });
 let lastTime = performance.now();
 let lastReadout = 0;
-document.addEventListener('visibilitychange',()=>{lastTime=performance.now();});
+document.addEventListener('visibilitychange', () => { lastTime = performance.now(); }, { signal: applicationEvents.signal });
 function tick(now: number): void {
+    if (applicationDisposed)
+        return;
     const elapsedSeconds = (now - lastTime) / 1000;
     lastTime = now;
     if (state.playback !== 'paused' && !document.hidden) {
         const next = advanceSimulation(state.day, state.rotation, state.playback, elapsedSeconds, state.speed);
         state.day = next.day;
         state.rotation = next.rotation;
-        scene.setState(state.playback === 'year' ? { day: state.day } : state.playback === 'coupled' ? { day:state.day,rotation:state.rotation } : { rotation: state.rotation });
+        scene.setState(state.playback === 'year' ? { day: state.day } : state.playback === 'coupled' ? { day: state.day, rotation: state.rotation } : { rotation: state.rotation });
         if (now - lastReadout >= 100) {
             updateReadouts();
             lastReadout = now;
         }
     }
-    requestAnimationFrame(tick);
+    tickFrame = requestAnimationFrame(tick);
 }
 document.querySelectorAll<HTMLButtonElement>('[data-season-day]').forEach(button => {
-    button.addEventListener('click', () => { state.day = Number(button.dataset.seasonDay); state.playback = 'paused'; update(); });
+    button.addEventListener('click', () => { state.day = Number(button.dataset.seasonDay); state.playback = 'paused'; update(); }, { signal: applicationEvents.signal });
 });
-$('#compare-toggle').addEventListener('click',async()=>{
-  if(compareLoading)return;
-  const button=$<HTMLButtonElement>('#compare-toggle');
-  if(!compareLab){
-    compareLoading=true; button.disabled=true;
-    try {
-      const {CompareLab:Comparison}=await import('./ui/compareLab');
-      compareLab=new Comparison({
-        change:()=>update(),
-        tiltA:tilt=>{state.tilt=tilt;state.playback='paused';update();},
-        day:day=>{state.day=day;state.playback='paused';update();},
-        mode:mode=>{state.surfaceMode=mode;update();},
-        playback:mode=>{state.playback=togglePlayback(state.playback,mode);update();},
-        scene:value=>scene.setComparison(value),
-      });
-      compareLab.update(compareSnapshot());
-    } catch { button.textContent=tr('Compare failed to load — retry'); return; }
-    finally{compareLoading=false;button.disabled=false;}
-  }
-  state.playback='paused'; compareLab.toggle();
-});
-bindContextHelp();
-onLanguageChange(() => {
+$('#compare-toggle').addEventListener('click', async () => {
+    if (compareLoading)
+        return;
+    const button = $<HTMLButtonElement>('#compare-toggle');
+    if(button.dataset.loadError === 'true'){ location.reload(); return; }
+    if (!compareLab) {
+        compareLoading = true;
+        button.disabled = true;
+        try {
+            const { CompareLab: Comparison } = await import('./ui/compareLab');
+            if (applicationDisposed)
+                return;
+            compareLab = new Comparison({
+                change: () => update(),
+                tiltA: tilt => { state.tilt = tilt; state.playback = 'paused'; update(); },
+                day: day => { state.day = day; state.playback = 'paused'; update(); },
+                mode: mode => { state.surfaceMode = mode; update(); },
+                playback: mode => { state.playback = togglePlayback(state.playback, mode); update(); },
+                scene: value => scene.setComparison(value),
+            });
+            compareLab.update(compareSnapshot());
+        }
+        catch {
+            button.dataset.loadError='true';button.textContent = tr('Reload to retry comparison');
+            return;
+        }
+        finally {
+            compareLoading = false;
+            button.disabled = false;
+        }
+    }
+    state.playback = 'paused';
+    compareLab.toggle();
+}, { signal: applicationEvents.signal });
+const disposeHelp = bindContextHelp();
+const disposeLanguage = onLanguageChange(() => {
     scene.refreshLanguage();
     for (const option of Array.from(locationSelect.options)) {
         const preset = LOCATIONS.find(item => item.id === option.value);
         option.textContent = tr(preset?.name ?? 'Custom point — click the globe');
     }
-    profileKey = ''; referenceKey = ''; chartKey = ''; lastChartSize = '';
+    profileKey = '';
+    referenceKey = '';
+    chartKey = '';
+    lastChartSize = '';
     tiltHelp.textContent = tr(TILT_HELP);
     update();
 });
 update();
-requestAnimationFrame(tick);
+tickFrame = requestAnimationFrame(tick);
