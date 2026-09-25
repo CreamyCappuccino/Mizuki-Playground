@@ -508,7 +508,7 @@ for (const [id, hour] of [['noon-here', 12], ['midnight-here', 0]] as const) {
 document.querySelectorAll<HTMLButtonElement>('[data-period]').forEach(button => {
     button.addEventListener('click', () => { state.period = button.dataset.period as 'year' | 'day'; update(); }, { signal: applicationEvents.signal });
 });
-$('#focus-location').addEventListener('click', () => scene.focusLocation(), { signal: applicationEvents.signal });
+$('#focus-location').addEventListener('click', () => { scene.focusLocation(); canvas.scrollIntoView({ block: 'center', behavior: 'auto' }); }, { signal: applicationEvents.signal });
 $('#reset-view').addEventListener('click', () => scene.resetView(), { signal: applicationEvents.signal });
 $('#temperature-model').addEventListener('change', event => {
     state.temperatureModel = (event.target as HTMLSelectElement).value as TemperatureModel;
