@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { dayLengthHours } from '../src/physics/solar';
 
 test.setTimeout(90_000);
 const errors = new WeakMap<Page, string[]>();
@@ -18,7 +19,12 @@ async function point(page: Page, fractionX=.5, fractionY=.5) {
     const y=Number(border.getAttribute('y'))+fy*Number(border.getAttribute('height'));
     const p=(svg as SVGSVGElement).createSVGPoint();p.x=x;p.y=y;
     const result=p.matrixTransform((svg as SVGSVGElement).getScreenCTM()!);
-    return {x:result.x,y:result.y};
+    const screenX=Math.round(result.x),screenY=Math.round(result.y);
+    p.x=screenX;p.y=screenY;
+    const local=p.matrixTransform((svg as SVGSVGElement).getScreenCTM()!.inverse());
+    const pickedX=(local.x-Number(border.getAttribute('x')))/Number(border.getAttribute('width'));
+    const pickedY=(local.y-Number(border.getAttribute('y')))/Number(border.getAttribute('height'));
+    return {x:screenX,y:screenY,day:Math.round(1+pickedX*364),latitude:Math.round((90-pickedY*180)*10)/10};
   },[fractionX,fractionY]);
 }
 async function ready(page: Page) { await expect(page.locator('#atlas-plot')).toHaveAttribute('aria-busy','false'); }
@@ -35,15 +41,15 @@ test('atlas opens paused, selects a latitude and day, and keeps longitude and ro
   await page.locator('[data-atlas-tilt="90"]').click();
   await page.locator('#atlas-metric').selectOption('daylight'); await ready(page);
   const p=await point(page); await page.mouse.click(p.x,p.y);
-  await expect(page.locator('#atlas-day-output')).toContainText('183');
-  await expect(page.locator('#atlas-latitude-output')).toHaveText('Equator');
-  await expect(page.locator('#atlas-selection')).toContainText('12.0 h');
+  await expect(page.locator('#atlas-day')).toHaveValue(String(p.day));
+  await expect(page.locator('#atlas-latitude')).toHaveValue(String(p.latitude));
+  await expect(page.locator('#atlas-selection')).toContainText(`${dayLengthHours(p.latitude,p.day,90).toFixed(1)} h`);
   const shot=info.outputPath('v06-daylight-atlas.png'); await page.screenshot({path:shot});
   await info.attach('90-degree day-length atlas',{path:shot,contentType:'image/png'});
   await page.locator('#atlas-focus').click();
   await expect(page.locator('#season-atlas')).not.toBeVisible();
-  await expect(page.locator('#day-readout')).toHaveText('183');
-  await expect(page.locator('#location-coords')).toHaveText('0.00° N · 121.57° E');
+  await expect(page.locator('#day-readout')).toHaveText(String(p.day));
+  await expect(page.locator('#location-coords')).toHaveText(`${Math.abs(p.latitude).toFixed(2)}° ${p.latitude>=0?'N':'S'} · 121.57° E`);
   await expect(page.locator('#rotation')).toHaveValue(rotation);
 });
 
@@ -136,8 +142,8 @@ test.describe('mobile atlas', () => {
     await page.locator('#text-size').selectOption('large');
     await page.locator('#open-atlas').click();
     const p=await point(page);await page.touchscreen.tap(p.x,p.y);
-    await expect(page.locator('#atlas-day')).toHaveValue('183');
-    await expect(page.locator('#atlas-latitude')).toHaveValue('0');
+    await expect(page.locator('#atlas-day')).toHaveValue(String(p.day));
+    await expect(page.locator('#atlas-latitude')).toHaveValue(String(p.latitude));
     const overflow=await page.locator('#season-atlas').evaluate(e=>e.scrollWidth>e.clientWidth);
     expect(overflow).toBe(false);
     const font=await page.locator('.atlas-axis').first().evaluate(e=>{
@@ -159,8 +165,8 @@ test.describe('mobile atlas', () => {
       await page.mouse.wheel(0,-120);
     }
     await expect.poll(()=>page.locator('#season-atlas').evaluate(e=>e.scrollTop)).toBeLessThan(before);
-    await expect(page.locator('#atlas-day')).toHaveValue('183');
-    await expect(page.locator('#atlas-latitude')).toHaveValue('0');
+    await expect(page.locator('#atlas-day')).toHaveValue(String(p.day));
+    await expect(page.locator('#atlas-latitude')).toHaveValue(String(p.latitude));
     await page.locator('#atlas-plot').scrollIntoViewIfNeeded();
     const shot=info.outputPath('v06-atlas-large-mobile.png');await page.screenshot({path:shot});
     await info.attach('Large-type mobile atlas with touch selection',{path:shot,contentType:'image/png'});
