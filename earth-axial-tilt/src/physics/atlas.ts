@@ -1,3 +1,4 @@
+import { orbitKey, maximumSolarFactor } from './orbit';
 import { dailyMeanInsolation, dayLengthHours, SOLAR_CONSTANT } from './solar';
 import { isThermalReady, temperatureFromSource, type TemperatureSource } from './temperatureModel';
 
@@ -27,6 +28,7 @@ export function atlasReady(config: AtlasConfig): boolean {
   if (!isThermalReady(config.source)) return false;
   return config.view === 'absolute' || (config.reference.tilt === 23.44 &&
     config.reference.model === config.source.model && config.reference.depth === config.source.depth &&
+    orbitKey(config.reference.orbit) === orbitKey(config.source.orbit) &&
     isThermalReady(config.reference));
 }
 
@@ -39,11 +41,11 @@ export function atlasReading(config: AtlasConfig, latitude: number, day: number)
   if (!atlasReady(config)) return null;
   const sample = (source: TemperatureSource): number => config.metric === 'temperature'
     ? temperatureFromSource(source, latitude, day)!
-    : config.metric === 'insolation' ? dailyMeanInsolation(latitude, day, source.tilt)
-      : dayLengthHours(latitude, day, source.tilt);
+    : config.metric === 'insolation' ? dailyMeanInsolation(latitude, day, source.tilt, source.orbit)
+      : dayLengthHours(latitude, day, source.tilt, source.orbit);
   const current = sample(config.source);
   // Astronomy always uses exactly 23.44 degrees even while the thermal worker is unavailable.
-  const reference = config.view === 'difference' ? sample({ ...config.reference, tilt: 23.44 }) : null;
+  const reference = config.view === 'difference' ? sample({ ...config.reference, tilt: 23.44, orbit:config.source.orbit }) : null;
   return { current, reference, value: reference === null ? current : current - reference };
 }
 
@@ -71,7 +73,7 @@ export function atlasScale(config: AtlasConfig, field: AtlasField): AtlasScale {
     const rounded = Math.ceil(extent / step) * step;
     return { minimum: -rounded, maximum: rounded, diverging: true };
   }
-  if (config.metric === 'insolation') return { minimum: 0, maximum: SOLAR_CONSTANT, diverging: false };
+  if (config.metric === 'insolation') return { minimum: 0, maximum: SOLAR_CONSTANT * maximumSolarFactor(config.source.orbit), diverging: false };
   if (config.metric === 'daylight') return { minimum: 0, maximum: 24, diverging: false };
   const minimum = Math.floor(field.minimum / 5) * 5;
   const maximum = Math.max(minimum + 5, Math.ceil(field.maximum / 5) * 5);
