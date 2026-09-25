@@ -71,7 +71,7 @@ export class SeasonAtlas {
             this.el('open-atlas').addEventListener('click', () => this.open(), { signal: this.events.signal });
         this.el('atlas-close').addEventListener('click', () => this.dialog.close(), { signal: this.events.signal });
         this.el('atlas-focus').addEventListener('click', () => { this.dialog.close(); this.actions.onFocus(); }, { signal: this.events.signal });
-        this.dialog.addEventListener('close', () => { this.gesture = null; this.actions.onSettings(); }, { signal: this.events.signal });
+        this.dialog.addEventListener('close', () => { this.gesture = null; this.actions.onSettings(); this.el<HTMLElement>('open-atlas').focus({ preventScroll: true }); }, { signal: this.events.signal });
         for (const element of [this.metric, this.view])
             element.addEventListener('change', () => this.actions.onSettings(), { signal: this.events.signal });
         this.el('atlas-trace').addEventListener('change', () => this.overlay.querySelector('.atlas-trace')?.toggleAttribute('hidden', !this.el<HTMLInputElement>('atlas-trace').checked), { signal: this.events.signal });
