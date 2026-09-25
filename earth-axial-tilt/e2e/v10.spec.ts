@@ -74,6 +74,22 @@ test('dual Focus preserves both worlds and has a visible return path on a phone'
  expect(await page.locator('#compare-temperature').allTextContents()).toEqual(before);
 });
 
+test('location and subsolar markers have distinct visual semantics without changing science',async({page},info)=>{
+ await page.setViewportSize({width:1100,height:760});await page.goto('/');
+ await expect(page.locator('#climate-status')).toHaveAttribute('data-status','ready');
+ const science=await page.locator('#tilt,#day,#rotation,#metric-daylight,#metric-solar,#metric-temp').evaluateAll(els=>els.map(el=>el instanceof HTMLInputElement?el.value:el.textContent));
+ const canvas=page.locator('#earth-canvas');
+ await expect(canvas).toHaveAttribute('data-location-marker','pin');
+ await expect(canvas).toHaveAttribute('data-subsolar-marker','sun-target');
+ await page.locator('#language').selectOption('ja');
+ await page.locator('#tools-mode').selectOption('all');
+ await expect(page.locator('.guide-controls')).toContainText('選択地点');
+ await expect(page.locator('.guide-controls')).toContainText('太陽直下点');
+ await page.locator('#focus-location').click();
+ await page.screenshot({path:info.outputPath('v10-marker-semantics-ja.png')});
+ expect(await page.locator('#tilt,#day,#rotation,#metric-daylight,#metric-solar,#metric-temp').evaluateAll(els=>els.map(el=>el instanceof HTMLInputElement?el.value:el.textContent))).toEqual(science);
+});
+
 test('reviewed Japanese comparison panel matches the pinned Chromium image',async({page},info)=>{
  test.skip(info.project.name !== 'chromium', 'Golden font rasterization is pinned to Linux Chromium; WebKit uses behavioural checks.');
  await page.setViewportSize({width:1440,height:1000});await page.goto('/');
