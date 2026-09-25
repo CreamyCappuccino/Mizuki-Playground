@@ -1,5 +1,6 @@
+import { CLASSIC_ORBIT, orbitKey, dayAtSeasonalLongitude, normalizeOrbit, type OrbitParameters } from '../physics/orbit';
 import * as THREE from 'three';
-import { orbitLayout, ORBIT_RADIUS, MODEL_SEASONS } from './orbitLayout';
+import { orbitLayout, ORBIT_RADIUS } from './orbitLayout';
 import { t } from '../ui/i18n';
 
 /** Static artistic Sun. No continuous animation, irradiance or climate inputs. */
@@ -37,20 +38,49 @@ function createSun(): THREE.Group {
 export class OrbitOverview extends THREE.Group {
   private readonly labelTextures: THREE.CanvasTexture[] = [];
   private readonly labels: { key: string; canvas: HTMLCanvasElement; texture: THREE.CanvasTexture }[] = [];
+  private readonly path = new THREE.LineLoop(new THREE.BufferGeometry().setAttribute('position',
+    new THREE.BufferAttribute(new Float32Array(256*3),3)), new THREE.LineBasicMaterial({color:0x7995b4,transparent:true,opacity:.65}));
+  private readonly seasons: {tick:THREE.Object3D;label:THREE.Object3D}[]=[];
+  private readonly apsides: {tick:THREE.Object3D;label:THREE.Object3D}[]=[];
+  private readonly direction = new THREE.ArrowHelper(new THREE.Vector3(0,0,-1),new THREE.Vector3(ORBIT_RADIUS,0,0),1.6,0x92bfe1,.65,.35);
+  private readonly paths = new Map<string,Float32Array>();
+  private currentKey='';
   constructor() {
     super(); this.name = 'orbit-overview'; this.visible = false;
-    this.add(createSun());
-    const ring = Array.from({length:256},(_,i)=>new THREE.Vector3(Math.cos(i/256*Math.PI*2)*ORBIT_RADIUS,0,Math.sin(i/256*Math.PI*2)*ORBIT_RADIUS));
-    this.add(new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(ring),new THREE.LineBasicMaterial({color:0x7995b4,transparent:true,opacity:.65})));
-    for (const season of MODEL_SEASONS) {
-      const v=new THREE.Vector3(...orbitLayout(season.day,23.44).position);
-      const tick=new THREE.Mesh(new THREE.SphereGeometry(.12,12,8),new THREE.MeshBasicMaterial({color:0xbdcce6})); tick.position.copy(v); this.add(tick);
-      const label=this.label(season.label); label.position.copy(v).multiplyScalar(1.18); label.position.y=-1.3; this.add(label);
+    this.add(createSun(),this.path,this.direction);
+    for (const key of ['Spring reference','Northern summer reference','Autumn reference','Northern winter reference']) {
+      const tick=new THREE.Mesh(new THREE.SphereGeometry(.12,12,8),new THREE.MeshBasicMaterial({color:0xbdcce6}));
+      const label=this.label(key);this.add(tick,label);this.seasons.push({tick,label});
     }
-    const sunLabel=this.label('Sun'); sunLabel.position.set(0,3.5,0); this.add(sunLabel);
-    // In this coordinate convention the model year and eastward spin both have +Y angular momentum.
-    const a = 0.6, position = new THREE.Vector3(Math.cos(a)*ORBIT_RADIUS,0,Math.sin(a)*ORBIT_RADIUS);
-    this.add(new THREE.ArrowHelper(new THREE.Vector3(Math.sin(a),0,-Math.cos(a)),position,1.6,0x92bfe1,.65,.35));
+    for (const key of ['Perihelion','Aphelion']) {
+      const tick=new THREE.Mesh(new THREE.OctahedronGeometry(.2),new THREE.MeshBasicMaterial({color:0xffc275}));
+      const label=this.label(key);this.add(tick,label);this.apsides.push({tick,label});
+    }
+    const sunLabel=this.label('Sun');sunLabel.position.set(0,3.5,0);this.add(sunLabel);
+    this.setOrbit(CLASSIC_ORBIT);
+  }
+  setOrbit(value:OrbitParameters=CLASSIC_ORBIT):void {
+    const orbit=normalizeOrbit(value),key=orbitKey(orbit);if(key===this.currentKey)return;this.currentKey=key;
+    let points=this.paths.get(key);
+    if(!points){
+      points=new Float32Array(256*3);
+      for(let i=0;i<256;i++)points.set(orbitLayout(80+i*365/256,23.44,orbit).position,i*3);
+      if(this.paths.size>=8)this.paths.delete(this.paths.keys().next().value!);
+      this.paths.set(key,points);
+    }
+    const attribute=this.path.geometry.attributes.position as THREE.BufferAttribute;
+    (attribute.array as Float32Array).set(points);attribute.needsUpdate=true;this.path.geometry.computeBoundingSphere();
+    this.seasons.forEach(({tick,label},i)=>{
+      const v=new THREE.Vector3(...orbitLayout(dayAtSeasonalLongitude(i*90,orbit),23.44,orbit).position);
+      tick.position.copy(v);label.position.copy(v).multiplyScalar(1.18);label.position.y=-1.3;
+    });
+    this.apsides.forEach(({tick,label},i)=>{
+      tick.visible=label.visible=orbit.eccentricity>0;
+      const v=new THREE.Vector3(...orbitLayout(dayAtSeasonalLongitude(orbit.perihelion-orbit.axis+i*180,orbit),23.44,orbit).position);
+      tick.position.copy(v);label.position.copy(v).multiplyScalar(1.1);label.position.y=1.5;
+    });
+    const day=dayAtSeasonalLongitude(215,orbit),v=new THREE.Vector3(...orbitLayout(day,23.44,orbit).position);
+    this.direction.position.copy(v);this.direction.setDirection(new THREE.Vector3(...orbitLayout(day+.05,23.44,orbit).position).sub(v).normalize());
   }
   private label(key: string): THREE.Sprite {
     const canvas=document.createElement('canvas'); canvas.width=512; canvas.height=112;
@@ -62,9 +92,9 @@ export class OrbitOverview extends THREE.Group {
   refreshLabels(): void {
     for(const {key,canvas,texture} of this.labels){
       const ctx=canvas.getContext('2d')!; ctx.clearRect(0,0,512,112);
-      ctx.font='500 40px system-ui, sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.font='500 36px system-ui, sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
       ctx.shadowColor='#020610';ctx.shadowBlur=10;ctx.fillStyle='#e5efff';ctx.fillText(t(key),256,56);texture.needsUpdate=true;
     }
   }
-  disposeLabels(): void { for(const texture of this.labelTextures)texture.dispose(); }
+  disposeLabels(): void { this.paths.clear();for(const texture of this.labelTextures)texture.dispose(); }
 }
