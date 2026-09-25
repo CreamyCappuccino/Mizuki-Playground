@@ -92,6 +92,7 @@ export class EarthScene {
   private pointerStart: { id: number; x: number; y: number; moved: boolean } | null = null;
   private readonly activePointers = new Set<number>();
   private frameId = 0;
+  private resizeFrame = 0;
   private disposed = false;
   private readonly raycaster = new THREE.Raycaster();
   private readonly pointer = new THREE.Vector2();
@@ -181,7 +182,10 @@ export class EarthScene {
     window.addEventListener('resize', this.resize);
     document.addEventListener('visibilitychange', this.invalidate);
     this.controls.addEventListener('change', this.invalidate);
-    this.resizeObserver = new ResizeObserver(this.resize);
+    this.resizeObserver = new ResizeObserver(() => {
+      cancelAnimationFrame(this.resizeFrame);
+      this.resizeFrame = requestAnimationFrame(this.resize);
+    });
     this.resizeObserver.observe(canvas);
     this.setQuality('high');
 
@@ -363,6 +367,7 @@ export class EarthScene {
     this.orbitOverview.disposeLabels();
     this.disposed = true;
     cancelAnimationFrame(this.frameId);
+    cancelAnimationFrame(this.resizeFrame);
     this.controls.dispose();
     this.canvas.removeEventListener('pointerdown', this.handlePointerDown);
     this.canvas.removeEventListener('pointermove', this.handlePointerMove);
