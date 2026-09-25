@@ -18,13 +18,14 @@ RCから先は、単に機能を積み足すのではなく、
 
 v1.1へ大きく進む前後どちらでもよいが、正式1.0タグ／版番号確定の前に以下を閉じる。
 
-### marker clarity
+### marker clarity — 完了
 
-- 現在の白球の選択地点マーカーを、球ではなく **pin / ▼ + dot** 系へ変更。
-- 太陽直下点は黄色い球ではなく **ring / target / sun glyph** 系へ変更。
-- 遠方のSun方向マーカー、選択地点、太陽直下点を形だけでも識別可能にする。
-- hover/tap/「？」で「選択地点」「太陽直下点」を説明。
-- Science guides OFF時に何が消えるかを明確化。
+- 選択地点マーカーは白球から、画面正対で読める **pin** 系へ変更済み。
+- 太陽直下点は別形状へ分離し、遠方のSun方向マーカーとも視覚的に区別済み。
+- ガイド凡例・日英ラベル・ドキュメントも形状に合わせて更新済み。
+- Science guidesとの関係も整理済み。
+
+この改善は1.0 RCの人間目線polishとしてmainへ反映済み。
 
 ### device gate
 
@@ -345,7 +346,7 @@ Earthを特別ケースとして維持しつつ、Mars/Uranusや異なる軌道�
 
 依存関係を考えると、次の順で進める。
 
-1. **1.0 marker polish**
+1. **1.0 marker polish — 完了**
 2. **1.1 presets + shareable state URL**
 3. **1.2 eccentricity / perihelion / precession**
 4. **1.3 Mars / Uranus astronomy**
