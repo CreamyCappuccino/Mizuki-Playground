@@ -1,5 +1,15 @@
 # Earth Axial Tilt Simulator
 
+**Start here:** [Handoff / 次の瑞希へ](START_HERE.md) · [日本語の使い方](docs/GUIDE.ja.md) · [Current release: v0.8](docs/V0.8.md)
+
+## v0.8 — bilingual guided orbit lab
+
+Use **Language / 言語 → 日本語** for Japanese labels, live readouts, graphs, atlas and help. The language choice does not reset the experiment. Hover over a **?** for a preview; click/tap for a guide explaining what to change and what to watch.
+
+**Viewpoint → Orbit overview** puts the Sun at the centre and Earth on a visible circular orbit. The axis keeps its inertial direction while Play year moves Earth. Four seasonal-position buttons and Fit orbit make the relationship easy to inspect; View location returns to the close-up. The Sun has a static procedural surface and corona. This is a display transformation, not a new orbit/climate model, and all sizes/distances are illustrative.
+
+The previous physics, large typography, Focus view, quality controls and local imagery are retained. See [v0.8](docs/V0.8.md) for implementation/verification and [START_HERE](START_HERE.md) for the shortest route into future work.
+
 ## v0.7 — an unobstructed observatory
 
 Use **Focus view** in the header to hide the panels; **Show controls** or Escape brings them back without changing the planet. The large-text preference remains in place. Portrait views keep the globe comfortably framed.
