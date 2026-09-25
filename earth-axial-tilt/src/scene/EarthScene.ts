@@ -56,8 +56,8 @@ export class EarthScene {
   private readonly orbitOverview = new OrbitOverview();
   private readonly localOrbitRing = this.createOrbitRing();
   private orbitView = false;
-  private readonly closeCamera = new THREE.Vector3(0.4, 1.3, 8.2);
-  private readonly overviewCamera = new THREE.Vector3(0, 32, 44);
+  private readonly closeCamera = new THREE.Vector3(0.4, 1.3, -8.2);
+  private readonly overviewCamera = new THREE.Vector3(0, 32, -44);
   private readonly earthGroup = new THREE.Group();
   private readonly earthMesh: THREE.Mesh<THREE.SphereGeometry, THREE.MeshPhongMaterial>;
   private readonly dataMesh: THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial>;
@@ -116,7 +116,7 @@ export class EarthScene {
     this.renderer.toneMappingExposure = 1.05;
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-    this.camera.position.set(0.4, 1.3, 8.2);
+    this.camera.position.set(0.4, 1.3, -8.2);
     this.controls = new OrbitControls(this.camera, canvas);
     this.controls.enableDamping = true;
     this.controls.enablePan = false;
@@ -250,7 +250,7 @@ export class EarthScene {
         if (view.side === 'B') this.setState(this.comparisonState());
         const y = this.canvas.clientHeight - view.y - view.height;
         this.camera.aspect = view.width / view.height;
-        this.camera.fov = viewFieldOfView(this.camera.aspect);
+        this.camera.fov = Math.min(100, viewFieldOfView(this.camera.aspect) * (this.comparison ? 1.12 : 1));
         this.camera.updateProjectionMatrix();
         this.renderer.setViewport(view.x, y, view.width, view.height);
         this.renderer.setScissor(view.x, y, view.width, view.height);
@@ -282,7 +282,7 @@ export class EarthScene {
 
   resetView(): void {
     if (this.orbitView) { this.fitOrbit(); return; }
-    this.setViewPosition(new THREE.Vector3(0.4, 1.3, 8.2));
+    this.setViewPosition(new THREE.Vector3(0.4, 1.3, -8.2));
   }
 
   private setViewPosition(position: THREE.Vector3): void {
@@ -315,7 +315,7 @@ export class EarthScene {
 
   fitOrbit(): void {
     if (!this.orbitView) this.setOrbitView(true);
-    this.setViewPosition(new THREE.Vector3(0, 32, 44));
+    this.setViewPosition(new THREE.Vector3(0, 32, -44));
     this.invalidate();
   }
 
@@ -354,6 +354,7 @@ export class EarthScene {
   private readonly invalidate = (): void => { if (!this.applyingPass) this.dirty = true; };
 
   dispose(): void {
+    if (this.disposed) return;
     window.removeEventListener('resize', this.resize);
     document.removeEventListener('visibilitychange', this.invalidate);
     this.resizeObserver.disconnect();
@@ -391,7 +392,7 @@ export class EarthScene {
     this.canvas.dataset.pixelRatio = String(config.pixelRatio);
     const viewport = comparisonViewports(width,height,this.comparison !== null)[0];
     this.camera.aspect = viewport.width / viewport.height;
-    this.camera.fov = viewFieldOfView(this.camera.aspect);
+    this.camera.fov = Math.min(100, viewFieldOfView(this.camera.aspect) * (this.comparison ? 1.12 : 1));
     this.camera.updateProjectionMatrix();
     this.invalidate();
   };
@@ -603,13 +604,13 @@ export class EarthScene {
     if (!start || start.id !== event.pointerId || start.moved || this.activePointers.size > 0
       || Math.hypot(event.clientX - start.x, event.clientY - start.y) > 6) return;
     const rect = this.canvas.getBoundingClientRect();
-    const px = event.clientX - rect.left, py = event.clientY - rect.top;
-    const view = comparisonViewports(rect.width,rect.height,this.comparison !== null).find(v =>
-      px >= v.x && px <= v.x+v.width && py >= v.y && py <= v.y+v.height);
+    const px = event.clientX - rect.left - this.canvas.clientLeft, py = event.clientY - rect.top - this.canvas.clientTop;
+    const view = comparisonViewports(this.canvas.clientWidth,this.canvas.clientHeight,this.comparison !== null).find(v =>
+      px >= v.x && px < v.x+v.width && py >= v.y && py < v.y+v.height);
     if (!view) return;
     const primary = this.state;
     if (view.side === 'B') { this.applyingPass = true; this.setState(this.comparisonState()); }
-    this.camera.aspect = view.width / view.height; this.camera.fov = viewFieldOfView(this.camera.aspect);
+    this.camera.aspect = view.width / view.height; this.camera.fov = Math.min(100, viewFieldOfView(this.camera.aspect) * (this.comparison ? 1.12 : 1));
     this.camera.updateProjectionMatrix();
     this.pointer.x = ((px - view.x) / view.width) * 2 - 1;
     this.pointer.y = -((py - view.y) / view.height) * 2 + 1;
