@@ -1,5 +1,6 @@
+import type { OrbitParameters } from '../physics/orbit';
 import type { ThermalSolution } from '../physics/energyBalance';
-export interface ThermalRequest { id: number; tilt: number; depth: number; compare: boolean }
+export interface ThermalRequest { orbit?: OrbitParameters; id: number; tilt: number; depth: number; compare: boolean }
 export type ThermalReply = { id: number; current: ThermalSolution; reference: ThermalSolution | null }
   | { id: number; error: string };
 export interface ClimateWorker {
@@ -19,8 +20,8 @@ export class ThermalClient {
   constructor(private readonly createWorker: () => ClimateWorker,
     private readonly onReply: (reply: ThermalReply) => void) {}
 
-  request(tilt: number, depth: number, compare: boolean): void {
-    this.wanted = { id: ++this.serial, tilt, depth, compare };
+  request(tilt: number, depth: number, compare: boolean, orbit?: OrbitParameters): void {
+    this.wanted = { id: ++this.serial, tilt, depth, compare, ...(orbit ? {orbit:{...orbit}} : {}) };
     this.pump();
   }
   cancel(): void { this.wanted = null; this.serial += 1; }
