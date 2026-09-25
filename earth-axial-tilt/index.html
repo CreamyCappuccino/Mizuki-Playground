@@ -22,10 +22,25 @@
 <div aria-label="Viewing controls" class="view-toolbar" data-i18n-aria-label="Viewing controls"><label for="language">Language / 言語 <select id="language"><option data-i18n="English" value="en">English</option><option data-i18n="日本語" value="ja">日本語</option></select></label>
 <div class="help-heading"><label data-help="view" for="scene-view"><span data-i18n="Viewpoint">Viewpoint</span><select id="scene-view"><option data-i18n="Earth close-up" value="earth">Earth close-up</option><option data-i18n="Orbit overview" value="orbit">Orbit overview</option></select></label></div>
 <div class="help-heading"><label data-help="quality" for="visual-quality"><span data-i18n="Quality">Quality</span><select id="visual-quality"><option data-i18n="Eco" value="eco">Eco</option><option data-i18n="Balanced" value="balanced">Balanced</option><option data-i18n="High" selected="" value="high">High</option></select></label></div>
+<button id="compare-toggle" aria-pressed="false"><span data-i18n="Compare Earth A/B">Compare Earth A/B</span></button>
 <button aria-pressed="false" id="focus-view"><span data-i18n="Focus view">Focus view</span></button>
 </div>
 </header>
 <p hidden="" id="focus-view-note"><span data-i18n="Focus view · drag to orbit, scroll / pinch to zoom · Esc or Show controls to return.">Focus view · drag to orbit, scroll / pinch to zoom · Esc or Show controls to return.</span></p>
+
+<section id="compare-controls" class="glass compare-controls" hidden aria-label="Compare Lab" data-i18n-aria-label="Compare Lab">
+  <div class="help-heading"><h2 data-help="dual"><span data-i18n="Compare Lab">Compare Lab</span></h2></div>
+  <div class="compare-settings">
+    <label for="compare-tilt-a"><span data-i18n="Earth A tilt">Earth A tilt</span> <input id="compare-tilt-a" type="number" min="0" max="90" step="0.01" value="23.44" inputmode="decimal"/> °</label>
+    <label for="compare-tilt-b"><span data-i18n="Earth B tilt">Earth B tilt</span> <input id="compare-tilt-b" type="number" min="0" max="90" step="0.01" value="90" inputmode="decimal"/> °</label>
+    <label for="compare-preset"><span data-i18n="Comparison preset">Comparison preset</span><select id="compare-preset"><option value="0">23.44° / 0°</option><option value="45">23.44° / 45°</option><option value="90" selected>23.44° / 90°</option><option value="custom" data-i18n="Custom / Custom">Custom / Custom</option></select></label>
+    <label for="compare-layer"><span data-i18n="Surface layer">Surface layer</span><select id="compare-layer"><option value="normal" data-i18n="Earth">Earth</option><option value="instant" data-i18n="Sun now">Sun now</option><option value="insolation" data-i18n="Daily solar">Daily solar</option><option value="daylight" data-i18n="Daylight">Daylight</option><option value="temperature" data-i18n="Temperature">Temperature</option></select></label>
+  </div>
+  <p id="compare-input-status" role="status" class="input-help"></p>
+  <div class="compare-transport"><label for="compare-day"><span data-i18n="Shared model day">Shared model day</span> <output id="compare-date"></output><input id="compare-day" type="range" min="1" max="365" value="172"/></label><button id="compare-play-year" data-i18n="Play year">Play year</button><button id="compare-play-day" data-i18n="Play day">Play day</button><button id="compare-play-coupled" data-i18n="Coupled motion">Coupled motion</button><button id="compare-exit" data-i18n="Back to single Earth">Back to single Earth</button></div>
+  <p class="input-help" data-i18n="Shared camera and clock. Drag either view to rotate both. A and B are separate experiments, not two planets in one orbit.">Shared camera and clock. Drag either view to rotate both. A and B are separate experiments, not two planets in one orbit.</p>
+</section>
+<div id="comparison-labels" hidden aria-hidden="true"><strong id="comparison-label-a"></strong><strong id="comparison-label-b"></strong></div>
 <aside aria-label="Simulation controls" class="controls glass" data-i18n-aria-label="Simulation controls">
 <section>
 <div class="control-heading">
@@ -65,7 +80,7 @@
 <button class="speed" data-speed="12">×12</button>
 </div>
 </section>
-<section class="rotation-controls">
+<section class="coupled-controls"><div class="help-heading"><h2 data-help="coupled"><span data-i18n="Rotation + orbit">Rotation + orbit</span></h2></div><button id="play-coupled" aria-pressed="false" data-i18n="Coupled motion">Coupled motion</button><p class="input-help" data-i18n="At ×1, one model day takes 10 seconds. The 365-day model makes 366 turns relative to space per orbit.">At ×1, one model day takes 10 seconds. The 365-day model makes 366 turns relative to space per orbit.</p></section><section class="rotation-controls">
 <div class="control-heading">
 <div><p class="eyebrow"><span data-i18n="DAY / NIGHT">DAY / NIGHT</span></p><div class="help-heading"><h2 data-help="rotation"><span data-i18n="Earth rotation">Earth rotation</span></h2></div></div>
 <output for="rotation" id="rotation-readout">0.0°</output>
@@ -127,7 +142,7 @@
 </section>
 </aside>
 <section aria-label="Selected location details" class="location-panel glass" data-i18n-aria-label="Selected location details">
-<div class="location-title">
+<section id="compare-results" hidden><h2 data-i18n="A / B comparison">A / B comparison</h2><p id="compare-context" class="input-help"></p><p id="compare-model" class="input-help"></p><table class="comparison-table"><thead><tr><th data-i18n="Metric">Metric</th><th>A</th><th>B</th><th>A − B</th></tr></thead><tbody><tr id="compare-daylight"><th scope="row" data-i18n="Daylight">Daylight</th><td data-column="a">—</td><td data-column="b">—</td><td data-column="diff">—</td></tr><tr id="compare-solar"><th scope="row" data-i18n="Daily solar">Daily solar</th><td data-column="a">—</td><td data-column="b">—</td><td data-column="diff">—</td></tr><tr id="compare-temperature"><th scope="row" data-i18n="Temperature">Temperature</th><td data-column="a">—</td><td data-column="b">—</td><td data-column="diff">—</td></tr></tbody></table><p id="compare-status" class="input-help" role="status"></p><button id="compare-retry" hidden data-i18n="Retry Earth B">Retry Earth B</button><p class="input-help" data-i18n="The location panel describes Earth A. Annual dashed curve: Earth B in Compare Lab; 23.44° otherwise. Day graph: Earth A only.">The location panel describes Earth A. Annual dashed curve: Earth B in Compare Lab; 23.44° otherwise. Day graph: Earth A only.</p></section><div class="location-title">
 <div>
 <p class="eyebrow"><span data-i18n="SELECTED LOCATION">SELECTED LOCATION</span></p>
 <h2 id="location-name"><span data-i18n="Taipei">Taipei</span></h2>
