@@ -28,6 +28,7 @@ export class LazyAtlas {
       } catch { this.failed=true;this.button.textContent=t('Reload to retry season atlas'); return; }
       finally { this.loading=false;this.button.disabled=false; }
     }
+    this.button.focus({ preventScroll: true });
     this.instance.open();
   }
   dispose(): void { this.disposed=true;this.events.abort();this.instance?.dispose();this.instance=null;this.snapshot=null; }
