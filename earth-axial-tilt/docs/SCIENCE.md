@@ -1,4 +1,4 @@
-# What the numbers mean (v0.5)
+# What the numbers mean — current through v1.0 RC
 
 ## Temperature is not the daytime maximum
 
@@ -80,13 +80,13 @@ These historical normals are not current weather observations and do not validat
 - Daily mean incoming solar energy is top-of-atmosphere (TOA), not surface irradiance. The solar constant is 1361 W/m2. The globe-wide area-weighted daily mean is 1361/4 W/m2 for this circular-orbit model.
 - Daylight uses an ideal point Sun without atmospheric refraction. The sunset calculation uses `cos(zenith) = a + b*cos(hour angle)` rather than singular tangents. When the Sun is exactly on the horizon all day, 12 h is an explicit reporting convention; effective incoming energy is zero. This occurs at the equator at an exact 90-degree-obliquity solstice, and at a pole at an exact equinox.
 - The golden subsolar marker is aligned with the light direction. The terminator is a great circle perpendicular to that direction. The axis, angle arc and N/S labels expose the geometry.
-- The scene keeps Earth at the origin and moves the Sun direction around it for inspection. Sizes and distances are not to scale; this is not a claim that the Sun orbits Earth.
+- The close-up keeps Earth at the origin and moves the Sun direction for inspection. Orbit overview instead puts the Sun at the origin and Earth at -14 times the unit Sun direction. Sizes and distances are not to scale; this is not a claim that the Sun orbits Earth.
 - Rotation is a freely controlled phase around the tilted local axis. Geographic longitude, the rotating surface, the selected marker and the subsolar meridian are consistent. The phase is not tied to UTC or a historical ephemeris.
 - Geographic markers now follow the equirectangular texture convention of Three.js SphereGeometry: +Y is north, +X is longitude 0 and -Z is longitude 90 E.
 
 ## Diurnal experiment (v0.3)
 
-The scene uses `Rx(obliquity) * Ry(rotation)`; its polar axis therefore does not precess or swing around the orbit-plane normal as the surface spins. A geographic surface normal `n` and the rotating-frame unit Sun vector `s` give:
+The scene uses `Rx(-obliquity) * Ry(rotation)`; its polar axis therefore does not precess or swing around the orbit-plane normal as the surface spins. A geographic surface normal `n` and the rotating-frame unit Sun vector `s` give:
 
 ```
 mu = dot(n, s)
@@ -100,7 +100,7 @@ Here hour angle is `15 * (local apparent solar hours - 12)` degrees. For a defin
 
 The displayed Sun position, instantaneous shader and selected-point computation all use the same rotating-frame direction. Their agreement with actual Three.js rotations is tested. Numerically averaging instantaneous flux over 1,440 evenly spaced rotation phases agrees with the existing analytic daily-mean insolation within 0.01 W/m2 across the tested tilts, latitudes and seasons. This is a mathematical consistency check, not climate calibration.
 
-**Frozen-date convention:** a diurnal experiment makes one full turn while holding the orbital date and declination fixed. At x1 that takes 30 real seconds, not 24 real hours. Year playback instead changes only the seasonal date. These independent experiments intentionally do not implement a sidereal clock, real-time ephemeris or a coupled 365-day continuous spin animation. Manual date or rotation changes pause playback, and hidden-tab elapsed time is not accumulated.
+**Frozen-date convention:** a diurnal experiment makes one full turn while holding the orbital date and declination fixed. At x1 that takes 30 real seconds, not 24 real hours. Year playback instead changes only the seasonal date. These two independent experiments do not implement a civil clock or ephemeris. A separate Coupled mode was added in v0.9, defined below. Manual date or rotation changes pause playback, and hidden-tab elapsed time is not accumulated.
 
 **Degeneracies:** at a geographic pole there is no unique local longitude/time meridian. When the Sun is exactly over a pole, the subsolar longitude is likewise undefined for the entire globe. These cases display `Undefined`, disable solar-noon/midnight targeting and use nominal 0–24 rotation hours on the flat Day graph. At an exact geometric horizon the direct horizontal flux is zero. Numerical cosine residuals below 1e-12 are snapped to zero.
 
@@ -120,3 +120,38 @@ Surface legends use the same numerical ranges as the geometry: daily and instant
 ## Visual resources and remaining limits
 
 The decorative Earth texture still loads from the existing threejs.org URL at runtime; failure leaves the scientific modes usable. This release removes the remote font request and uses local/system font fallbacks. Cloud physics, real-time weather, station-calibrated climate, quality presets, dual-globe rendering and deployment are outside this release.
+
+
+## v0.9: prograde inertial frame and coupled clock
+
+The old separate animations had opposite spin/orbit handedness at zero obliquity. Coupling them requires a consistent frame. Since v0.9:
+
+```
+lambda = 2*pi*(day-80)/365
+s_world = [cos(lambda), 0, -sin(lambda)]
+r_Earth = -R * s_world                 (R=14 is display-only)
+n_axis = [0, cos(epsilon), -sin(epsilon)]
+M_surface = Rx(-epsilon) * Ry(theta)
+s_untilted-local = [s_x, -s_z*sin(epsilon), s_z*cos(epsilon)]
+```
+
+The axial and orbital angular momenta agree about +Y for zero tilt. Declination remains asin(sin(epsilon)*sin(lambda)); no EBM coefficients or scalar daily/annual energy functions were changed. The camera was mirrored to retain a sunlit starting view. The arbitrary phase's absolute subsolar longitude can differ from pre-v0.9 displays.
+
+For a circular model with 365 mean solar days per orbit and prograde spin, the Sun's annual apparent circuit subtracts one turn from the inertial spin count. We therefore choose 366 inertial turns per model year:
+
+```
+dtheta/dday = 360 * 366 / 365  degrees/model-day
+dday/dreal-second = 0.1 * speed
+```
+
+These are model definitions, not rounded real-world ephemeris constants. At zero tilt, apparent solar time repeats after one model day. At nonzero tilt the projected subsolar meridian advances nonuniformly; a uniform apparent solar clock is not asserted. At an exact solar/geographic pole a meridian may be undefined. Sidereal versus solar definitions: [USNO](https://aa.usno.navy.mil/faq/GAST), [solar day](https://iasb.be/en/encyclopedia/solar-day-definition), [sidereal day](https://aeronomy.be/en/encyclopedia/sidereal-day-definition).
+
+A visibility transition resets the animation timestamp, and frame increments are bounded. Rotation wraps independently of the annual phase; a year boundary never resets the surface to an arbitrary zero.
+
+## A/B comparison semantics
+
+A/B have the same day, longitude/latitude, rotational phase, model and heat depth. Only tilt differs. Differences are A−B for geometric daylight, TOA daily solar, and the same temperature model. Equal configurations give exact zero differences. Missing or configuration-mismatched thermal solutions give null differences, not substituted earlier temperatures.
+
+The annual graph uses B as its reference while comparing. The daily graph remains A's instantaneous profile at the current date. Atlas remains A versus 23.44°. Those references are labelled separately. Sharing rotational phase is not the same as forcing equal apparent solar time at two obliquities, which is why instantaneous A−B solar metrics are not included without further controls.
+
+Rendering reuses one scene/context with isolated scissor passes and restores primary state after B. Identical colours denote identical numerical scales. Display geometry and quality never enter the energy-balance solver. See [Three.js multiple scenes](https://threejs.org/manual/pages/multiple-scenes.html) for the shared-renderer pattern.
