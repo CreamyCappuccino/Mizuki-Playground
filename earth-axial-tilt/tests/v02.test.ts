@@ -46,7 +46,7 @@ describe('globe / astronomy agreement', () => {
       for (const day of [1, 80, 171.25, 262.5, 353.75]) {
         const local = subsolarDirectionLocal(day, tilt);
         expect(cartesianToGeographic(local).latitude).toBeCloseTo(solarDeclinationDeg(day, tilt), 7);
-        const world = new Vector3(...local).applyEuler(new Euler(tilt * Math.PI / 180, 0, 0));
+        const world = new Vector3(...local).applyEuler(new Euler(-tilt * Math.PI / 180, 0, 0));
         expect(world.distanceTo(new Vector3(...sunDirection(day)))).toBeLessThan(1e-12);
       }
     }
