@@ -1,0 +1,28 @@
+name: Earth review workspace
+on:
+  push:
+    branches: ['mizuki/earth-v1-release']
+    paths: ['.github/workflows/earth-review-workspace.yml']
+permissions:
+  contents: read
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install project-only review dependencies
+        working-directory: earth-axial-tilt
+        run: npm install
+      - name: Archive only public project and installed dependencies
+        run: tar -czf earth-review-workspace.tar.gz earth-axial-tilt AGENTS.md .editorconfig .gitignore .github/workflows/earth-axial-tilt.yml
+      - uses: actions/upload-artifact@v4
+        with:
+          name: earth-review-workspace
+          path: earth-review-workspace.tar.gz
+          retention-days: 1
