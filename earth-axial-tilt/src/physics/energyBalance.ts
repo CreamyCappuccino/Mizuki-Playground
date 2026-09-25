@@ -1,3 +1,4 @@
+import { normalizeOrbit, type OrbitParameters } from './orbit';
 import { clamp, dailyMeanInsolation } from './solar';
 
 /** A dry, zonally averaged seasonal EBM. Parameters are illustrative, not a city fit. */
@@ -19,6 +20,7 @@ export interface ClimateGrid {
   upper: Float64Array;
 }
 export interface ThermalSolution {
+  orbit?: OrbitParameters;
   tilt: number;
   depth: number;
   x: Float64Array;
@@ -31,7 +33,7 @@ export interface ThermalSolution {
   minimum: number;
   maximum: number;
 }
-export interface SolverOptions { bands?: number; stepsPerDay?: number }
+export interface SolverOptions { bands?: number; stepsPerDay?: number; orbit?: OrbitParameters }
 
 function finiteRange(value: number, min: number, max: number, name: string): void {
   if (!Number.isFinite(value) || value < min || value > max) {
@@ -95,6 +97,7 @@ function factor(grid: ClimateGrid, timeFactor: number, identity: number) {
  * No temperature clamp and no artificial 28-day lag are used in this model.
  */
 export function solveSeasonalClimate(tilt: number, depth: number, options: SolverOptions = {}): ThermalSolution {
+  const orbit = normalizeOrbit(options.orbit);
   finiteRange(tilt, 0, 90, 'Obliquity');
   finiteRange(depth, 2.5, 50, 'Equivalent water depth');
   const grid = buildClimateGrid(options.bands ?? EBM.bands);
@@ -107,7 +110,7 @@ export function solveSeasonalClimate(tilt: number, depth: number, options: Solve
   for (let s = 0; s < count; s += 1) {
     const day = 1 + (s + 1) / steps;
     for (let i = 0; i < n; i += 1) {
-      const absorbed = (1 - planetaryAlbedo(grid.x[i])) * dailyMeanInsolation(grid.latitude[i], day, tilt);
+      const absorbed = (1 - planetaryAlbedo(grid.x[i])) * dailyMeanInsolation(grid.latitude[i], day, tilt, orbit);
       forcing[s * n + i] = absorbed - EBM.A;
       mean[i] += (absorbed - EBM.A) / count;
     }
@@ -142,7 +145,7 @@ export function solveSeasonalClimate(tilt: number, depth: number, options: Solve
     if (!Number.isFinite(t)) throw new Error('Thermal model produced a non-finite temperature.');
     minimum = Math.min(minimum, t); maximum = Math.max(maximum, t);
   }
-  return { tilt, depth, x: grid.x, temperatures, years, periodicError, energyResidual, minimum, maximum };
+  return { tilt, depth, orbit, x: grid.x, temperatures, years, periodicError, energyResidual, minimum, maximum };
 }
 
 /** Interpolate the periodic daily field, linearly in equal-area coordinate x. */
