@@ -2,6 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: './e2e',
+  snapshotPathTemplate: '{testDir}/__snapshots__/{projectName}/{arg}{ext}',
   timeout: 30_000,
   fullyParallel: true,
   reporter: 'list',
@@ -20,5 +21,6 @@ export default defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
+    { name: 'webkit', use: { ...devices['Desktop Safari'], launchOptions: {} } },
   ],
 });
