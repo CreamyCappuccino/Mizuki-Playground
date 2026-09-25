@@ -48,9 +48,9 @@ export class OrbitOverview extends THREE.Group {
       const label=this.label(season.label); label.position.copy(v).multiplyScalar(1.18); label.position.y=-1.3; this.add(label);
     }
     const sunLabel=this.label('Sun'); sunLabel.position.set(0,3.5,0); this.add(sunLabel);
-    // In this coordinate convention the model year traverses decreasing world-Y azimuth.
+    // In this coordinate convention the model year and eastward spin both have +Y angular momentum.
     const a = 0.6, position = new THREE.Vector3(Math.cos(a)*ORBIT_RADIUS,0,Math.sin(a)*ORBIT_RADIUS);
-    this.add(new THREE.ArrowHelper(new THREE.Vector3(-Math.sin(a),0,Math.cos(a)),position,1.6,0x92bfe1,.65,.35));
+    this.add(new THREE.ArrowHelper(new THREE.Vector3(Math.sin(a),0,-Math.cos(a)),position,1.6,0x92bfe1,.65,.35));
   }
   private label(key: string): THREE.Sprite {
     const canvas=document.createElement('canvas'); canvas.width=512; canvas.height=112;
