@@ -1,3 +1,4 @@
+import { comparisonViewports } from '../physics/comparison';
 import { OrbitOverview } from './orbitOverview';
 import { orbitLayout, ORBIT_EARTH_SCALE } from './orbitLayout';
 import * as THREE from 'three';
@@ -14,7 +15,7 @@ import { parseVisualQuality, qualitySettings, viewFieldOfView, type VisualQualit
 
 export type SurfaceMode = 'normal' | 'insolation' | 'daylight' | 'temperature' | 'instant';
 
-interface SceneState {
+export interface SceneState {
   tilt: number;
   day: number;
   mode: SurfaceMode;
@@ -43,6 +44,9 @@ export class EarthScene {
   private readonly controls: OrbitControls;
   private readonly appearance: EarthAppearance;
   private readonly resizeObserver: ResizeObserver;
+  private comparison: { tilt: number; thermal: ThermalSolution | null } | null = null;
+  private applyingPass = false;
+  private colorCache: { key: string; thermal: ThermalSolution | null; values: Float32Array }[] = [];
   private quality: VisualQuality = 'high';
   private nightLights = true;
   private dirty = true;
@@ -190,9 +194,9 @@ export class EarthScene {
     const previous = this.state;
     this.state = { ...this.state, ...next };
     this.state.rotation = wrapRotation(this.state.rotation);
-    // Intrinsic XYZ yields Rx(tilt) * Ry(spin): spin around the tilted LOCAL axis,
+    // Intrinsic XYZ yields Rx(-tilt) * Ry(spin): spin around the tilted LOCAL axis,
     // never the orbit-plane normal. All geographic children share this frame.
-    this.earthGroup.rotation.set(THREE.MathUtils.degToRad(this.state.tilt),
+    this.earthGroup.rotation.set(-THREE.MathUtils.degToRad(this.state.tilt),
       THREE.MathUtils.degToRad(this.state.rotation), 0, 'XYZ');
     const seasonChanged = previous.day !== this.state.day || previous.tilt !== this.state.tilt;
     const rotationChanged = previous.rotation !== this.state.rotation;
@@ -222,6 +226,49 @@ export class EarthScene {
     this.appearance.setVisibility(this.state.mode === 'normal', this.nightLights);
     this.canvas.dataset.nightLightsVisible = String(this.state.mode === 'normal' && this.nightLights && this.canvas.dataset.nightTexture === 'ready');
     this.invalidate();
+  }
+
+  setComparison(value: { tilt: number; thermal: ThermalSolution | null } | null): void {
+    if (value?.tilt === this.comparison?.tilt && value?.thermal === this.comparison?.thermal) return;
+    this.comparison = value;
+    this.canvas.dataset.comparison = String(value !== null);
+    this.resize();
+  }
+
+  private comparisonState(): SceneState {
+    return { ...this.state, tilt: this.comparison!.tilt, thermal: this.comparison!.thermal };
+  }
+
+  /** Independent presentation passes over shared geometry/textures, not extra WebGL contexts. */
+  private drawViews(): void {
+    const primary = this.state;
+    const views = comparisonViewports(this.canvas.clientWidth, this.canvas.clientHeight, this.comparison !== null);
+    this.renderer.setScissorTest(true);
+    this.applyingPass = true;
+    try {
+      for (const view of views) {
+        if (view.side === 'B') this.setState(this.comparisonState());
+        const y = this.canvas.clientHeight - view.y - view.height;
+        this.camera.aspect = view.width / view.height;
+        this.camera.fov = viewFieldOfView(this.camera.aspect);
+        this.camera.updateProjectionMatrix();
+        this.renderer.setViewport(view.x, y, view.width, view.height);
+        this.renderer.setScissor(view.x, y, view.width, view.height);
+        this.renderer.render(this.scene, this.camera);
+        const axis = new THREE.Vector3(0,1,0).transformDirection(this.earthGroup.matrixWorld).toArray();
+        this.canvas.dataset[view.side === 'A' ? 'viewA' : 'viewB'] = JSON.stringify({
+          tilt: this.state.tilt, day: this.state.day, rotation: this.state.rotation, axis,
+          position: this.earthRoot.position.toArray(), temperature: this.canvas.dataset.temperatureLayer,
+          viewport: view,
+        });
+      }
+    } finally {
+      if (this.comparison) this.setState(primary);
+      else delete this.canvas.dataset.viewB;
+      this.applyingPass = false;
+      this.renderer.setScissorTest(false);
+      this.renderer.setViewport(0,0,this.canvas.clientWidth,this.canvas.clientHeight);
+    }
   }
 
   focusLocation(): void {
@@ -304,12 +351,13 @@ export class EarthScene {
   }
 
   refreshView(): void { this.resize(); }
-  private readonly invalidate = (): void => { this.dirty = true; };
+  private readonly invalidate = (): void => { if (!this.applyingPass) this.dirty = true; };
 
   dispose(): void {
     window.removeEventListener('resize', this.resize);
     document.removeEventListener('visibilitychange', this.invalidate);
     this.resizeObserver.disconnect();
+    this.colorCache = [];
     this.appearance.dispose();
     this.orbitOverview.disposeLabels();
     this.disposed = true;
@@ -341,7 +389,8 @@ export class EarthScene {
     this.renderer.setSize(width, height, false);
     this.canvas.dataset.quality = this.quality;
     this.canvas.dataset.pixelRatio = String(config.pixelRatio);
-    this.camera.aspect = width / height;
+    const viewport = comparisonViewports(width,height,this.comparison !== null)[0];
+    this.camera.aspect = viewport.width / viewport.height;
     this.camera.fov = viewFieldOfView(this.camera.aspect);
     this.camera.updateProjectionMatrix();
     this.invalidate();
@@ -352,7 +401,7 @@ export class EarthScene {
     if (!document.hidden) {
       this.controls.update();
       if (this.dirty) {
-        this.renderer.render(this.scene, this.camera);
+        this.drawViews();
         this.dirty = false;
         this.canvas.dataset.renderCount = String(++this.renderCount);
         this.canvas.dataset.nightLightsVisible = String(this.appearance.night.visible);
@@ -465,11 +514,11 @@ export class EarthScene {
 
   private updateAxis(): void {
     const axis = this.scene.getObjectByName('axis-indicator');
-    if (axis) axis.rotation.x = THREE.MathUtils.degToRad(this.state.tilt);
+    if (axis) axis.rotation.x = -THREE.MathUtils.degToRad(this.state.tilt);
     const positions = this.tiltArc.geometry.attributes.position as THREE.BufferAttribute;
     for (let i = 0; i <= 64; i += 1) {
       const angle = THREE.MathUtils.degToRad(this.state.tilt) * i / 64;
-      positions.setXYZ(i, 0, 2.78 * Math.cos(angle), 2.78 * Math.sin(angle));
+      positions.setXYZ(i, 0, 2.78 * Math.cos(angle), -2.78 * Math.sin(angle));
     }
     positions.needsUpdate = true;
     this.tiltArc.geometry.computeBoundingSphere();
@@ -488,6 +537,12 @@ export class EarthScene {
     this.canvas.dataset.temperatureLayer = this.state.mode === 'temperature' ? (this.dataMesh.visible ? this.state.temperatureModel : 'pending') : 'off';
     if (!this.dataMesh.visible) return;
 
+    const cacheKey = `${this.state.mode}:${this.state.tilt}:${this.state.day}:${this.state.temperatureModel}:${this.state.heatDepth}`;
+    const cachedLayer = this.colorCache.find(c => c.key === cacheKey && c.thermal === this.state.thermal);
+    if (cachedLayer) {
+      (this.dataMesh.geometry.attributes.color.array as Float32Array).set(cachedLayer.values);
+      this.dataMesh.geometry.attributes.color.needsUpdate = true; return;
+    }
     const positions = this.dataMesh.geometry.attributes.position;
     const colors = this.dataMesh.geometry.attributes.color as THREE.BufferAttribute;
     const color = new THREE.Color();
@@ -522,6 +577,8 @@ export class EarthScene {
     }
 
     colors.needsUpdate = true;
+    this.colorCache.push({key:cacheKey, thermal:this.state.thermal, values:(colors.array as Float32Array).slice()});
+    if (this.colorCache.length > 4) this.colorCache.shift();
   }
 
   private readonly handlePointerDown = (event: PointerEvent): void => {
@@ -546,17 +603,27 @@ export class EarthScene {
     if (!start || start.id !== event.pointerId || start.moved || this.activePointers.size > 0
       || Math.hypot(event.clientX - start.x, event.clientY - start.y) > 6) return;
     const rect = this.canvas.getBoundingClientRect();
-    this.pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-    this.pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    const px = event.clientX - rect.left, py = event.clientY - rect.top;
+    const view = comparisonViewports(rect.width,rect.height,this.comparison !== null).find(v =>
+      px >= v.x && px <= v.x+v.width && py >= v.y && py <= v.y+v.height);
+    if (!view) return;
+    const primary = this.state;
+    if (view.side === 'B') { this.applyingPass = true; this.setState(this.comparisonState()); }
+    this.camera.aspect = view.width / view.height; this.camera.fov = viewFieldOfView(this.camera.aspect);
+    this.camera.updateProjectionMatrix();
+    this.pointer.x = ((px - view.x) / view.width) * 2 - 1;
+    this.pointer.y = -((py - view.y) / view.height) * 2 + 1;
     // Camera controls can change orientation before the next animation frame.
     this.camera.updateMatrixWorld(true);
     this.raycaster.setFromCamera(this.pointer, this.camera);
 
     const hit = this.raycaster.intersectObject(this.earthMesh, false)[0];
-    if (!hit) return;
+    if (!hit) { if (view.side === 'B') this.setState(primary); this.applyingPass = false; return; }
 
     const local = this.earthGroup.worldToLocal(hit.point.clone()).normalize();
     const { latitude, longitude } = cartesianToGeographic([local.x, local.y, local.z]);
+    if (view.side === 'B') this.setState(primary);
+    this.applyingPass = false;
     this.onLocationPick?.({
       id: 'custom',
       name: 'Custom point',
