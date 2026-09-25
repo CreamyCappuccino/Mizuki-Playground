@@ -1,3 +1,4 @@
+import { t as tr, getLanguage } from './i18n';
 import type { AnnualPoint } from '../physics/climate';
 import { chartX, getChartLayout, measureChart } from './chartLayout';
 
@@ -10,7 +11,7 @@ const STARTS = [1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366];
 export function formatModelDate(day: number): string {
   const bounded = Math.min(365, Math.max(1, Math.floor(day)));
   const month = STARTS.findIndex((start, i) => bounded >= start && bounded < STARTS[i + 1]);
-  return `${MONTHS[month]} ${bounded - STARTS[month] + 1}`;
+  return getLanguage() === 'ja' ? `${month + 1}月${bounded - STARTS[month] + 1}日` : `${MONTHS[month]} ${bounded - STARTS[month] + 1}`;
 }
 
 export function renderAnnualChart(container: HTMLElement, points: AnnualPoint[], options: ChartOptions): void {
@@ -30,7 +31,7 @@ export function renderAnnualChart(container: HTMLElement, points: AnnualPoint[],
   const referencePath = options.reference ? pathFor(options.reference) : '';
   const stride = [1, 2, 3, 4, 6, 12].find(step => (right - left) * step / 12 >= fontSize * 2.35) ?? 12;
   const labels = MONTHS.map((month, i) => i % stride ? '' :
-    `<text x="${x((STARTS[i] + STARTS[i + 1] - 1) / 2)}" y="${height - 10}" text-anchor="middle" class="chart-month">${month}</text>`).join('');
+    `<text x="${x((STARTS[i] + STARTS[i + 1] - 1) / 2)}" y="${height - 10}" text-anchor="middle" class="chart-month">${tr(month)}</text>`).join('');
   const grid = [0, 0.5, 1].map(fraction => {
     const value = max - fraction * (max - min);
     return `<line x1="${left}" y1="${y(value)}" x2="${right}" y2="${y(value)}" class="chart-grid"/>
