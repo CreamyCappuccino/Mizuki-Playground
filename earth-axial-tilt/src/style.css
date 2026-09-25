@@ -766,11 +766,11 @@ select { min-height: 44px; }
 .orbit-toolbar p { margin: 0; }
 .orbit-season-buttons { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 8px; }
 .orbit-season-buttons button { min-height: 40px; padding: 8px 12px; font-size: var(--ui-label); }
-:root[data-scene-view="orbit"]:not([data-focus-view="true"]) body { overflow: auto; }
-:root[data-scene-view="orbit"]:not([data-focus-view="true"]) #app { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 16px; padding: 0 16px 16px; height: auto; min-height: 100svh; }
-:root[data-scene-view="orbit"]:not([data-focus-view="true"]) #earth-canvas { position: relative; grid-column: 1 / -1; inset: auto; width: 100%; height: max(660px, 76svh); }
-:root[data-scene-view="orbit"]:not([data-focus-view="true"]) .controls,
-:root[data-scene-view="orbit"]:not([data-focus-view="true"]) .location-panel { position: relative; inset: auto; width: 100%; max-height: none; overflow: visible; margin: 0; }
+:root[data-scene-view="orbit"]:not([data-focus-view="true"]):not([data-comparison="true"]) body { overflow: auto; }
+:root[data-scene-view="orbit"]:not([data-focus-view="true"]):not([data-comparison="true"]) #app { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 16px; padding: 0 16px 16px; height: auto; min-height: 100svh; }
+:root[data-scene-view="orbit"]:not([data-focus-view="true"]):not([data-comparison="true"]) #earth-canvas { position: relative; grid-column: 1 / -1; inset: auto; width: 100%; height: max(660px, 76svh); }
+:root[data-scene-view="orbit"]:not([data-focus-view="true"]):not([data-comparison="true"]) .controls,
+:root[data-scene-view="orbit"]:not([data-focus-view="true"]):not([data-comparison="true"]) .location-panel { position: relative; inset: auto; width: 100%; max-height: none; overflow: visible; margin: 0; }
 :root[data-scene-view="orbit"] .axis-legend { display: none; }
 @media (max-width: 1400px) {
   .topbar { row-gap: 6px; }
@@ -787,8 +787,8 @@ select { min-height: 44px; }
   .view-toolbar label { flex-wrap: wrap; }
   .view-toolbar .help-heading { flex: 1 1 46%; }
   .orbit-toolbar { top: 245px; width: calc(100% - 24px); max-width: none; }
-  :root[data-scene-view="orbit"]:not([data-focus-view="true"]) #app { grid-template-columns: minmax(0,1fr); padding: 0 10px 10px; }
-  :root[data-scene-view="orbit"]:not([data-focus-view="true"]) #earth-canvas { height: max(770px, 92svh); }
+  :root[data-scene-view="orbit"]:not([data-focus-view="true"]):not([data-comparison="true"]) #app { grid-template-columns: minmax(0,1fr); padding: 0 10px 10px; }
+  :root[data-scene-view="orbit"]:not([data-focus-view="true"]):not([data-comparison="true"]) #earth-canvas { height: max(770px, 92svh); }
   .context-help { padding: 18px; }
   :root[lang="ja"] .atlas-settings { grid-template-columns: 1fr; }
   :root[data-focus-view="true"] .topbar h1 { font-size: 1rem; }
@@ -797,7 +797,7 @@ select { min-height: 44px; }
 }
 /* Measure actual localized chrome: long labels and Large text cannot cover the scene. */
 .orbit-toolbar { top: var(--topbar-bottom, 170px); }
-:root[data-scene-view="orbit"]:not([data-focus-view="true"]) #earth-canvas {
+:root[data-scene-view="orbit"]:not([data-focus-view="true"]):not([data-comparison="true"]) #earth-canvas {
   margin-top: var(--orbit-bottom, 240px);
   height: max(400px, calc(100svh - var(--orbit-bottom, 240px) - 32px));
 }
@@ -810,7 +810,7 @@ select { min-height: 44px; }
   .view-toolbar .help-heading { flex-wrap: nowrap; align-items: end; flex-basis: 100%; }
   .view-toolbar .help-heading > label { flex-wrap: nowrap; justify-content: space-between; }
   .view-toolbar .help-button { margin-bottom: 7px; }
-  :root:not([data-scene-view="orbit"]):not([data-focus-view="true"]) #earth-canvas { margin-top: var(--topbar-bottom, 230px); }
+  :root:not([data-scene-view="orbit"]):not([data-focus-view="true"]):not([data-comparison="true"]) #earth-canvas { margin-top: var(--topbar-bottom, 230px); }
 }
 :root[data-focus-view="true"] #earth-canvas {
   top: var(--topbar-bottom, 130px); height: calc(100% - var(--topbar-bottom, 130px) - var(--focus-note-space, 90px));
@@ -857,3 +857,26 @@ select { min-height: 44px; }
   .compare-settings label { flex:1 1 100%; justify-content:space-between; }
   .comparison-table th,.comparison-table td { padding:10px 3px; }
 }
+
+/* v1.0: presentation-only simplification, persistent orientation and safe-area margins. */
+:root[data-tools-mode="basic"] .advanced-only { display:none; }
+.experiment-status { font-size:var(--ui-label); color:#a6d5eb; max-width:38rem; }
+.quick-start { padding:16px; margin-bottom:18px; border:1px solid #34556d; border-radius:12px; background:#102334; }
+.quick-start p { font-size:var(--ui-body); line-height:1.7; color:#d2e2ee; margin:10px 0; }
+.quick-start button { min-height:44px; padding:8px 12px; margin:4px 8px 0 0; font-size:var(--ui-label); }
+.view-toolbar #tools-mode { width:108px; }
+@supports(padding:env(safe-area-inset-bottom)) {
+  @media(max-width:760px) { body { padding-bottom:env(safe-area-inset-bottom); } }
+}
+
+:root[data-comparison="true"] #earth-canvas { margin:0; }
+:root[data-comparison="true"] #orbit-toolbar { transform:none; max-width:100%; }
+
+/* Compare Focus uses the available viewport, not the normal stacked document grid. */
+:root[data-comparison="true"][data-focus-view="true"] body { overflow:hidden; }
+:root[data-comparison="true"][data-focus-view="true"] #app { display:block; height:100svh; min-height:0; padding:0; }
+:root[data-comparison="true"][data-focus-view="true"] .topbar { position:absolute; top:10px; left:10px; right:10px; width:auto; }
+:root[data-comparison="true"][data-focus-view="true"] #compare-controls { display:none; }
+:root[data-comparison="true"][data-focus-view="true"] #earth-canvas { position:absolute; top:var(--topbar-bottom,180px); left:0; width:100%; height:max(180px,calc(100svh - var(--topbar-bottom,180px) - var(--focus-note-space,90px))); margin:0; }
+:root[data-comparison="true"][data-focus-view="true"] #orbit-toolbar { position:absolute; left:12px; right:12px; top:var(--topbar-bottom,180px); width:auto; transform:none; }
+:root[data-comparison="true"][data-focus-view="true"][data-scene-view="orbit"] #earth-canvas { top:var(--orbit-bottom,240px); height:max(180px,calc(100svh - var(--orbit-bottom,240px) - var(--focus-note-space,90px))); }
