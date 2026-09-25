@@ -29,3 +29,9 @@ The atlas shows latitude across a model year. Its difference layer always compar
 ## Help and recovery
 
 Hover over ? for a preview or click/tap for an experiment guide. Optional module-load failure offers an explicit page reload; thermal-worker failure has a recalculation action. Quality changes do not change numerical results. [Release checks](RELEASE_CHECKLIST.md) distinguish automated engines from physical iPhone/Safari observations.
+
+## Reproduce an experiment (v1.1)
+
+Open **Experiments & sharing**, choose a question, and press **Prepare experiment**. Playback stays paused. Read what to watch, then choose day/year/coupled playback yourself. **Undo experiment** is a one-step return to the previous conditions.
+
+Copy a link for a snapshot of the current conditions, or save/load a settings JSON file across app installations. A localhost URL is local to the receiving device; it is not remote access to the sender's Mac. Files carry conditions, not solved temperatures or screenshots. Restoring retains the recipient's display language, font size and quality, and never autoplays. Fast/Slow heat storage presets are successive experiments, not independent A/B capacities.
