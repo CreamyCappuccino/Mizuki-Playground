@@ -5,8 +5,8 @@ export function compareMeasurements(a: TemperatureSource, b: TemperatureSource, 
   if (a.model !== b.model || a.depth !== b.depth) throw new RangeError('Comparison requires the same model and heat storage.');
   const row = (key: ComparisonRow['key'], x: number | null, y: number | null): ComparisonRow => ({ key, a: x, b: y,
     difference: x === null || y === null ? null : x - y });
-  return [row('daylight', dayLengthHours(latitude,day,a.tilt),dayLengthHours(latitude,day,b.tilt)),
-    row('solar', dailyMeanInsolation(latitude,day,a.tilt),dailyMeanInsolation(latitude,day,b.tilt)),
+  return [row('daylight', dayLengthHours(latitude,day,a.tilt,a.orbit),dayLengthHours(latitude,day,b.tilt,b.orbit)),
+    row('solar', dailyMeanInsolation(latitude,day,a.tilt,a.orbit),dailyMeanInsolation(latitude,day,b.tilt,b.orbit)),
     row('temperature',temperatureFromSource(a,latitude,day),temperatureFromSource(b,latitude,day))];
 }
 export interface ComparisonViewport { x: number; y: number; width: number; height: number; side: 'A' | 'B' }
