@@ -110,7 +110,15 @@ test('portrait focus keeps the return button readable and restores the large-tex
     await page.locator('#focus-view').click();
     await expect(page.locator('#focus-view')).toBeInViewport();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-    expect(await page.locator('#earth-canvas').evaluate(el => el.getBoundingClientRect().height)).toBeCloseTo(844, 0);
+    // v0.8 reserves the actual localized header and return-note space instead of
+    // drawing beneath them. Verify the usable view, not the former full-page height.
+    await expect.poll(() => page.locator('#earth-canvas').evaluate(el => {
+      const canvas = el.getBoundingClientRect();
+      const header = document.querySelector('.topbar')!.getBoundingClientRect();
+      const note = document.querySelector('#focus-view-note')!.getBoundingClientRect();
+      return canvas.height >= 300 && canvas.top >= header.bottom &&
+        canvas.bottom <= note.top && canvas.bottom <= innerHeight;
+    })).toBe(true);
     await page.screenshot({ path: info.outputPath('v07-focus-mobile.png') });
     await page.locator('#focus-view').click();
     await expect(page.locator('#text-size')).toHaveValue('large');
