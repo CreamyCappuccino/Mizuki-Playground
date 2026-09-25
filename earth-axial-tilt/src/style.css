@@ -893,3 +893,17 @@ select { min-height: 44px; }
 :root[data-focus-view="true"] #compare-toggle { display:none; }
 
 #compare-warning { color:#ffd0a1; }
+
+/* v1.1: optional workbench, preserving readable type in the existing scrollable control column. */
+.experiment-tools details > summary { cursor: pointer; color: var(--cyan); font-weight: 600; font-size: 1rem; min-height: 32px; }
+.experiment-tools details[open] > summary { margin-bottom: 14px; }
+.experiment-tools label { display:block; margin: 10px 0 6px; font-size: .875rem; }
+.experiment-question { margin: 12px 0 6px; font-size: 1rem; line-height: 1.5; }
+.experiment-actions { display:flex; flex-wrap:wrap; gap:8px; margin:10px 0; }
+.experiment-actions button { min-height: 42px; padding:8px 10px; flex:1 1 120px; font-size:.875rem; }
+#experiment-workbench .input-help { line-height:1.65; overflow-wrap:anywhere; }
+#experiment-link { width:100%; font:inherit; font-size:.875rem; color:inherit; background:#08101d; border:1px solid var(--line); border-radius:8px; padding:10px; resize:vertical; }
+#experiment-notice[data-status="error"] { color:#ffbbac; }
+:root[data-text-size="large"] .experiment-tools label,
+:root[data-text-size="large"] .experiment-tools .input-help,
+:root[data-text-size="large"] .experiment-actions button { font-size:1rem; }
