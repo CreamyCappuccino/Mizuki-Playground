@@ -6,7 +6,8 @@ interface ViewActions {
     refresh: () => void;
 }
 /** Presentation controls are deliberately separate from the physical simulation state. */
-export function bindViewControls(actions: ViewActions): void {
+export function bindViewControls(actions: ViewActions): () => void {
+    const events = new AbortController();
     const get = <T extends HTMLElement>(id: string): T => {
         const element = document.getElementById(id);
         if (!element)
@@ -35,8 +36,8 @@ export function bindViewControls(actions: ViewActions): void {
             localStorage.setItem('earth-lab:quality', value);
         }
         catch { /* storage may be unavailable */ }
-    });
-    lights.addEventListener('change', () => actions.lights(lights.checked));
+    }, { signal: events.signal });
+    lights.addEventListener('change', () => actions.lights(lights.checked), { signal: events.signal });
     const setFocus = (value: boolean) => {
         if (focused === value)
             return;
@@ -61,13 +62,13 @@ export function bindViewControls(actions: ViewActions): void {
                 window.scrollTo(scrollX, scrollY);
         });
     };
-    focusButton.addEventListener('click', () => setFocus(!focused));
+    focusButton.addEventListener('click', () => setFocus(!focused), { signal: events.signal });
     document.addEventListener('keydown', event => {
         if (event.key !== 'Escape' || !focused || event.defaultPrevented || document.querySelector('dialog[open]'))
             return;
         event.preventDefault();
         setFocus(false);
-    });
+    }, { signal: events.signal });
     const status = () => {
         const day = canvas.dataset.dayTexture, night = canvas.dataset.nightTexture;
         const note = get('visual-status');
@@ -85,9 +86,12 @@ export function bindViewControls(actions: ViewActions): void {
         root.style.setProperty('--focus-note-space', `${noteSpace}px`);
     };
     const chromeObserver = new ResizeObserver(measureChrome);
-    chromeObserver.observe(header); chromeObserver.observe(orbitToolbar); chromeObserver.observe(focusNote);
+    chromeObserver.observe(header);
+    chromeObserver.observe(orbitToolbar);
+    chromeObserver.observe(focusNote);
     measureChrome();
-    canvas.addEventListener('visualstatus', status);
+    canvas.addEventListener('visualstatus', status, { signal: events.signal });
     status();
-    onLanguageChange(() => { focusButton.textContent = tr(focused ? 'Show controls' : 'Focus view'); status(); });
+    const unsubscribe = onLanguageChange(() => { focusButton.textContent = tr(focused ? 'Show controls' : 'Focus view'); status(); });
+    return () => { events.abort(); chromeObserver.disconnect(); cancelAnimationFrame(frame); unsubscribe(); };
 }
