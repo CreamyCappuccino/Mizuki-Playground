@@ -1,6 +1,7 @@
 import { t as tr, msg, getLanguage } from './i18n';
 import { ATLAS_UNITS, atlasReady, atlasReading, atlasScale, atlasSelection, buildAtlasField, type AtlasConfig, type AtlasField, type AtlasMetric, type AtlasView } from '../physics/atlas';
 import type { TemperatureSource } from '../physics/temperatureModel';
+import { orbitKey, isClassicOrbit } from '../physics/orbit';
 import { solarDeclinationDeg } from '../physics/solar';
 import { atlasColor } from './atlasColors';
 import { createChartLayout, type ChartLayout } from './chartLayout';
@@ -172,12 +173,13 @@ export class SeasonAtlas {
         });
         this.el('atlas-context').textContent = msg `${snapshot.source.tilt}° tilt · ${snapshot.source.model === 'energy-balance'
             ? msg `Thermal EBM · ${snapshot.source.depth} m heat storage` : tr('Illustrative temperature model')} · same repeating year as the globe`;
+        if(!isClassicOrbit(snapshot.source.orbit))this.el('atlas-context').textContent += ' · '+tr('Same orbit as Earth A; the reference changes tilt only. Dates are elapsed from the model equinox.');
         const ready = atlasReady(config);
         this.plot.setAttribute('aria-busy', String(!ready));
         const status = this.el('atlas-status');
         status.hidden = ready;
         status.textContent = snapshot.error ? tr('Temperature unavailable. Solar and Daylight remain usable. Close to retry the thermal model.') : tr('Calculating the matching thermal year…');
-        const key = `${getLanguage()}:${config.metric}:${config.view}:${snapshot.source.tilt}:${config.metric === 'temperature'
+        const key = `${getLanguage()}:${config.metric}:${config.view}:${snapshot.source.tilt}:${orbitKey(snapshot.source.orbit)}:${config.metric === 'temperature'
             ? `${snapshot.source.model}:${snapshot.source.depth}:${snapshot.revision}:${ready}` : 'astronomy'}`;
         const box = this.plot.getBoundingClientRect();
         const font = parseFloat(getComputedStyle(this.plot).fontSize) || 14;
@@ -235,7 +237,7 @@ export class SeasonAtlas {
                 label.textContent = `${value} ${ATLAS_UNITS[config.metric]}`;
                 return label;
             }));
-            this.el('atlas-scale-note').textContent = msg `${config.view === 'difference' ? tr('Selected tilt − Earth 23.44°, same model and heat storage. Blue: lower · pale: no change · warm: higher. Symmetric scale adapts.') : config.metric === 'temperature' ? tr('Temperature scale adapts to the full sampled field. Read the legend when changing settings.') : tr('Fixed scale for direct comparisons between tilts.')} Sampled range: ${field.minimum.toFixed(1)} to ${field.maximum.toFixed(1)} ${ATLAS_UNITS[config.metric]}.`;
+            this.el('atlas-scale-note').textContent = msg `${config.view === 'difference' ? tr('Selected tilt − Earth 23.44°, same model and heat storage. Blue: lower · pale: no change · warm: higher. Symmetric scale adapts.') : config.metric === 'temperature' ? tr('Temperature scale adapts to the full sampled field. Read the legend when changing settings.') : tr(config.metric === 'insolation' && !isClassicOrbit(config.source.orbit) ? 'Solar scale uses this orbit’s maximum normal-incidence flux. Read the legend when changing the orbit.' : 'Fixed scale for direct comparisons between tilts.')} Sampled range: ${field.minimum.toFixed(1)} to ${field.maximum.toFixed(1)} ${ATLAS_UNITS[config.metric]}.`;
             this.el('atlas-legend').hidden = false;
         }
         else {
@@ -247,7 +249,7 @@ export class SeasonAtlas {
         const lines = [90, 60, 30, 0, -30, -60, -90].map(lat => `<line class="atlas-grid" x1="${l.left}" x2="${l.right}" y1="${y(lat)}" y2="${y(lat)}"/><text x="${l.left - 10}" y="${y(lat) + l.fontSize * .34}" text-anchor="end" class="atlas-axis">${lat === 0 ? '0°' : `${Math.abs(lat)}°${lat > 0 ? 'N' : 'S'}`}</text>`).join('');
         const stride = [1, 2, 3, 4, 6, 12].find(s => (l.right - l.left) * s / 12 >= l.fontSize * 2.5) ?? 12;
         const months = MONTHS.map((name, i) => i % stride ? '' : `<text x="${x((STARTS[i] + STARTS[i + 1] - 1) / 2)}" y="${l.height - 10}" text-anchor="middle" class="atlas-axis">${tr(name)}</text>`).join('');
-        const trace = Array.from({ length: 365 }, (_, i) => `${i ? 'L' : 'M'}${x(i + 1).toFixed(2)},${y(solarDeclinationDeg(i + 1, config.source.tilt)).toFixed(2)}`).join(' ');
+        const trace = Array.from({ length: 365 }, (_, i) => `${i ? 'L' : 'M'}${x(i + 1).toFixed(2)},${y(solarDeclinationDeg(i + 1, config.source.tilt, config.source.orbit)).toFixed(2)}`).join(' ');
         this.overlay.setAttribute('viewBox', `0 0 ${l.width} ${l.height}`);
         this.overlay.innerHTML = `${lines}${months}<rect class="atlas-border" x="${l.left}" y="${l.top}" width="${l.right - l.left}" height="${l.bottom - l.top}"/><path class="atlas-trace" d="${trace}" ${this.el<HTMLInputElement>('atlas-trace').checked ? '' : 'hidden'}/><line class="atlas-day-cursor" y1="${l.top}" y2="${l.bottom}"/><line class="atlas-lat-cursor" x1="${l.left}" x2="${l.right}"/><circle class="atlas-crosshair" r="5"/>`;
     }
