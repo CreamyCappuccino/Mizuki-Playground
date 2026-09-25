@@ -1,10 +1,18 @@
 # Earth Axial Tilt Lab
 
-**1.0.0-rc.1 — Compare Lab and release candidate**
+**1.1.0-rc.1 — reproducible Earth experiments**
 
 An interactive, bilingual science toy: tilt Earth, follow a day or year, and compare two hypothetical worlds. Static Vite + TypeScript + Three.js; no backend or runtime remote imagery required.
 
 [Start developing](START_HERE.md) · [日本語ガイド](docs/GUIDE.ja.md) · [English guide](docs/GUIDE.en.md) · [Science](docs/SCIENCE.md) · [Roadmap](ROADMAP.md) · [Release gate](docs/RELEASE_CHECKLIST.md)
+
+## New in the 1.1 candidate
+
+Open **Experiments & sharing** in the left controls. Seven question-based presets prepare polar sunlight, zero tilt, Taipei day/night, polar night, fast/slow heat storage and coupled motion. Preparation pauses playback, restores a useful view and reports the conditions. **Undo experiment** restores the previous scientific state.
+
+**Copy experiment link** creates a versioned, bounded URL fragment. **Save / Load settings file** works across installations without requiring a public website. URLs/files restore A/B tilts, time, coordinates, layers, model and global heat storage; language, typography, quality and playback are never imported. Values are recomputed, not copied from an old thermal solution. Invalid or future-version data leaves the experiment unchanged. Links are snapshots, not live-synchronized sessions.
+
+A `localhost` URL points to the receiving device, not to your Mac. Use a settings file in another installed copy, or a shared app host only after deployment is separately approved. No server, upload, user tracking or automatic publication is added. See [v1.1](docs/V1.1.md) and the [state format](docs/EXPERIMENT_STATE.md).
 
 ## What you can explore
 
