@@ -2,9 +2,9 @@
 
 ## 現在地
 
-`CreamyCappuccino/Mizuki-Playground/earth-axial-tilt/`。独立した静的フロントエンド。**v0.9の比較・同時再生を実装し、v1.0.0-rc.1として仕上げ・検証中／検証記録を確認する段階。** 正式版の実機iPhone確認は未完了。公開はしていない。
+`CreamyCappuccino/Mizuki-Playground/earth-axial-tilt/`。独立した静的フロントエンド。**v0.9の比較・同時再生とv1.0の仕上げを実装。v1.0.0-rc.1はChromium／macOS WebKitの自動検証が成功。** 正式版の実機iPhone確認は未完了。公開はしていない。
 
-最短の復帰は **この文書 → ROADMAP.md → docs/V1.0.md → 変更分野のコード**。MCP索引は **Mizuki MM410**。メモリは道案内、最新コード・CI・文書が正本。
+最短の復帰は **この文書 → ROADMAP.md → docs/V1.0.md → 変更分野のコード**。確認済みのコード・CI・画像は [検証記録](docs/VERIFICATION-1.0-rc.1.md) を参照し、着手時はさらに最新HEADのCIを確認する。MCP索引は **Mizuki MM410**。メモリは道案内、最新コード・CI・文書が正本。
 
 ## 今できること
 
