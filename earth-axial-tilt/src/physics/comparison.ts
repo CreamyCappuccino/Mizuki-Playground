@@ -14,7 +14,8 @@ export interface ComparisonViewport { x: number; y: number; width: number; heigh
 export function comparisonViewports(width: number, height: number, enabled: boolean): ComparisonViewport[] {
   if (![width,height].every(v=>Number.isFinite(v)&&v>0)) return [];
   if (!enabled) return [{x:0,y:0,width,height,side:'A'}];
+  const middleX=Math.floor(width/2), middleY=Math.floor(height/2);
   return width < 760
-    ? [{x:0,y:0,width,height:height/2,side:'A'},{x:0,y:height/2,width,height:height/2,side:'B'}]
-    : [{x:0,y:0,width:width/2,height,side:'A'},{x:width/2,y:0,width:width/2,height,side:'B'}];
+    ? [{x:0,y:0,width,height:middleY,side:'A'},{x:0,y:middleY,width,height:height-middleY,side:'B'}]
+    : [{x:0,y:0,width:middleX,height,side:'A'},{x:middleX,y:0,width:width-middleX,height,side:'B'}];
 }
