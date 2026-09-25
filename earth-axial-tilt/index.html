@@ -12,7 +12,7 @@
 <canvas aria-label="Interactive 3D Earth" data-i18n-aria-label="Interactive 3D Earth" id="earth-canvas"></canvas>
 <header class="topbar glass">
 <div>
-<p class="eyebrow"><span data-i18n="MIZUKI PLAYGROUND / PLANET LAB · v1.1 RC">MIZUKI PLAYGROUND / PLANET LAB · v1.1 RC</span></p>
+<p class="eyebrow"><span data-i18n="MIZUKI PLAYGROUND / PLANET LAB · v1.2 RC">MIZUKI PLAYGROUND / PLANET LAB · v1.2 RC</span></p>
 <h1><span data-i18n="Earth Axial Tilt">Earth Axial Tilt</span></h1>
 </div>
 <div aria-live="polite" class="topbar__readout">
@@ -45,7 +45,28 @@
 <div id="comparison-labels" hidden aria-hidden="true"><strong id="comparison-label-a"></strong><strong id="comparison-label-b"></strong></div>
 <aside aria-label="Simulation controls" class="controls glass" data-i18n-aria-label="Simulation controls">
 <section class="experiment-tools">
-  <details id="experiment-workbench">
+  
+<section class="orbit-lab">
+  <details id="orbit-workbench">
+    <summary data-i18n="Orbit laboratory">Orbit laboratory</summary>
+    <div class="workbench-heading"><span data-help="kepler" data-i18n="Distance, speed and seasons">Distance, speed and seasons</span></div>
+    <p class="input-help" data-i18n="Earth-only experiment: 365 model days, semimajor axis 1 au. Each world’s spring reference is day 80. Not a real calendar.">Earth-only experiment: 365 model days, semimajor axis 1 au. Each world’s spring reference is day 80. Not a real calendar.</p>
+    <label for="orbit-side" data-i18n="Edit orbit of">Edit orbit of</label>
+    <select id="orbit-side"><option value="A">Earth A</option><option value="B">Earth B</option></select>
+    <div class="orbit-inputs">
+      <label for="orbit-e"><span data-i18n="Eccentricity e">Eccentricity e</span><input id="orbit-e" type="number" min="0" max="0.3" step="0.0001" value="0" inputmode="decimal"/></label>
+      <label for="orbit-peri"><span data-i18n="Perihelion Sun longitude (°)">Perihelion Sun longitude (°)</span><input id="orbit-peri" type="number" min="0" max="360" step="1" value="0" inputmode="decimal"/></label>
+      <label for="orbit-axis"><span data-i18n="Axis azimuth (°)">Axis azimuth (°)</span><input id="orbit-axis" type="number" min="0" max="360" step="1" value="0" inputmode="decimal"/></label>
+    </div>
+    <p id="orbit-input-status" role="status" class="input-help"></p>
+    <div class="orbit-actions"><button id="orbit-classic" data-i18n="Classic circle">Classic circle</button><button id="orbit-earthlike" data-i18n="Earth-like example">Earth-like example</button><button id="orbit-summer" data-i18n="Near Sun in northern summer">Near Sun in northern summer</button><button id="orbit-winter" data-i18n="Near Sun in northern winter">Near Sun in northern winter</button><button id="orbit-copy-a" data-i18n="Copy A orbit to B">Copy A orbit to B</button></div>
+    <p id="orbit-values" class="profile-summary"></p><p class="input-help" data-i18n="Solar here is incoming flux at the top of the atmosphere, normal to the rays. It is not the daily mean or sunlight at the ground.">Solar here is incoming flux at the top of the atmosphere, normal to the rays. It is not the daily mean or sunlight at the ground.</p>
+    <div class="orbit-actions"><button id="orbit-near" data-i18n="Go to perihelion">Go to perihelion</button><button id="orbit-far" data-i18n="Go to aphelion">Go to aphelion</button></div>
+    <p id="orbit-degeneracy" class="input-help"></p><p id="orbit-quarter-dates" class="input-help"></p>
+    <p class="input-help" data-i18n="Northern summer: Sun longitude − axis azimuth = 90°. Perihelion longitude uses this Sun-based frame, not Earth’s heliocentric longitude.">Northern summer: Sun longitude − axis azimuth = 90°. Perihelion longitude uses this Sun-based frame, not Earth’s heliocentric longitude.</p>
+  </details>
+</section>
+<details id="experiment-workbench">
     <summary><span data-i18n="Experiments &amp; sharing">Experiments &amp; sharing</span></summary>
     <div class="help-heading"><h2 data-help="experiments" data-i18n="Choose a question">Choose a question</h2></div>
     <label for="experiment-preset" data-i18n="Experiment preset">Experiment preset</label>
@@ -168,7 +189,7 @@
 <p data-i18n="Use ? for an experiment guide. Basic hides optional appearance and diagnostic panels, never your settings.">Use ? for an experiment guide. Basic hides optional appearance and diagnostic panels, never your settings.</p>
 <button id="intro-basic" data-i18n="Use Basic tools">Use Basic tools</button><button id="intro-dismiss" data-i18n="Got it">Got it</button>
 </section>
-<section id="compare-results" hidden><h2 data-i18n="A / B comparison">A / B comparison</h2><p id="compare-context" class="input-help"></p><p id="compare-model" class="input-help"></p><table class="comparison-table"><thead><tr><th data-i18n="Metric">Metric</th><th>A</th><th>B</th><th>A − B</th></tr></thead><tbody><tr id="compare-daylight"><th scope="row" data-i18n="Daylight">Daylight</th><td data-column="a">—</td><td data-column="b">—</td><td data-column="diff">—</td></tr><tr id="compare-solar"><th scope="row" data-i18n="Daily solar">Daily solar</th><td data-column="a">—</td><td data-column="b">—</td><td data-column="diff">—</td></tr><tr id="compare-temperature"><th scope="row" data-i18n="Temperature">Temperature</th><td data-column="a">—</td><td data-column="b">—</td><td data-column="diff">—</td></tr></tbody></table><p id="compare-status" class="input-help" role="status"></p><p id="compare-warning" class="input-help" role="status" hidden></p><button id="compare-retry" hidden data-i18n="Retry Earth B">Retry Earth B</button><p class="input-help" data-i18n="The location panel describes Earth A. Annual dashed curve: Earth B in Compare Lab; 23.44° otherwise. Day graph: Earth A only.">The location panel describes Earth A. Annual dashed curve: Earth B in Compare Lab; 23.44° otherwise. Day graph: Earth A only.</p></section><div class="location-title">
+<section id="compare-results" hidden><h2 data-i18n="A / B comparison">A / B comparison</h2><p id="compare-context" class="input-help"></p><p id="compare-orbits" class="input-help" hidden></p><p id="compare-model" class="input-help"></p><table class="comparison-table"><thead><tr><th data-i18n="Metric">Metric</th><th>A</th><th>B</th><th>A − B</th></tr></thead><tbody><tr id="compare-daylight"><th scope="row" data-i18n="Daylight">Daylight</th><td data-column="a">—</td><td data-column="b">—</td><td data-column="diff">—</td></tr><tr id="compare-solar"><th scope="row" data-i18n="Daily solar">Daily solar</th><td data-column="a">—</td><td data-column="b">—</td><td data-column="diff">—</td></tr><tr id="compare-temperature"><th scope="row" data-i18n="Temperature">Temperature</th><td data-column="a">—</td><td data-column="b">—</td><td data-column="diff">—</td></tr></tbody></table><p id="compare-status" class="input-help" role="status"></p><p id="compare-warning" class="input-help" role="status" hidden></p><button id="compare-retry" hidden data-i18n="Retry Earth B">Retry Earth B</button><p class="input-help" data-i18n="The location panel describes Earth A. Annual dashed curve: Earth B in Compare Lab; 23.44° otherwise. Day graph: Earth A only.">The location panel describes Earth A. Annual dashed curve: Earth B in Compare Lab; 23.44° otherwise. Day graph: Earth A only.</p></section><div class="location-title">
 <div>
 <p class="eyebrow"><span data-i18n="SELECTED LOCATION">SELECTED LOCATION</span></p>
 <h2 id="location-name"><span data-i18n="Taipei">Taipei</span></h2>
@@ -226,7 +247,7 @@
 <p class="input-help chart-help" id="chart-help"><span data-i18n="Click or drag the graph to select. Arrow keys also work.">Click or drag the graph to select. Arrow keys also work.</span></p>
 <p class="model-note" id="temperature-model-note"><span data-i18n="Thermal EBM: experimental latitude-band temperature driven by daily-mean sunlight. Not calibrated to local weather.">Thermal EBM: experimental latitude-band temperature driven by daily-mean sunlight. Not calibrated to local weather.</span></p>
 <details class="model-details">
-<summary><span data-i18n="What do these numbers mean?">What do these numbers mean?</span></summary>
+<summary><span data-i18n="What do these numbers mean?">What do these numbers mean?</span></summary><p data-i18n="Classic uses a circle. The orbit laboratory uses Kepler ellipses with semimajor axis 1 au and a 365-day model year. Each world’s spring reference is day 80, not a shared real epoch. Axis azimuth is static. Solar energy varies with inverse-square distance; the EBM recomputes its whole forcing year.">Classic uses a circle. The orbit laboratory uses Kepler ellipses with semimajor axis 1 au and a 365-day model year. Each world’s spring reference is day 80, not a shared real epoch. Axis azimuth is static. Solar energy varies with inverse-square distance; the EBM recomputes its whole forcing year.</p>
 <p><span data-i18n="Temperature represents a typical daily-mean-style estimate including both day and night. It is not a maximum, minimum, or feels-like temperature. Places at the same latitude share the same estimate. Thermal EBM solves heat storage, absorbed sunlight, outgoing radiation and heat exchange between latitude bands. Oceans, altitude, clouds, ice feedback and city effects are not resolved.">Temperature represents a typical daily-mean-style estimate including both day and night. It is not a maximum, minimum, or feels-like temperature. Places at the same latitude share the same estimate. Thermal EBM solves heat storage, absorbed sunlight, outgoing radiation and heat exchange between latitude bands. Oceans, altitude, clouds, ice feedback and city effects are not resolved.</span></p>
 <p><span data-i18n="The annual summary averages all 365 model days. The comparison line uses the same simplified model at 23.44°, not observed climate normals. Thermal EBM compares the same heat-storage setting at both tilts. Illustrative mode retains v0.1's coefficients. The selected model is not calibrated to Taipei or Singapore.">The annual summary averages all 365 model days. The comparison line uses the same simplified model at 23.44°, not observed climate normals. Thermal EBM compares the same heat-storage setting at both tilts. Illustrative mode retains v0.1's coefficients. The selected model is not calibrated to Taipei or Singapore.</span></p>
 <p><span data-i18n="Changing tilt or heat storage solves a new repeating annual climate, not the first year after a sudden change. Thermal EBM uses 90 latitude bands and a half-day numerical timestep; temperatures are interpolated from the converged year. Heat capacity is uniform, albedo is fixed by latitude, and outgoing radiation is linear in temperature. Extreme results are model extrapolations, not habitability or weather predictions. Display colours saturate at the legend limits; numerical temperatures are not clipped.">Changing tilt or heat storage solves a new repeating annual climate, not the first year after a sudden change. Thermal EBM uses 90 latitude bands and a half-day numerical timestep; temperatures are interpolated from the converged year. Heat capacity is uniform, albedo is fixed by latitude, and outgoing radiation is linear in temperature. Extreme results are model extrapolations, not habitability or weather predictions. Display colours saturate at the legend limits; numerical temperatures are not clipped.</span></p>
@@ -242,14 +263,14 @@
 </div>
 <section aria-label="Season positions" class="orbit-toolbar" data-i18n-aria-label="Season positions" hidden="" id="orbit-toolbar">
 <div class="help-heading"><p data-help="view"><span data-i18n="Orbit view · sizes and distances are illustrative, not to scale.">Orbit view · sizes and distances are illustrative, not to scale.</span></p></div>
-<div class="orbit-season-buttons"><button id="fit-orbit" type="button"><span data-i18n="Fit orbit">Fit orbit</span></button><button data-season-day="80" type="button"><span data-i18n="March">March</span></button><button data-season-day="171.25" type="button"><span data-i18n="June">June</span></button><button data-season-day="262.5" type="button"><span data-i18n="September">September</span></button><button data-season-day="353.75" type="button"><span data-i18n="December">December</span></button></div>
+<div class="orbit-season-buttons"><button id="fit-orbit" type="button"><span data-i18n="Fit orbit">Fit orbit</span></button><button data-season-day="80" type="button"><span data-i18n="Spring reference">Spring reference</span></button><button data-season-day="171.25" type="button"><span data-i18n="Northern summer reference">Northern summer reference</span></button><button data-season-day="262.5" type="button"><span data-i18n="Autumn reference">Autumn reference</span></button><button data-season-day="353.75" type="button"><span data-i18n="Northern winter reference">Northern winter reference</span></button></div>
 </section></div>
 <dialog aria-describedby="atlas-intro" aria-labelledby="atlas-title" class="season-atlas" id="season-atlas">
 <header class="atlas-heading">
 <div><p class="eyebrow"><span data-i18n="PLANET LAB / A YEAR AT EVERY LATITUDE">PLANET LAB / A YEAR AT EVERY LATITUDE</span></p><div class="help-heading"><h2 data-help="atlas" id="atlas-title"><span data-i18n="Season atlas">Season atlas</span></h2></div></div>
 <button aria-label="Close season atlas" autofocus="" data-i18n-aria-label="Close season atlas" id="atlas-close" type="button"><span data-i18n="Back to globe ×">Back to globe ×</span></button>
 </header>
-<p id="atlas-intro"><span data-i18n="North at the top. South at the bottom. One repeating model year from left to right.">North at the top. South at the bottom. One repeating model year from left to right.</span></p>
+<p class="atlas-note" data-i18n="Atlas reference: 23.44° with Earth A’s orbit and heat storage. It is not Earth B.">Atlas reference: 23.44° with Earth A’s orbit and heat storage. It is not Earth B.</p><p id="atlas-intro"><span data-i18n="North at the top. South at the bottom. One repeating model year from left to right.">North at the top. South at the bottom. One repeating model year from left to right.</span></p>
 <p id="atlas-comparison-note" class="atlas-note" hidden data-i18n="Compare Lab: this atlas shows Earth A. Its difference map always compares A with 23.44°, not with Earth B.">Compare Lab: this atlas shows Earth A. Its difference map always compares A with 23.44°, not with Earth B.</p>
 <p class="atlas-context" id="atlas-context"></p>
 <div class="atlas-settings">
