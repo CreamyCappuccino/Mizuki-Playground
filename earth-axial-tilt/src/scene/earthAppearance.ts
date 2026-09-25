@@ -109,7 +109,10 @@ export class EarthAppearance {
     this.atmosphere.visible = this.naturalLayer;
   }
   setAnisotropy(value: number): void {
-    for (const texture of this.textures) { texture.anisotropy = value; texture.needsUpdate = true; }
+    for (const texture of this.textures) {
+      if (texture.anisotropy === value) continue;
+      texture.anisotropy = value; texture.needsUpdate = true;
+    }
   }
   dispose(): void {
     this.disposed = true;
