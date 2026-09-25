@@ -4,6 +4,8 @@
 
 ## 現在地
 
+- 1.1.0-rc.1の実験プリセット・共有URL・設定ファイルを実装。詳細は [V1.1](docs/V1.1.md)。正式な実機gateは未確認のまま維持。
+
 - v0.9 Compare Lab は実装済み。
 - v1.0 は `1.0.0-rc.1`。自動検証は整っているが、**物理iPhoneのSafari確認はまだ正式版ゲートとして残す**。
 - 公開URLへのdeploymentは未実施。潮さんの明示GOが必要。
@@ -35,7 +37,7 @@ v1.1へ大きく進む前後どちらでもよいが、正式1.0タグ／版番�
 
 ---
 
-# v1.1 — Clarity & Shareable Experiments
+# v1.1 — Clarity & Shareable Experiments（実装済み／RC検証）
 
 ## 目的
 
@@ -425,7 +427,7 @@ Earth/Marsと同様、専用モデルがないTemperatureは未提供。
 # 長距離実装の推奨順
 
 1. **1.0 marker polish — 完了**
-2. **1.1 presets + shareable state URL**
+2. **1.1 presets + shareable state URL — 実装済み、同一HEADのCIで確認**
 3. **1.2 Earth orbit mechanics: eccentricity / perihelion / precession**
 4. **1.3 Earth climate geography: land / ocean / altitude**
 5. **1.4 Earth feedbacks: ice-albedo / hysteresis**
