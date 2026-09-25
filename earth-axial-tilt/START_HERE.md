@@ -2,6 +2,9 @@
 
 ## 現在地
 
+**1.1.0-rc.1：問いベースの実験プリセット、共有URL、設定ファイル、直前の実験へ戻す操作を実装。** `docs/V1.1.md`と`docs/EXPERIMENT_STATE.md`を読む。物理式は1.0から変更していない。実機Safari gateと公開承認は未完了のまま。
+
+
 `CreamyCappuccino/Mizuki-Playground/earth-axial-tilt/`。独立した静的フロントエンド。**v0.9の比較・同時再生とv1.0の仕上げを実装。v1.0.0-rc.1はChromium／macOS WebKitの自動検証が成功。** 正式版の実機iPhone確認は未完了。公開はしていない。
 
 最短の復帰は **この文書 → ROADMAP.md → docs/V1.0.md → 変更分野のコード**。確認済みのコード・CI・画像は [検証記録](docs/VERIFICATION-1.0-rc.1.md) を参照し、着手時はさらに最新HEADのCIを確認する。MCP索引は **Mizuki MM410**。メモリは道案内、最新コード・CI・文書が正本。
@@ -17,6 +20,7 @@ v0.8の日英・?・公転俯瞰・大文字・Atlas・EBMを保持。A/B別傾�
 | 現在できること／起動 | `README.md` |
 | 今後と残りの検証 | `ROADMAP.md`、`docs/RELEASE_CHECKLIST.md` |
 | 日英の利用者ガイド | `docs/GUIDE.ja.md`、`docs/GUIDE.en.md` |
+| 実験の保存・検証 | `src/experiments/state.ts`、`presets.ts`、`src/ui/experimentWorkbench.ts` |
 | 共有A状態とUIの連携 | `src/main.ts`、`index.html` |
 | 比較B、待機・失敗、差分 | `src/ui/compareLab.ts`、`src/physics/comparison.ts` |
 | 時計 | `src/physics/motion.ts`、`src/ui/playback.ts` |
@@ -55,3 +59,7 @@ CIの同じhead_shaを確認。Chromiumの画像基準を変更するときはac
 ## 文書とメモリ
 
 README＝今できること、START_HERE＝復帰入口、ROADMAP＝未来、SCIENCE＝数式、V0.x/V1.x＝変更履歴。関連する文書をコードと同時更新する。Mizuki MM410は短い索引として更新し、版ごとの長文を無限に追記しない。
+
+## v1.1の引き継ぎ注意
+
+リンクは科学条件を保存し、描画画像・キャッシュ済み温度・言語・画質・再生状態を保存しない。URLとJSONは同じvalidatorを通し、原子的に適用する。未知のschema versionや不正値は既存状態を維持。optional Compareの読み込みが遅い時は新しい操作が優先する。Heat storageのFast/Slowプリセットは順番に比較する二実験で、A/Bの熱容量を別々にした機能ではない。
