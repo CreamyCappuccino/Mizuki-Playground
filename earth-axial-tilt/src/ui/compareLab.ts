@@ -133,6 +133,9 @@ export class CompareLab {
     status.dataset.status=failed?'error':isThermalReady(snapshot.source)&&isThermalReady(b)?'ready':'loading';
     status.textContent=t(failed?'Earth B temperature unavailable. Solar and daylight still work.':status.dataset.status==='ready'?'A/B results ready. Difference = A minus B.':'Calculating A/B temperatures… no previous result is substituted.');
     this.el('compare-retry').hidden=!failed;
+    const extrapolated=[snapshot.source,b].some(source=>source.model==='energy-balance' && isThermalReady(source) && source.solution!==null && (source.solution.minimum < -60 || source.solution.maximum > 60));
+    const warning=this.el('compare-warning');warning.hidden=!extrapolated;
+    warning.textContent=extrapolated?t('Large model extrapolation: linear radiation and fixed reflectivity omit ice, evaporation and climate feedbacks. Extreme temperatures are not predictions.'):'';
     this.placeLabels();
   }
   private placeLabels():void{
