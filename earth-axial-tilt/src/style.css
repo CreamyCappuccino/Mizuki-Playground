@@ -813,9 +813,9 @@ select { min-height: 44px; }
   :root:not([data-scene-view="orbit"]):not([data-focus-view="true"]) #earth-canvas { margin-top: var(--topbar-bottom, 230px); }
 }
 :root[data-focus-view="true"] #earth-canvas {
-  top: var(--topbar-bottom, 130px); height: calc(100% - var(--topbar-bottom, 130px) - 70px);
+  top: var(--topbar-bottom, 130px); height: calc(100% - var(--topbar-bottom, 130px) - var(--focus-note-space, 90px));
 }
 :root[data-focus-view="true"][data-scene-view="orbit"] .orbit-toolbar { top: var(--topbar-bottom, 130px); bottom: auto; }
 :root[data-focus-view="true"][data-scene-view="orbit"] #earth-canvas {
-  top: var(--orbit-bottom, 250px); height: max(180px, calc(100% - var(--orbit-bottom, 250px) - 70px));
+  top: var(--orbit-bottom, 250px); height: max(180px, calc(100% - var(--orbit-bottom, 250px) - var(--focus-note-space, 90px)));
 }
