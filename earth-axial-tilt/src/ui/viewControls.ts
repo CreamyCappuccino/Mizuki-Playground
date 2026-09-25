@@ -50,6 +50,7 @@ export function bindViewControls(actions: ViewActions): void {
         focusButton.textContent = focused ? tr('Show controls') : tr('Focus view');
         focusButton.setAttribute('aria-pressed', String(focused));
         get('focus-view-note').hidden = !focused;
+        measureChrome();
         focusButton.focus({ preventScroll: true });
         if (focused)
             window.scrollTo(0, 0);
@@ -75,13 +76,16 @@ export function bindViewControls(actions: ViewActions): void {
     };
     const header = document.querySelector<HTMLElement>('.topbar')!;
     const orbitToolbar = get<HTMLElement>('orbit-toolbar');
+    const focusNote = get<HTMLElement>('focus-view-note');
     const measureChrome = () => {
         const bottom = header.offsetTop + header.offsetHeight + 12;
         root.style.setProperty('--topbar-bottom', `${bottom}px`);
         root.style.setProperty('--orbit-bottom', `${bottom + orbitToolbar.offsetHeight + 12}px`);
+        const noteSpace = focusNote.hidden ? 0 : Math.max(0, Math.ceil(window.innerHeight - focusNote.getBoundingClientRect().top + 12));
+        root.style.setProperty('--focus-note-space', `${noteSpace}px`);
     };
     const chromeObserver = new ResizeObserver(measureChrome);
-    chromeObserver.observe(header); chromeObserver.observe(orbitToolbar);
+    chromeObserver.observe(header); chromeObserver.observe(orbitToolbar); chromeObserver.observe(focusNote);
     measureChrome();
     canvas.addEventListener('visualstatus', status);
     status();
