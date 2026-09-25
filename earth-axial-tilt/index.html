@@ -12,16 +12,18 @@
 <canvas aria-label="Interactive 3D Earth" data-i18n-aria-label="Interactive 3D Earth" id="earth-canvas"></canvas>
 <header class="topbar glass">
 <div>
-<p class="eyebrow"><span data-i18n="MIZUKI PLAYGROUND / PLANET LAB · v0.8">MIZUKI PLAYGROUND / PLANET LAB · v0.8</span></p>
+<p class="eyebrow"><span data-i18n="MIZUKI PLAYGROUND / PLANET LAB · v1.0 RC">MIZUKI PLAYGROUND / PLANET LAB · v1.0 RC</span></p>
 <h1><span data-i18n="Earth Axial Tilt">Earth Axial Tilt</span></h1>
 </div>
 <div aria-live="polite" class="topbar__readout">
 <span id="season-label"><span data-i18n="June solstice">June solstice</span></span>
-<strong id="date-readout">Day 172</strong>
+<span id="experiment-status" class="experiment-status"></span><strong id="date-readout">Day 172</strong>
 </div>
 <div aria-label="Viewing controls" class="view-toolbar" data-i18n-aria-label="Viewing controls"><label for="language">Language / 言語 <select id="language"><option data-i18n="English" value="en">English</option><option data-i18n="日本語" value="ja">日本語</option></select></label>
 <div class="help-heading"><label data-help="view" for="scene-view"><span data-i18n="Viewpoint">Viewpoint</span><select id="scene-view"><option data-i18n="Earth close-up" value="earth">Earth close-up</option><option data-i18n="Orbit overview" value="orbit">Orbit overview</option></select></label></div>
 <div class="help-heading"><label data-help="quality" for="visual-quality"><span data-i18n="Quality">Quality</span><select id="visual-quality"><option data-i18n="Eco" value="eco">Eco</option><option data-i18n="Balanced" value="balanced">Balanced</option><option data-i18n="High" selected="" value="high">High</option></select></label></div>
+<label for="tools-mode"><span data-i18n="Tools">Tools</span><select id="tools-mode"><option value="all" data-i18n="All tools">All tools</option><option value="basic" data-i18n="Basic">Basic</option></select></label>
+<button id="show-intro" data-i18n="Start here">Start here</button>
 <button id="compare-toggle" aria-pressed="false"><span data-i18n="Compare Earth A/B">Compare Earth A/B</span></button>
 <button aria-pressed="false" id="focus-view"><span data-i18n="Focus view">Focus view</span></button>
 </div>
@@ -127,13 +129,13 @@
 <p class="eyebrow"><span data-i18n="LOCATION">LOCATION</span></p>
 <select aria-label="Choose a location" data-i18n-aria-label="Choose a location" id="location-select"></select>
 </section>
-<section aria-label="Earth appearance" class="appearance-controls" data-i18n-aria-label="Earth appearance">
+<section aria-label="Earth appearance" class="appearance-controls advanced-only" data-i18n-aria-label="Earth appearance">
 <p class="eyebrow"><span data-i18n="EARTH APPEARANCE">EARTH APPEARANCE</span></p>
 <label class="check-control"><input checked="" id="night-lights" type="checkbox"/><span data-i18n="Night lights in Earth view">Night lights in Earth view</span></label>
 <p class="input-help" id="visual-status" role="status"><span data-i18n="Loading local Earth maps…">Loading local Earth maps…</span></p>
 <p class="input-help"><span data-i18n="Day and night maps:">Day and night maps:</span><a href="https://www.solarsystemscope.com/textures/" rel="noopener noreferrer" target="_blank">Solar System Scope</a> / <a href="https://creativecommons.org/licenses/by/4.0/" rel="noopener noreferrer" target="_blank">CC BY 4.0</a><span data-i18n=", resized by three.js. Fixed geography and lights, not a response to tilt. Decorative lights and atmosphere are hidden in science modes.">, resized by three.js. Fixed geography and lights, not a response to tilt. Decorative lights and atmosphere are hidden in science modes.</span></p>
 </section>
-<section class="guide-controls">
+<section class="guide-controls advanced-only">
 <div class="help-heading"><label class="check-control" data-help="guides"><input checked="" id="show-guides" type="checkbox"/><span data-i18n="Show science guides">Show science guides</span></label></div>
 <p><span class="key axis-key"></span><span data-i18n="Axis / N–S">Axis / N–S</span><span class="key sun-key"></span><span data-i18n="Subsolar point">Subsolar point</span></p>
 <p><span class="key terminator-key"></span><span data-i18n="Day–night boundary">Day–night boundary</span><span class="key arc-key"></span><span data-i18n="Tilt arc">Tilt arc</span></p>
@@ -142,6 +144,12 @@
 </section>
 </aside>
 <section aria-label="Selected location details" class="location-panel glass" data-i18n-aria-label="Selected location details">
+<section id="quick-start" class="quick-start" aria-labelledby="quick-start-title">
+<h2 id="quick-start-title" data-i18n="Three ways to explore">Three ways to explore</h2>
+<p data-i18n="Seasons: choose 90°, then Play year in Orbit overview. Day and night: choose Sun now, then Play day. Compare: open Earth A/B and change only B.">Seasons: choose 90°, then Play year in Orbit overview. Day and night: choose Sun now, then Play day. Compare: open Earth A/B and change only B.</p>
+<p data-i18n="Use ? for an experiment guide. Basic hides optional appearance and diagnostic panels, never your settings.">Use ? for an experiment guide. Basic hides optional appearance and diagnostic panels, never your settings.</p>
+<button id="intro-basic" data-i18n="Use Basic tools">Use Basic tools</button><button id="intro-dismiss" data-i18n="Got it">Got it</button>
+</section>
 <section id="compare-results" hidden><h2 data-i18n="A / B comparison">A / B comparison</h2><p id="compare-context" class="input-help"></p><p id="compare-model" class="input-help"></p><table class="comparison-table"><thead><tr><th data-i18n="Metric">Metric</th><th>A</th><th>B</th><th>A − B</th></tr></thead><tbody><tr id="compare-daylight"><th scope="row" data-i18n="Daylight">Daylight</th><td data-column="a">—</td><td data-column="b">—</td><td data-column="diff">—</td></tr><tr id="compare-solar"><th scope="row" data-i18n="Daily solar">Daily solar</th><td data-column="a">—</td><td data-column="b">—</td><td data-column="diff">—</td></tr><tr id="compare-temperature"><th scope="row" data-i18n="Temperature">Temperature</th><td data-column="a">—</td><td data-column="b">—</td><td data-column="diff">—</td></tr></tbody></table><p id="compare-status" class="input-help" role="status"></p><button id="compare-retry" hidden data-i18n="Retry Earth B">Retry Earth B</button><p class="input-help" data-i18n="The location panel describes Earth A. Annual dashed curve: Earth B in Compare Lab; 23.44° otherwise. Day graph: Earth A only.">The location panel describes Earth A. Annual dashed curve: Earth B in Compare Lab; 23.44° otherwise. Day graph: Earth A only.</p></section><div class="location-title">
 <div>
 <p class="eyebrow"><span data-i18n="SELECTED LOCATION">SELECTED LOCATION</span></p>
@@ -158,7 +166,7 @@
 </div>
 <button aria-haspopup="dialog" class="jump-chart atlas-launch" id="open-atlas"><span data-i18n="Season atlas · explore every latitude ↗">Season atlas · explore every latitude ↗</span></button>
 <button class="jump-chart" id="jump-chart"><span data-i18n="Explore the graph ↓">Explore the graph ↓</span></button>
-<div class="solar-moment">
+<div class="solar-moment advanced-only">
 <div class="moment-heading"><div class="help-heading"><p class="eyebrow" data-help="rotation"><span data-i18n="SUN AT THIS MOMENT">SUN AT THIS MOMENT</span></p></div><span id="illumination-state">—</span></div>
 <div class="moment-metrics">
 <article><span><span data-i18n="Local solar time">Local solar time</span></span><strong id="metric-solar-time">—</strong></article>
@@ -224,6 +232,7 @@
 <button aria-label="Close season atlas" autofocus="" data-i18n-aria-label="Close season atlas" id="atlas-close" type="button"><span data-i18n="Back to globe ×">Back to globe ×</span></button>
 </header>
 <p id="atlas-intro"><span data-i18n="North at the top. South at the bottom. One repeating model year from left to right.">North at the top. South at the bottom. One repeating model year from left to right.</span></p>
+<p id="atlas-comparison-note" class="atlas-note" hidden data-i18n="Compare Lab: this atlas shows Earth A. Its difference map always compares A with 23.44°, not with Earth B.">Compare Lab: this atlas shows Earth A. Its difference map always compares A with 23.44°, not with Earth B.</p>
 <p class="atlas-context" id="atlas-context"></p>
 <div class="atlas-settings">
 <label><span data-i18n="Layer">Layer</span><select id="atlas-metric"><option data-i18n="Daily solar" value="insolation">Daily solar</option><option data-i18n="Daylight" value="daylight">Daylight</option><option data-i18n="Temperature" value="temperature">Temperature</option></select></label>
