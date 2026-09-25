@@ -1,3 +1,5 @@
+import { ExperimentWorkbench } from './ui/experimentWorkbench';
+import { experimentLocation, type ExperimentState } from './experiments/state';
 import type { CompareLab } from './ui/compareLab';
 import { bindContextHelp } from './ui/contextHelp';
 import { t as tr, msg, initLanguageControl, onLanguageChange, solarClockLabel } from './ui/i18n';
@@ -69,7 +71,10 @@ document.documentElement.dataset.textSize = textSize.value;
 const disposeLanguageControl = initLanguageControl();
 const TILT_HELP = '0–90° · Enter or leave the field to apply.';
 let compareLab: CompareLab | null = null;
-let compareLoading = false;
+let comparePromise: Promise<CompareLab> | null = null;
+let dormantTiltB=90;
+let experimentRequest=0;
+let workbench: ExperimentWorkbench | null = null;
 const scene = new EarthScene(canvas, {
     onLocationPick: (location) => {
         state.location = location;
@@ -217,6 +222,7 @@ function refreshExperimentLabel(): void {
 }
 function updateReadouts(): void {
     refreshExperimentLabel();
+    workbench?.refresh();
     $<HTMLElement>('#atlas-comparison-note').hidden = !compareLab?.enabled;
     compareLab?.update(compareSnapshot());
     atlas.update({ source: temperatureSource(), reference: temperatureSource(true), revision: thermalRevision,
@@ -538,6 +544,7 @@ window.addEventListener('pagehide', event => {
     thermalClient.dispose();
     compareLab?.dispose();
     atlas.dispose();
+    workbench?.dispose();
     scene.dispose();
     applicationEvents.abort();
 }, { signal: applicationEvents.signal });
@@ -564,40 +571,74 @@ function tick(now: number): void {
 document.querySelectorAll<HTMLButtonElement>('[data-season-day]').forEach(button => {
     button.addEventListener('click', () => { state.day = Number(button.dataset.seasonDay); state.playback = 'paused'; update(); }, { signal: applicationEvents.signal });
 });
-$('#compare-toggle').addEventListener('click', async () => {
-    if (compareLoading)
-        return;
-    const button = $<HTMLButtonElement>('#compare-toggle');
-    if(button.dataset.loadError === 'true'){ location.reload(); return; }
-    if (!compareLab) {
-        compareLoading = true;
-        button.disabled = true;
+async function ensureComparison(): Promise<CompareLab> {
+    if(compareLab)return compareLab;
+    if(comparePromise)return comparePromise;
+    const button=$<HTMLButtonElement>('#compare-toggle');button.disabled=true;
+    comparePromise=(async()=>{
         try {
-            const { CompareLab: Comparison } = await import('./ui/compareLab');
-            if (applicationDisposed)
-                return;
-            compareLab = new Comparison({
-                change: () => update(),
-                tiltA: tilt => { state.tilt = tilt; state.playback = 'paused'; update(); },
-                day: day => { state.day = day; state.playback = 'paused'; update(); },
-                mode: mode => { state.surfaceMode = mode; update(); },
-                playback: mode => { state.playback = togglePlayback(state.playback, mode); update(); },
-                scene: value => scene.setComparison(value),
+            const { CompareLab: Comparison }=await import('./ui/compareLab');
+            if(applicationDisposed)throw new Error('Application disposed');
+            compareLab=new Comparison({
+                change:()=>update(),
+                tiltA:tilt=>{state.tilt=tilt;state.playback='paused';update();},
+                day:day=>{state.day=day;state.playback='paused';update();},
+                mode:mode=>{state.surfaceMode=mode;update();},
+                playback:mode=>{state.playback=togglePlayback(state.playback,mode);update();},
+                scene:value=>scene.setComparison(value),
             });
-            compareLab.update(compareSnapshot());
-        }
-        catch {
-            button.dataset.loadError='true';button.textContent = tr('Reload to retry comparison');
-            return;
-        }
-        finally {
-            compareLoading = false;
-            button.disabled = false;
-        }
-    }
-    state.playback = 'paused';
-    compareLab.toggle();
-}, { signal: applicationEvents.signal });
+            compareLab.tiltB=dormantTiltB;
+            compareLab.update(compareSnapshot());return compareLab;
+        } catch(error) {
+            button.dataset.loadError='true';button.textContent=tr('Reload to retry comparison');throw error;
+        } finally {button.disabled=false;comparePromise=null;}
+    })();
+    return comparePromise;
+}
+$('#compare-toggle').addEventListener('click',async()=>{
+    const request=++experimentRequest;
+    const button=$<HTMLButtonElement>('#compare-toggle');
+    if(button.dataset.loadError==='true'){location.reload();return;}
+    try {
+        const comparison=await ensureComparison();
+        if(applicationDisposed||request!==experimentRequest)return;
+        state.playback='paused';comparison.toggle();
+    } catch { /* Explicit reload message remains on the comparison button. */ }
+},{signal:applicationEvents.signal});
+
+function captureExperiment(): ExperimentState {
+    return {tilt:state.tilt,tiltB:compareLab?.tiltB??dormantTiltB,day:state.day,rotation:state.rotation,
+        latitude:state.location.latitude,longitude:state.location.longitude,dual:!!compareLab?.enabled,
+        surfaceMode:state.surfaceMode,temperatureModel:state.temperatureModel,heatDepth:state.heatDepth as ExperimentState['heatDepth'],
+        sceneView:canvas.dataset.sceneView==='orbit'?'orbit':'earth',period:state.period,chartMetric:state.chartMetric,
+        reference:state.compare,guides:state.guides,speed:state.speed as ExperimentState['speed']};
+}
+async function applyExperiment(next:ExperimentState):Promise<boolean> {
+    const request=++experimentRequest;
+    if(next.dual)await ensureComparison();
+    if(applicationDisposed||request!==experimentRequest)return false;
+    // Nothing from the untrusted payload is assigned until validation and optional loading have succeeded.
+    state.tilt=next.tilt; state.day=next.day; state.rotation=next.rotation;state.speed=next.speed;
+    state.playback='paused';state.location=experimentLocation(next);state.surfaceMode=next.surfaceMode;
+    state.temperatureModel=next.temperatureModel;state.heatDepth=next.heatDepth;
+    state.period=next.period;state.chartMetric=next.chartMetric;state.compare=next.reference;state.guides=next.guides;
+    dormantTiltB=next.tiltB;compareLab?.configure(next.dual,next.tiltB);
+    locationSelect.value=state.location.id;
+    $<HTMLSelectElement>('#temperature-model').value=state.temperatureModel;
+    $<HTMLSelectElement>('#heat-storage').value=String(state.heatDepth);
+    $<HTMLInputElement>('#show-guides').checked=state.guides;
+    $<HTMLInputElement>('#compare-earth').checked=state.compare;
+    tiltHelp.textContent=tr(TILT_HELP);profileKey='';referenceKey='';chartKey='';
+    // Fit a useful starting camera without loading a saved camera pose or changing personal display preferences.
+    scene.setOrbitView(next.sceneView==='orbit');syncSceneView();
+    update();
+    if(next.sceneView==='orbit')scene.fitOrbit();else scene.focusLocation();
+    return true;
+}
+// A newer direct user action wins over a slow dynamic import. Worker replies do not cancel requests.
+for(const event of ['input','change','pointerdown','keydown'])document.addEventListener(event,()=>{experimentRequest++;},
+    {capture:true,signal:applicationEvents.signal});
+workbench=new ExperimentWorkbench({capture:captureExperiment,apply:applyExperiment,cancelPending:()=>{experimentRequest++;}});
 const disposeHelp = bindContextHelp();
 const disposeLanguage = onLanguageChange(() => {
     scene.refreshLanguage();
@@ -613,4 +654,5 @@ const disposeLanguage = onLanguageChange(() => {
     update();
 });
 update();
+void workbench.restoreHash();
 tickFrame = requestAnimationFrame(tick);
