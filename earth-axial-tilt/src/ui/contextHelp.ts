@@ -2,6 +2,20 @@ import { getLanguage, t, onLanguageChange } from './i18n';
 type Bilingual = readonly [string, string];
 interface Help { title: Bilingual; meaning: Bilingual; experiment: Bilingual; observe: Bilingual; limit: Bilingual }
 export const HELP: Readonly<Record<string, Help>> = {
+  dual: {
+    title:['Compare Lab','比較ラボ'],
+    meaning:['A and B share the date, rotational phase, location, model and heat storage. Only obliquity differs.','A・B は日付、自転角、地点、モデル、蓄熱を共有し、傾きだけが違います。'],
+    experiment:['Choose 23.44° / 90°, then Daylight and June. Try the same experiment in Orbit overview.','23.44° / 90° を選び、「昼の長さ」と6月にします。公転俯瞰でも同じ実験を見てみましょう。'],
+    observe:['Read A, B and A minus B. In annual graphs the dashed curve becomes B; both 3D views use identical colour scales.','A、B、A−Bを読みます。年間グラフの破線はBになり、二つの地球は同じ色スケールを使います。'],
+    limit:['These are separate hypothetical worlds, not planets sharing an orbit. Time/location synchronization is intentionally always on.','二つは別々の仮想世界です。同じ軌道上の二惑星ではありません。比較の条件を揃えるため、時間と地点の同期は常に有効です。'],
+  },
+  coupled: {
+    title:['Coupled motion','自転と公転の同時再生'],
+    meaning:['Advance one shared model clock. A 365-mean-solar-day circular year contains 366 prograde rotations relative to space.','一つのモデル時計で進めます。365平均太陽日の円軌道の一年には、宇宙空間に対する順行の自転が366回含まれます。'],
+    experiment:['Choose Orbit overview, then Coupled motion. At x1 a model day takes ten seconds; use Play year for a faster tour of seasons.','公転俯瞰で同時再生を選びます。×1でモデルの一日が10秒。季節を素早く一周するには「一年を再生」を使います。'],
+    observe:['The surface spins and the planet travels, but the axis does not chase the Sun. Speed changes preserve the spin/orbit ratio.','地表が自転し、地球も移動しますが、軸は太陽を追いかけません。速度を変えても自転と公転の比率は保ちます。'],
+    limit:['This is mean model time, not a civil calendar. At nonzero tilt apparent solar time is nonuniform; polar meridians can be undefined. No hourly temperature model is added.','平均的なモデル時刻で、標準時のカレンダーではありません。傾きがあると視太陽時の進みは一様でなく、極では未定義になることもあります。毎時の気温モデルは追加していません。'],
+  },
   tilt: {
     title: ['Axial tilt', '地軸の傾き'],
     meaning: ['The angle between the rotation axis and the normal to the orbital plane.', '公転面に垂直な方向から、自転軸がどれだけ傾いているかです。'],
