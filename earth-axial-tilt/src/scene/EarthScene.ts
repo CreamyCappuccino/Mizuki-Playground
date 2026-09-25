@@ -451,26 +451,40 @@ export class EarthScene {
     );
   }
 
-  private createLocationMarker(): THREE.Group {
-    const marker = new THREE.Group();
+  private createLocationMarker(): THREE.Sprite {
+    const canvas = document.createElement('canvas');
+    canvas.width = 64;
+    canvas.height = 96;
+    const context = canvas.getContext('2d');
+    if (context) {
+      context.shadowColor = '#8fe8ff';
+      context.shadowBlur = 8;
+      context.beginPath();
+      context.moveTo(32, 92);
+      context.bezierCurveTo(27, 75, 8, 56, 8, 34);
+      context.bezierCurveTo(8, 16, 18, 6, 32, 6);
+      context.bezierCurveTo(46, 6, 56, 16, 56, 34);
+      context.bezierCurveTo(56, 56, 37, 75, 32, 92);
+      context.closePath();
+      context.fillStyle = '#f7fbff';
+      context.fill();
+      context.shadowBlur = 0;
+      context.lineWidth = 3;
+      context.strokeStyle = '#8fe8ff';
+      context.stroke();
+      context.beginPath();
+      context.arc(32, 33, 9, 0, Math.PI * 2);
+      context.fillStyle = '#18364f';
+      context.fill();
+    }
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    const marker = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: texture, transparent: true, depthWrite: false, toneMapped: false,
+    }));
     marker.name = 'selected-location-pin';
-
-    const material = new THREE.MeshBasicMaterial({ color: 0xffffff, toneMapped: false });
-    const pointer = new THREE.Mesh(new THREE.ConeGeometry(0.075, 0.18, 3), material);
-    pointer.rotation.x = Math.PI;
-    pointer.position.y = 0.09;
-
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.062, 16, 12), material);
-    head.position.y = 0.205;
-
-    const halo = new THREE.Mesh(
-      new THREE.TorusGeometry(0.09, 0.012, 8, 24),
-      new THREE.MeshBasicMaterial({ color: 0x8fe8ff, toneMapped: false }),
-    );
-    halo.rotation.x = Math.PI / 2;
-    halo.position.y = 0.205;
-
-    marker.add(pointer, head, halo);
+    marker.center.set(0.5, 0.04);
+    marker.scale.set(0.34, 0.51, 1);
     return marker;
   }
 
@@ -581,12 +595,9 @@ export class EarthScene {
   }
 
   private updateMarker(): void {
-    const point = new THREE.Vector3(...geographicToCartesian(
+    this.marker.position.fromArray(geographicToCartesian(
       this.state.location.latitude, this.state.location.longitude, EARTH_RADIUS * 1.012,
     ));
-    const outward = point.clone().normalize();
-    this.marker.position.copy(point);
-    this.marker.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), outward);
   }
 
   private updateDataLayer(): void {
