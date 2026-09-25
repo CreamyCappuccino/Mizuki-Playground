@@ -890,3 +890,5 @@ select { min-height: 44px; }
 :root[data-focus-view="true"] .view-toolbar .help-heading:has(#visual-quality),
 :root[data-focus-view="true"] #show-intro,
 :root[data-focus-view="true"] #compare-toggle { display:none; }
+
+#compare-warning { color:#ffd0a1; }
