@@ -12,10 +12,10 @@ const tilts = [0, 23.44, 45, 90];
 const days = [80, 171.25, 200, 353.75];
 
 describe('instantaneous solar physics and geographic rotation', () => {
-  it('agrees with the actual Three.js Rx(tilt) Ry(rotation) frame', () => {
+  it('agrees with the actual Three.js Rx(-tilt) Ry(rotation) frame', () => {
     for (const tilt of tilts) for (const day of days) for (const rotation of [0, 37.5, 90, 181, 359]) {
       const sun = new Vector3(...sunDirection(day));
-      const transform = new Euler(tilt * Math.PI / 180, rotation * Math.PI / 180, 0, 'XYZ');
+      const transform = new Euler(-tilt * Math.PI / 180, rotation * Math.PI / 180, 0, 'XYZ');
       const localSun = new Vector3(...rotatingSunDirection(day, tilt, rotation));
       expect(localSun.clone().applyEuler(transform).distanceTo(sun)).toBeLessThan(1e-12);
       for (const latitude of [-90, -55, 0, 25.033, 90]) for (const longitude of [-170, 0, 121.5654]) {
@@ -67,8 +67,8 @@ describe('instantaneous solar physics and geographic rotation', () => {
 
   it('keeps the tilted rotation axis fixed while surface longitude rotates', () => {
     for (const tilt of tilts) for (const rotation of [0, 90, 180, 270]) {
-      const pole = new Vector3(0, 1, 0).applyEuler(new Euler(tilt * Math.PI / 180, rotation * Math.PI / 180, 0, 'XYZ'));
-      expect(pole.distanceTo(new Vector3(0, Math.cos(tilt * Math.PI / 180), Math.sin(tilt * Math.PI / 180)))).toBeLessThan(1e-12);
+      const pole = new Vector3(0, 1, 0).applyEuler(new Euler(-tilt * Math.PI / 180, rotation * Math.PI / 180, 0, 'XYZ'));
+      expect(pole.distanceTo(new Vector3(0, Math.cos(tilt * Math.PI / 180), -Math.sin(tilt * Math.PI / 180)))).toBeLessThan(1e-12);
     }
   });
 
