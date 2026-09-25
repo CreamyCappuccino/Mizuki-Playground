@@ -1,3 +1,5 @@
+import { OrbitOverview } from './orbitOverview';
+import { orbitLayout, ORBIT_EARTH_SCALE } from './orbitLayout';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { dailyMeanInsolation, dayLengthHours, SOLAR_CONSTANT } from '../physics/solar';
@@ -46,6 +48,12 @@ export class EarthScene {
   private dirty = true;
   private renderCount = 0;
   private readonly sunLocal = new THREE.Vector3();
+  private readonly earthRoot = new THREE.Group();
+  private readonly orbitOverview = new OrbitOverview();
+  private readonly localOrbitRing = this.createOrbitRing();
+  private orbitView = false;
+  private readonly closeCamera = new THREE.Vector3(0.4, 1.3, 8.2);
+  private readonly overviewCamera = new THREE.Vector3(0, 32, 44);
   private readonly earthGroup = new THREE.Group();
   private readonly earthMesh: THREE.Mesh<THREE.SphereGeometry, THREE.MeshPhongMaterial>;
   private readonly dataMesh: THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial>;
@@ -109,7 +117,7 @@ export class EarthScene {
     this.controls.enableDamping = true;
     this.controls.enablePan = false;
     this.controls.minDistance = 5.1;
-    this.controls.maxDistance = 12;
+    this.controls.maxDistance = 16;
 
     this.scene.background = new THREE.Color(0x02040b);
     this.scene.add(this.createStars());
@@ -118,7 +126,7 @@ export class EarthScene {
     this.scene.add(ambient);
     this.scene.add(this.sunLight);
     this.scene.add(this.sunMesh);
-    this.scene.add(this.createOrbitRing());
+    this.scene.add(this.localOrbitRing, this.orbitOverview, this.sunLight.target);
 
     const earthGeometry = new THREE.SphereGeometry(EARTH_RADIUS, 96, 64);
     const earthMaterial = new THREE.MeshPhongMaterial({
@@ -157,8 +165,8 @@ export class EarthScene {
 
     this.earthGroup.add(this.createLatitudeGrid());
     this.earthGroup.add(this.marker);
-    this.scene.add(this.earthGroup);
-    this.scene.add(this.guidesGroup);
+    this.earthRoot.add(this.earthGroup, this.guidesGroup);
+    this.scene.add(this.earthRoot);
     this.guidesGroup.add(this.subsolarMarker, this.terminator, this.tiltArc);
     this.createAxis();
 
@@ -207,7 +215,8 @@ export class EarthScene {
     // Daily-mean maps do not depend on rotational phase. No CPU recoloring on spin.
     if (seasonChanged || next.mode !== undefined || previous.thermal !== this.state.thermal || previous.temperatureModel !== this.state.temperatureModel || previous.heatDepth !== this.state.heatDepth) this.updateDataLayer();
     // Current world matrices are also needed for picking before the next frame.
-    this.earthGroup.updateMatrixWorld(true);
+    this.syncOrbitLayout();
+    this.earthRoot.updateMatrixWorld(true);
     this.sunLocal.fromArray(rotatingSunDirection(this.state.day, this.state.tilt, this.state.rotation));
     this.appearance.setSun(this.sunDirectionVector, this.sunLocal);
     this.appearance.setVisibility(this.state.mode === 'normal', this.nightLights);
@@ -216,6 +225,7 @@ export class EarthScene {
   }
 
   focusLocation(): void {
+    if (this.orbitView) this.setOrbitView(false);
     // Move only the observer, not the time or geographic location.
     const position = this.earthGroup.localToWorld(new THREE.Vector3(...geographicToCartesian(
       this.state.location.latitude, this.state.location.longitude,
@@ -224,6 +234,7 @@ export class EarthScene {
   }
 
   resetView(): void {
+    if (this.orbitView) { this.fitOrbit(); return; }
     this.setViewPosition(new THREE.Vector3(0.4, 1.3, 8.2));
   }
 
@@ -238,6 +249,46 @@ export class EarthScene {
     this.controls.enableDamping = damping;
     this.camera.updateMatrixWorld(true);
     this.invalidate();
+  }
+
+  /** Move presentation frames only. The physical vectors stay in the same inertial orientation. */
+  setOrbitView(enabled: boolean): void {
+    if (enabled === this.orbitView) return;
+    (this.orbitView ? this.overviewCamera : this.closeCamera).copy(this.camera.position);
+    this.orbitView = enabled;
+    document.documentElement.dataset.sceneView = enabled ? 'orbit' : 'earth';
+    this.controls.minDistance = enabled ? 24 : 5.1;
+    this.controls.maxDistance = enabled ? 92 : 16;
+    this.camera.far = enabled ? 240 : 100;
+    this.syncOrbitLayout();
+    this.setViewPosition((enabled ? this.overviewCamera : this.closeCamera).clone());
+    this.resize();
+    this.canvas.dispatchEvent(new Event('sceneviewchange'));
+  }
+
+  fitOrbit(): void {
+    if (!this.orbitView) this.setOrbitView(true);
+    this.setViewPosition(new THREE.Vector3(0, 32, 44));
+    this.invalidate();
+  }
+
+  refreshLanguage(): void { this.orbitOverview.refreshLabels(); this.invalidate(); }
+
+  private syncOrbitLayout(): void {
+    const layout = orbitLayout(this.state.day, this.state.tilt);
+    this.earthRoot.position.fromArray(this.orbitView ? layout.position : [0, 0, 0]);
+    this.earthRoot.scale.setScalar(this.orbitView ? ORBIT_EARTH_SCALE : 1);
+    this.orbitOverview.visible = this.orbitView;
+    this.localOrbitRing.visible = !this.orbitView;
+    this.sunMesh.visible = !this.orbitView;
+    this.sunLight.position.copy(this.earthRoot.position).addScaledVector(this.sunDirectionVector, 10);
+    this.sunLight.target.position.copy(this.earthRoot.position);
+    this.sunLight.target.updateMatrixWorld(true);
+    this.earthRoot.updateMatrixWorld(true);
+    this.canvas.dataset.sceneView = this.orbitView ? 'orbit' : 'earth';
+    this.canvas.dataset.earthPosition = JSON.stringify(this.earthRoot.position.toArray());
+    const worldAxis = new THREE.Vector3(0, 1, 0).transformDirection(this.earthGroup.matrixWorld);
+    this.canvas.dataset.axisDirection = JSON.stringify(worldAxis.toArray());
   }
 
   setQuality(value: VisualQuality): void {
@@ -260,6 +311,7 @@ export class EarthScene {
     document.removeEventListener('visibilitychange', this.invalidate);
     this.resizeObserver.disconnect();
     this.appearance.dispose();
+    this.orbitOverview.disposeLabels();
     this.disposed = true;
     cancelAnimationFrame(this.frameId);
     this.controls.dispose();
