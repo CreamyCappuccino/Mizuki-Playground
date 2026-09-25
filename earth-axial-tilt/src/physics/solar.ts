@@ -1,3 +1,4 @@
+import { orbitalMoment, isClassicOrbit, dayAtSeasonalLongitude, type OrbitParameters } from './orbit';
 export const SOLAR_CONSTANT = 1361;
 
 const DEG = Math.PI / 180;
@@ -15,14 +16,14 @@ export function radToDeg(value: number): number {
   return value * RAD;
 }
 
-export function orbitalLongitudeRad(dayOfYear: number): number {
-  // Circular-orbit approximation with the March equinox near day 80.
-  return (2 * Math.PI * (dayOfYear - 80)) / 365;
+export function orbitalLongitudeRad(dayOfYear: number, orbit?: OrbitParameters): number {
+  // Inertial solar longitude; optional Kepler geometry, spring reference anchored at day 80.
+  return orbitalMoment(dayOfYear, orbit).solarLongitude;
 }
 
-export function solarDeclinationDeg(dayOfYear: number, obliquityDeg: number): number {
+export function solarDeclinationDeg(dayOfYear: number, obliquityDeg: number, orbit?: OrbitParameters): number {
   const epsilon = degToRad(obliquityDeg);
-  const lambda = orbitalLongitudeRad(dayOfYear);
+  const lambda = orbitalMoment(dayOfYear, orbit).seasonalLongitude;
   return radToDeg(Math.asin(clamp(Math.sin(epsilon) * Math.sin(lambda), -1, 1)));
 }
 
@@ -50,8 +51,9 @@ export function dayLengthHours(
   latitudeDeg: number,
   dayOfYear: number,
   obliquityDeg: number,
+  orbit?: OrbitParameters,
 ): number {
-  const declination = solarDeclinationDeg(dayOfYear, obliquityDeg);
+  const declination = solarDeclinationDeg(dayOfYear, obliquityDeg, orbit);
   const hourAngle = sunsetHourAngleRad(latitudeDeg, declination);
   return clamp((24 * hourAngle) / Math.PI, 0, 24);
 }
@@ -60,29 +62,30 @@ export function dailyMeanInsolation(
   latitudeDeg: number,
   dayOfYear: number,
   obliquityDeg: number,
+  orbit?: OrbitParameters,
 ): number {
   const phi = degToRad(latitudeDeg);
-  const delta = degToRad(solarDeclinationDeg(dayOfYear, obliquityDeg));
+  const delta = degToRad(solarDeclinationDeg(dayOfYear, obliquityDeg, orbit));
   const h0 = sunsetHourAngleRad(latitudeDeg, radToDeg(delta));
 
   const q =
-    (SOLAR_CONSTANT / Math.PI) *
+    (solarIrradiance(dayOfYear, orbit) / Math.PI) *
     (h0 * Math.sin(phi) * Math.sin(delta) +
       Math.cos(phi) * Math.cos(delta) * Math.sin(h0));
 
   return Math.max(0, q);
 }
 
-export function subsolarLatitudeDeg(dayOfYear: number, obliquityDeg: number): number {
-  return solarDeclinationDeg(dayOfYear, obliquityDeg);
+export function subsolarLatitudeDeg(dayOfYear: number, obliquityDeg: number, orbit?: OrbitParameters): number {
+  return solarDeclinationDeg(dayOfYear, obliquityDeg, orbit);
 }
 
-export function seasonLabel(dayOfYear: number): string {
+export function seasonLabel(dayOfYear: number, orbit?: OrbitParameters): string {
   const anchors = [
-    { day: 80, label: 'Near March equinox (model)' },
-    { day: 171.25, label: 'Near June solstice (model)' },
-    { day: 262.5, label: 'Near September equinox (model)' },
-    { day: 353.75, label: 'Near December solstice (model)' },
+    { day: dayAtSeasonalLongitude(0, orbit), label: 'Near March equinox (model)' },
+    { day: dayAtSeasonalLongitude(90, orbit), label: 'Near June solstice (model)' },
+    { day: dayAtSeasonalLongitude(180, orbit), label: 'Near September equinox (model)' },
+    { day: dayAtSeasonalLongitude(270, orbit), label: 'Near December solstice (model)' },
   ];
 
   let best = anchors[0];
@@ -96,7 +99,7 @@ export function seasonLabel(dayOfYear: number): string {
     }
   }
 
-  if (bestDistance <= 5) return best.label;
+  if (bestDistance <= 5) return isClassicOrbit(orbit) ? best.label : ['Spring reference','Northern summer reference','Autumn reference','Northern winter reference'][anchors.indexOf(best)];
 
   const monthStarts = [1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335];
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -105,4 +108,9 @@ export function seasonLabel(dayOfYear: number): string {
     if (dayOfYear >= monthStarts[i]) month = i;
   }
   return months[month];
+}
+
+/** Incoming ray-normal TOA flux; S0 is specified at 1 au, not renormalized per year. */
+export function solarIrradiance(day:number, orbit?:OrbitParameters):number {
+  return SOLAR_CONSTANT * orbitalMoment(day,orbit).irradianceFactor;
 }
