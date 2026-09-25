@@ -80,6 +80,14 @@ test('Japanese overview and help stay usable on a portrait screen with large tex
   const close=await page.locator('#help-close').boundingBox();
   expect(close).not.toBeNull(); expect(close!.x+close!.width).toBeLessThanOrEqual(390);
   await page.locator('#help-close').click();
+  await page.locator('#focus-view').click();
+  await expect.poll(() => page.locator('#earth-canvas').evaluate(el => {
+    const canvas = el.getBoundingClientRect();
+    const toolbar = document.querySelector('#orbit-toolbar')!.getBoundingClientRect();
+    const note = document.querySelector('#focus-view-note')!.getBoundingClientRect();
+    return canvas.height >= 180 && canvas.top >= toolbar.bottom && canvas.bottom <= note.top;
+  })).toBe(true);
+  await page.keyboard.press('Escape');
   await page.locator('#scene-view').selectOption('earth');
   await expect(page.locator('#text-size')).toHaveValue('large');
 });
