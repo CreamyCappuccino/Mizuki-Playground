@@ -20,12 +20,14 @@ export function cartesianToGeographic([x, y, z]: Vector3Tuple): { latitude: numb
 
 export function sunDirection(day: number): Vector3Tuple {
   const lambda = orbitalLongitudeRad(day);
-  return [Math.cos(lambda), 0, Math.sin(lambda)];
+  // Prograde orbit about +Y; same handedness as positive eastward Ry spin.
+  return [Math.cos(lambda), 0, -Math.sin(lambda)];
 }
 
 export function subsolarDirectionLocal(day: number, tilt: number): Vector3Tuple {
   const [x, , z] = sunDirection(day);
   const epsilon = degToRad(tilt);
   // Inverse of the globe's X-axis obliquity rotation.
-  return [x, z * Math.sin(epsilon), z * Math.cos(epsilon)];
+  // Inverse of Rx(-obliquity). Annual declination is unchanged.
+  return [x, -z * Math.sin(epsilon), z * Math.cos(epsilon)];
 }
