@@ -110,7 +110,8 @@ export class CompareLab {
     for(const mode of ['year','day','coupled'] as const){
       const button=this.el(`compare-play-${mode}`); const active=snapshot.playback===mode;
       button.setAttribute('aria-pressed',String(active));button.classList.toggle('active',active);
-      button.textContent=t(active?'Pause':mode==='year'?'Play year':mode==='day'?'Play day':'Coupled motion');
+      const label=t(active?'Pause':mode==='year'?'Play year':mode==='day'?'Play day':'Coupled motion');
+      if(button.textContent!==label)button.textContent=label;
     }
     this.el('comparison-label-a').textContent=`A · ${snapshot.source.tilt}°`;
     this.el('comparison-label-b').textContent=`B · ${this.tiltB}°`;
