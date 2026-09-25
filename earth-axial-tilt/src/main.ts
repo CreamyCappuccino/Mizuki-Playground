@@ -1,3 +1,4 @@
+import type { CompareLab } from './ui/compareLab';
 import { bindContextHelp } from './ui/contextHelp';
 import { t as tr, msg, initLanguageControl, onLanguageChange, solarClockLabel } from './ui/i18n';
 import { bindViewControls } from './ui/viewControls';
@@ -63,6 +64,8 @@ catch {
 document.documentElement.dataset.textSize = textSize.value;
 initLanguageControl();
 const TILT_HELP = '0–90° · Enter or leave the field to apply.';
+let compareLab: CompareLab | null = null;
+let compareLoading = false;
 const scene = new EarthScene(canvas, {
     onLocationPick: (location) => {
         state.location = location;
@@ -167,6 +170,12 @@ const atlas = new SeasonAtlas({
     },
     onFocus: () => scene.focusLocation(),
 });
+function compareSnapshot() {
+  return { source: temperatureSource(), latitude: state.location.latitude, longitude: state.location.longitude,
+    locationName: state.location.name, day: state.day, rotation: state.rotation, mode: state.surfaceMode, playback: state.playback };
+}
+function chartReferenceSource(): TemperatureSource { return compareLab?.enabled ? compareLab.sourceB : temperatureSource(true); }
+function chartComparison(): boolean { return state.compare || !!compareLab?.enabled; }
 function update(): void {
     syncThermalModel();
     updateThermalStatus();
@@ -186,14 +195,18 @@ function update(): void {
     playButton.setAttribute('aria-pressed', String(state.playback === 'year'));
     playDayButton.textContent = state.playback === 'day' ? tr('❚❚ Pause day') : tr('▶ Play day');
     playDayButton.setAttribute('aria-pressed', String(state.playback === 'day'));
+    $('#play-coupled').textContent = tr(state.playback === 'coupled' ? 'Pause coupled motion' : 'Coupled motion');
+    $('#play-coupled').setAttribute('aria-pressed',String(state.playback === 'coupled'));
+    $('#play-coupled').classList.toggle('active',state.playback === 'coupled');
     $('#chart-buttons').toggleAttribute('hidden', state.period === 'day');
-    document.querySelector<HTMLElement>('.compare-control')!.hidden = state.period === 'day';
+    document.querySelector<HTMLElement>('.compare-control')!.hidden = state.period === 'day' || !!compareLab?.enabled;
     $('#profile-period').textContent = state.period === 'year' ? tr('ANNUAL PROFILE') : tr('ONE SOLAR DAY');
     scene.setState({ tilt: state.tilt, day: state.day, mode: state.surfaceMode, location: state.location, guides: state.guides, rotation: state.rotation, temperatureModel: state.temperatureModel, heatDepth: state.heatDepth, thermal: thermalSolution });
     updateSurfaceLegend();
     updateReadouts();
 }
 function updateReadouts(): void {
+    compareLab?.update(compareSnapshot());
     atlas.update({ source: temperatureSource(), reference: temperatureSource(true), revision: thermalRevision,
         day: state.day, latitude: state.location.latitude, longitude: state.location.longitude,
         locationName: state.location.name, error: thermalError });
@@ -231,7 +244,7 @@ function updateReadouts(): void {
         button.title = button.disabled ? tr('Solar meridian is undefined at this geometry.') : tr('Use local apparent solar time, not clock time.');
     }
     const pendingTemperature = state.period === 'year' && state.chartMetric === 'temperature' &&
-        (!isThermalReady(temperatureSource()) || (state.compare && !isThermalReady(temperatureSource(true))));
+        (!isThermalReady(temperatureSource()) || (chartComparison() && !isThermalReady(chartReferenceSource())));
     chartContainer.classList.toggle('thermal-pending', pendingTemperature);
     chartContainer.setAttribute('aria-busy', String(pendingTemperature));
     if (pendingTemperature) {
@@ -239,8 +252,8 @@ function updateReadouts(): void {
             chartContainer.replaceChildren();
             chartKey = 'pending';
         }
-        $('#chart-title').textContent = tr('Thermal temperature · calculating');
-        $('#profile-summary').textContent = thermalError ? tr('Thermal model unavailable; no substitute temperatures are shown.') : tr('Solving heat storage, radiation and heat exchange between latitude bands…');
+        $('#chart-title').textContent = tr(thermalError || (compareLab?.enabled && compareLab.failed) ? 'Temperature unavailable' : 'Thermal temperature · calculating');
+        $('#profile-summary').textContent = thermalError || (compareLab?.enabled && compareLab.failed) ? tr('Thermal model unavailable; no substitute temperatures are shown.') : tr('Solving heat storage, radiation and heat exchange between latitude bands…');
         updateChartSelection();
         return;
     }
@@ -266,22 +279,22 @@ function updateReadouts(): void {
         profile = thermalChart ? profileFromSource(temperatureSource(), latitude)! : annualProfile(latitude, state.tilt);
         profileKey = nextKey;
     }
-    const nextReferenceKey = `${latitude}:${thermalChart ? `${state.heatDepth}:${thermalRevision}` : 'original'}`;
-    if (state.compare && referenceKey !== nextReferenceKey) {
-        reference = thermalChart ? profileFromSource(temperatureSource(true), latitude)! : annualProfile(latitude, 23.44);
+    const nextReferenceKey = `${latitude}:${chartReferenceSource().tilt}:${compareLab?.revision}:${thermalChart ? `${state.heatDepth}:${thermalRevision}` : 'original'}`;
+    if (chartComparison() && referenceKey !== nextReferenceKey) {
+        reference = thermalChart ? profileFromSource(chartReferenceSource(), latitude)! : annualProfile(latitude, chartReferenceSource().tilt);
         referenceKey = nextReferenceKey;
     }
-    const nextChartKey = `year:${profileKey}:${state.chartMetric}:${state.compare}`;
+    const nextChartKey = `year:${profileKey}:${state.chartMetric}:${chartComparison()}:${nextReferenceKey}`;
     if (nextChartKey !== chartKey) {
         const titles: Record<ChartMetric, string> = {
             temperature: state.temperatureModel === 'energy-balance' ? tr('Thermal temperature · daily forcing') : tr('Daily-mean temperature estimate'), insolation: tr('Daily mean solar (TOA)'), daylight: tr('Day length'),
         };
         $('#chart-title').textContent = titles[state.chartMetric];
-        renderAnnualChart(chartContainer, profile, { metric: state.chartMetric, activeDay: state.day, reference: state.compare ? reference : undefined });
+        renderAnnualChart(chartContainer, profile, { metric: state.chartMetric, activeDay: state.day, reference: chartComparison() ? reference : undefined });
         const values = profile.map((point) => point[state.chartMetric]);
         const unit = { temperature: '°C', insolation: 'W/m²', daylight: 'h' }[state.chartMetric];
         const mean = values.reduce((sum, value) => sum + value, 0) / values.length;
-        $('#profile-summary').textContent = msg `Annual mean ${mean.toFixed(1)} ${unit} · Daily-curve range ${Math.min(...values).toFixed(1)}–${Math.max(...values).toFixed(1)} ${unit}${state.compare ? tr(' · Dashed: Earth reference') : ''}${thermalChart ? msg ` · Thermal EBM / ${state.heatDepth} m` : ''}`;
+        $('#profile-summary').textContent = msg `Annual mean ${mean.toFixed(1)} ${unit} · Daily-curve range ${Math.min(...values).toFixed(1)}–${Math.max(...values).toFixed(1)} ${unit}${chartComparison() ? tr(compareLab?.enabled ? ' · Dashed: Earth B' : ' · Dashed: Earth reference') : ''}${thermalChart ? msg ` · Thermal EBM / ${state.heatDepth} m` : ''}`;
         if (thermalChart) {
             const warmest = Math.max(...values);
             if (warmest - Math.min(...values) > 0.05)
@@ -495,11 +508,13 @@ $('#heat-storage').addEventListener('change', event => {
     state.playback = 'paused';
     update();
 });
+$('#play-coupled').addEventListener('click', () => { state.playback = togglePlayback(state.playback, 'coupled'); update(); });
 $('#retry-climate').addEventListener('click', () => { thermalKey = ''; update(); });
 window.addEventListener('pagehide', event => { if (!event.persisted)
-    thermalClient.dispose(); });
+    { thermalClient.dispose(); compareLab?.dispose(); scene.dispose(); } });
 let lastTime = performance.now();
 let lastReadout = 0;
+document.addEventListener('visibilitychange',()=>{lastTime=performance.now();});
 function tick(now: number): void {
     const elapsedSeconds = (now - lastTime) / 1000;
     lastTime = now;
@@ -507,7 +522,7 @@ function tick(now: number): void {
         const next = advanceSimulation(state.day, state.rotation, state.playback, elapsedSeconds, state.speed);
         state.day = next.day;
         state.rotation = next.rotation;
-        scene.setState(state.playback === 'year' ? { day: state.day } : { rotation: state.rotation });
+        scene.setState(state.playback === 'year' ? { day: state.day } : state.playback === 'coupled' ? { day:state.day,rotation:state.rotation } : { rotation: state.rotation });
         if (now - lastReadout >= 100) {
             updateReadouts();
             lastReadout = now;
@@ -517,6 +532,27 @@ function tick(now: number): void {
 }
 document.querySelectorAll<HTMLButtonElement>('[data-season-day]').forEach(button => {
     button.addEventListener('click', () => { state.day = Number(button.dataset.seasonDay); state.playback = 'paused'; update(); });
+});
+$('#compare-toggle').addEventListener('click',async()=>{
+  if(compareLoading)return;
+  const button=$<HTMLButtonElement>('#compare-toggle');
+  if(!compareLab){
+    compareLoading=true; button.disabled=true;
+    try {
+      const {CompareLab:Comparison}=await import('./ui/compareLab');
+      compareLab=new Comparison({
+        change:()=>update(),
+        tiltA:tilt=>{state.tilt=tilt;state.playback='paused';update();},
+        day:day=>{state.day=day;state.playback='paused';update();},
+        mode:mode=>{state.surfaceMode=mode;update();},
+        playback:mode=>{state.playback=togglePlayback(state.playback,mode);update();},
+        scene:value=>scene.setComparison(value),
+      });
+      compareLab.update(compareSnapshot());
+    } catch { button.textContent=tr('Compare failed to load — retry'); return; }
+    finally{compareLoading=false;button.disabled=false;}
+  }
+  state.playback='paused'; compareLab.toggle();
 });
 bindContextHelp();
 onLanguageChange(() => {
