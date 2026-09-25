@@ -73,7 +73,13 @@ jobs:
       - name: Install WebKit
         run: npx playwright install webkit
       - name: macOS WebKit regression (not on-device iPhone Safari)
-        run: npm run test:e2e:webkit -- e2e/v06.spec.ts e2e/v07.spec.ts e2e/v08.spec.ts e2e/v09.spec.ts e2e/v10.spec.ts --workers=1
+        run: |
+          # End the browser/GPU process between suites; retain every failure and artifact.
+          result=0
+          for suite in v06 v07 v08 v09 v10; do
+            npm run test:e2e:webkit -- "e2e/${suite}.spec.ts" --workers=1 --output="test-results/${suite}" || result=1
+          done
+          exit "$result"
       - name: WebKit evidence
         if: always()
         uses: actions/upload-artifact@v4
