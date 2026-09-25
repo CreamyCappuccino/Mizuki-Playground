@@ -63,3 +63,5 @@ README＝今できること、START_HERE＝復帰入口、ROADMAP＝未来、SCI
 ## v1.1の引き継ぎ注意
 
 リンクは科学条件を保存し、描画画像・キャッシュ済み温度・言語・画質・再生状態を保存しない。URLとJSONは同じvalidatorを通し、原子的に適用する。未知のschema versionや不正値は既存状態を維持。optional Compareの読み込みが遅い時は新しい操作が優先する。Heat storageのFast/Slowプリセットは順番に比較する二実験で、A/Bの熱容量を別々にした機能ではない。
+
+検証チェックポイントは `docs/VERIFICATION-1.1-rc.1.md`。v1.1は単体114/Chromium64/macOS WebKit41本を確認（実機Safariではない）。最終HEADの合否はCIで確認する。
