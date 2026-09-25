@@ -73,7 +73,7 @@ jobs:
       - name: Install WebKit
         run: npx playwright install webkit
       - name: macOS WebKit regression (not on-device iPhone Safari)
-        run: npm run test:e2e:webkit -- e2e/v06.spec.ts e2e/v07.spec.ts e2e/v08.spec.ts e2e/v09.spec.ts e2e/v10.spec.ts --workers=2
+        run: npm run test:e2e:webkit -- e2e/v06.spec.ts e2e/v07.spec.ts e2e/v08.spec.ts e2e/v09.spec.ts e2e/v10.spec.ts --workers=1
       - name: WebKit evidence
         if: always()
         uses: actions/upload-artifact@v4
