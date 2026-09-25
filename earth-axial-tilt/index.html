@@ -1,259 +1,244 @@
-<!doctype html>
+<!DOCTYPE html>
+
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta
-      name="description"
-      content="Explore how Earth's axial tilt changes sunlight, day length, seasons, and a simplified climate estimate."
-    />
-    <title>Earth Axial Tilt Lab</title>
-  </head>
-  <body>
-    <div id="app">
-      <canvas id="earth-canvas" aria-label="Interactive 3D Earth"></canvas>
-
-      <header class="topbar glass">
-        <div>
-          <p class="eyebrow">MIZUKI PLAYGROUND / PLANET LAB · v0.7</p>
-          <h1>Earth Axial Tilt</h1>
-        </div>
-        <div class="topbar__readout" aria-live="polite">
-          <span id="season-label">June solstice</span>
-          <strong id="date-readout">Day 172</strong>
-        </div>
-        <div class="view-toolbar" aria-label="Viewing controls">
-          <label for="visual-quality">Quality <select id="visual-quality"><option value="eco">Eco</option><option value="balanced">Balanced</option><option value="high" selected>High</option></select></label>
-          <button id="focus-view" aria-pressed="false">Focus view</button>
-        </div>
-      </header>
-      <p id="focus-view-note" hidden>Focus view · drag to orbit, scroll / pinch to zoom · Esc or Show controls to return.</p>
-
-      <aside class="controls glass" aria-label="Simulation controls">
-        <section>
-          <div class="control-heading">
-            <div>
-              <p class="eyebrow">OBLIQUITY</p>
-              <h2>Axial tilt</h2>
-            </div>
-            <output id="tilt-readout" for="tilt">23.44°</output>
-          </div>
-          <input id="tilt" aria-label="Axial tilt slider" type="range" min="0" max="90" value="23.44" step="0.01" />
-          <div class="presets" aria-label="Axial tilt presets">
-            <button data-tilt="0">0°</button>
-            <button class="active" data-tilt="23.44">Earth</button>
-            <button data-tilt="45">45°</button>
-            <button data-tilt="60">60°</button>
-            <button data-tilt="90">90°</button>
-          </div>
-          <div class="numeric-tilt">
-            <label for="tilt-number">Exact angle</label>
-            <div><input id="tilt-number" type="number" min="0" max="90" step="0.01"
-              value="23.44" inputmode="decimal" aria-describedby="tilt-help" /><span>°</span></div>
-          </div>
-          <p id="tilt-help" class="input-help" role="status">0–90° · Enter or leave the field to apply.</p>
-        </section>
-
-        <section>
-          <div class="control-heading">
-            <div>
-              <p class="eyebrow">ORBIT</p>
-              <h2>Day of year</h2>
-            </div>
-            <output id="day-readout" for="day">172</output>
-          </div>
-          <input id="day" aria-label="Day of year" type="range" min="1" max="365" value="172" step="1" />
-          <div class="transport">
-            <button id="play-year" class="primary" aria-pressed="false">▶ Play year</button>
-            <button class="speed active" data-speed="1">×1</button>
-            <button class="speed" data-speed="4">×4</button>
-            <button class="speed" data-speed="12">×12</button>
-          </div>
-        </section>
-
-        <section class="rotation-controls">
-          <div class="control-heading">
-            <div><p class="eyebrow">DAY / NIGHT</p><h2>Earth rotation</h2></div>
-            <output id="rotation-readout" for="rotation">0.0°</output>
-          </div>
-          <input id="rotation" aria-label="Earth rotation angle" type="range" min="0" max="360" step="0.1" value="0" />
-          <div class="rotation-actions">
-            <button id="play-day" class="primary" aria-pressed="false">▶ Play day</button>
-            <button id="noon-here">Noon here</button>
-            <button id="midnight-here">Midnight here</button>
-          </div>
-          <p class="input-help">Play day holds the date; Play year holds rotation. Speed ×1 / ×4 / ×12 above applies to both.</p>
-        </section>
-
-        <section>
-          <p class="eyebrow">SURFACE LAYER</p>
-          <div class="segmented" id="mode-buttons">
-            <button class="active" data-mode="normal">Earth</button>
-            <button data-mode="instant">Sun now</button>
-            <button data-mode="insolation">Daily solar</button>
-            <button data-mode="daylight">Daylight</button>
-            <button data-mode="temperature">Temp</button>
-          </div>
-          <div id="surface-legend" class="surface-legend" hidden>
-            <span id="surface-legend-title"></span>
-            <div id="surface-legend-ramp" class="color-ramp"></div>
-            <div id="surface-legend-ticks" class="legend-ticks"></div>
-          </div>
-        </section>
-
-        <section class="thermal-controls" aria-label="Temperature model controls">
-          <p class="eyebrow">CLIMATE LAB</p>
-          <label for="temperature-model">Temperature model</label>
-          <select id="temperature-model">
-            <option value="energy-balance" selected>Thermal EBM · experimental</option>
-            <option value="illustrative">Illustrative · v0.1–v0.4</option>
-          </select>
-          <label for="heat-storage">Heat storage</label>
-          <select id="heat-storage" aria-describedby="heat-help">
-            <option value="2.5">Fast · 2.5 m equivalent</option>
-            <option value="10" selected>Mixed · 10 m equivalent</option>
-            <option value="50">Slow · 50 m equivalent</option>
-          </select>
-          <p id="heat-help" class="input-help">Equivalent water depth measures heat capacity, not actual ocean depth. This experiment changes the whole planet.</p>
-        </section>
-        <section>
-          <p class="eyebrow">LOCATION</p>
-          <select id="location-select" aria-label="Choose a location"></select>
-        </section>
-        <section class="appearance-controls" aria-label="Earth appearance">
-          <p class="eyebrow">EARTH APPEARANCE</p>
-          <label class="check-control"><input id="night-lights" type="checkbox" checked /> Night lights in Earth view</label>
-          <p id="visual-status" class="input-help" role="status">Loading local Earth maps…</p>
-          <p class="input-help">Day and night maps: <a href="https://www.solarsystemscope.com/textures/" target="_blank" rel="noopener noreferrer">Solar System Scope</a> / <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC BY 4.0</a>, resized by three.js. Fixed geography and lights, not a response to tilt. Decorative lights and atmosphere are hidden in science modes.</p>
-        </section>
-        <section class="guide-controls">
-          <label class="check-control"><input id="show-guides" type="checkbox" checked /> Show science guides</label>
-          <p><span class="key axis-key"></span> Axis / N–S <span class="key sun-key"></span> Subsolar point</p>
-          <p><span class="key terminator-key"></span> Day–night boundary <span class="key arc-key"></span> Tilt arc</p>
-          <p>Subsolar latitude: <strong id="subsolar-readout">—</strong></p>
-          <p>Subsolar longitude: <strong id="subsolar-longitude">—</strong></p>
-        </section>
-      </aside>
-
-      <section class="location-panel glass" aria-label="Selected location details">
-        <div class="location-title">
-          <div>
-            <p class="eyebrow">SELECTED LOCATION</p>
-            <h2 id="location-name">Taipei</h2>
-          </div>
-          <span id="location-coords">25.03° N · 121.57° E</span>
-        </div>
-
-        <div class="panel-toolbar">
-          <div class="location-actions">
-            <button id="focus-location">View location</button><button id="reset-view">Reset view</button>
-          </div>
-          <label class="text-size-control" for="text-size">Text size
-            <select id="text-size"><option value="comfortable">Comfort</option><option value="large">Large</option></select>
-          </label>
-        </div>
-        <button id="open-atlas" class="jump-chart atlas-launch" aria-haspopup="dialog">Season atlas · explore every latitude ↗</button>
-        <button id="jump-chart" class="jump-chart">Explore the graph ↓</button>
-        <div class="solar-moment">
-          <div class="moment-heading"><p class="eyebrow">SUN AT THIS MOMENT</p><span id="illumination-state">—</span></div>
-          <div class="moment-metrics">
-            <article><span>Local solar time</span><strong id="metric-solar-time">—</strong></article>
-            <article><span>Sun elevation</span><strong id="metric-elevation">—</strong></article>
-            <article><span>Solar now (TOA)</span><strong id="metric-instant">—</strong></article>
-          </div>
-          <p>Solar time is not your clock time. TOA = above the atmosphere.</p>
-        </div>
-        <div class="climate-status-box">
-          <p id="climate-status" role="status" data-status="loading">Calculating a repeating thermal year…</p>
-          <button id="retry-climate" hidden>Retry thermal model</button>
-          <p id="climate-warning" hidden></p>
-        </div>
-        <div class="metrics">
-          <article><span>Daylight</span><strong id="metric-daylight">—</strong></article>
-          <article><span>Daily solar (TOA)</span><strong id="metric-solar">—</strong></article>
-          <article><span>Mean temp (est.)</span><strong id="metric-temp">—</strong></article>
-          <article><span>Declination</span><strong id="metric-declination">—</strong></article>
-        </div>
-
-        <div id="profile-section" class="segmented period-buttons" aria-label="Graph timescale">
-          <button data-period="year" class="active" aria-pressed="true">Year</button>
-          <button data-period="day" aria-pressed="false">Day</button>
-        </div>
-        <div class="chart-heading">
-          <div>
-            <p id="profile-period" class="eyebrow">ANNUAL PROFILE</p>
-            <h3 id="chart-title">Temperature estimate</h3>
-          </div>
-          <div class="segmented compact" id="chart-buttons">
-            <button class="active" data-chart="temperature">Temp</button>
-            <button data-chart="insolation">Solar</button>
-            <button data-chart="daylight">Daylight</button>
-          </div>
-        </div>
-        <label class="check-control compare-control"><input id="compare-earth" type="checkbox" /> Compare Earth 23.44° (same model)</label>
-        <p id="profile-summary" class="profile-summary"></p>
-        <div id="annual-chart" class="chart" tabindex="0" role="slider" aria-orientation="horizontal"
-          aria-label="Annual profile: select model day" aria-valuemin="1" aria-valuemax="365" aria-valuenow="172" aria-describedby="chart-help"></div>
-        <p id="chart-selection" class="chart-selection"></p>
-        <p id="chart-help" class="input-help chart-help">Click or drag the graph to select. Arrow keys also work.</p>
-        <p id="temperature-model-note" class="model-note">
-          Thermal EBM: experimental latitude-band temperature driven by daily-mean sunlight. Not calibrated to local weather.
-        </p>
-        <details class="model-details">
-          <summary>What do these numbers mean?</summary>
-          <p>Temperature represents a typical daily-mean-style estimate including both day and night. It is not a maximum, minimum, or feels-like temperature. Places at the same latitude share the same estimate. Thermal EBM solves heat storage, absorbed sunlight, outgoing radiation and heat exchange between latitude bands. Oceans, altitude, clouds, ice feedback and city effects are not resolved.</p>
-          <p>The annual summary averages all 365 model days. The comparison line uses the same simplified model at 23.44°, not observed climate normals. Thermal EBM compares the same heat-storage setting at both tilts. Illustrative mode retains v0.1's coefficients. The selected model is not calibrated to Taipei or Singapore.</p>
-          <p>Changing tilt or heat storage solves a new repeating annual climate, not the first year after a sudden change. Thermal EBM uses 90 latitude bands and a half-day numerical timestep; temperatures are interpolated from the converged year. Heat capacity is uniform, albedo is fixed by latitude, and outgoing radiation is linear in temperature. Extreme results are model extrapolations, not habitability or weather predictions. Display colours saturate at the legend limits; numerical temperatures are not clipped.</p>
-          <p>Solar is daily-mean incoming energy at the top of the atmosphere (TOA), not ground-level sunlight. Daylight uses a point Sun without refraction. At an exact all-day horizon, 12 h is a reporting convention and incoming energy is zero.</p>
-          <p>The globe is Earth-centred: the moving Sun indicates direction, not a scale orbit. The circular 365-day model does not reproduce exact calendar dates of the equinoxes. Rotation is an independently controlled phase around the tilted axis. A day experiment holds the orbital date fixed; a year experiment holds the rotational phase fixed. Neither is a civil-time calendar or a sidereal clock.</p>
-          <p>Sun now is instantaneous incoming flux on a horizontal surface at TOA, not weather-dependent sunlight at the ground. The Day graph holds declination fixed; its dashed line is the 24-hour mean used by Daily solar. Spinning the globe cannot change the daily-mean temperature or the annual profile.</p>
-          <p>Local solar noon is 12:00 on a Sun-based clock, not necessarily 12:00 in a time zone. At a geographic pole, or when the Sun is exactly above a pole, that solar meridian is undefined. The Day graph then uses nominal rotation hours. A geometric horizon has zero direct horizontal flux.</p>
-        </details>
-      </section>
-
-      <div class="axis-legend" aria-hidden="true">
-        <span class="axis-dot"></span>
-        <span>Rotation axis</span>
-      </div>
-    </div>
-
-
-    <dialog id="season-atlas" class="season-atlas" aria-labelledby="atlas-title" aria-describedby="atlas-intro">
-      <header class="atlas-heading">
-        <div><p class="eyebrow">PLANET LAB / A YEAR AT EVERY LATITUDE</p><h2 id="atlas-title">Season atlas</h2></div>
-        <button id="atlas-close" type="button" autofocus aria-label="Close season atlas">Back to globe ×</button>
-      </header>
-      <p id="atlas-intro">North at the top. South at the bottom. One repeating model year from left to right.</p>
-      <p id="atlas-context" class="atlas-context"></p>
-      <div class="atlas-settings">
-        <label>Layer<select id="atlas-metric"><option value="insolation">Daily solar</option><option value="daylight">Daylight</option><option value="temperature">Temperature</option></select></label>
-        <label>View<select id="atlas-view"><option value="absolute">Model values</option><option value="difference">Difference from 23.44°</option></select></label>
-        <label>Heat storage<select id="atlas-heat"><option value="2.5">Fast</option><option value="10" selected>Mixed</option><option value="50">Slow</option></select></label>
-      </div>
-      <div class="atlas-angle-row">
-        <label for="atlas-tilt">Tilt <input id="atlas-tilt" type="number" min="0" max="90" step="0.01" value="23.44" inputmode="decimal" aria-label="Atlas tilt in degrees"/> °</label>
-        <div class="atlas-presets"><button type="button" data-atlas-tilt="0">0°</button><button type="button" data-atlas-tilt="23.44">Earth</button><button type="button" data-atlas-tilt="45">45°</button><button type="button" data-atlas-tilt="90">90°</button></div>
-        <label class="check-control"><input id="atlas-trace" type="checkbox" checked/> Sun's latitude (dashed)</label>
-      </div>
-      <p id="atlas-input-status" class="input-help" role="status"></p>
-      <div id="atlas-plot" class="atlas-plot">
-        <canvas id="atlas-field" role="img" aria-label="Season atlas" aria-describedby="atlas-map-help atlas-scale-note atlas-selection"></canvas>
-        <svg id="atlas-overlay" aria-hidden="true" preserveAspectRatio="none"></svg>
-        <p id="atlas-status" role="status" hidden></p>
-      </div>
-      <div id="atlas-legend" class="atlas-legend"><div id="atlas-ramp" class="color-ramp"></div><div id="atlas-scale-labels" class="legend-ticks"></div></div>
-      <p id="atlas-scale-note" class="atlas-note"></p>
-      <div class="atlas-navigation">
-        <label for="atlas-day">Model day <output id="atlas-day-output" for="atlas-day"></output><input id="atlas-day" type="range" min="1" max="365" step="1" value="172"/></label>
-        <label for="atlas-latitude">Latitude <output id="atlas-latitude-output" for="atlas-latitude"></output><input id="atlas-latitude" type="range" min="-90" max="90" step="0.1" value="25.033"/></label>
-      </div>
-      <p id="atlas-selection" class="chart-selection" aria-live="polite"></p>
-      <p id="atlas-location-note" class="atlas-note"></p>
-      <button id="atlas-focus" type="button" class="primary">View this selection on Earth ↗</button>
-      <p id="atlas-map-help" class="atlas-note">Tap/click the map to change the day and latitude. Or use the labelled sliders with a keyboard. Vertical swipes scroll; hovering never changes the planet. Longitude is retained; these daily-mean fields do not depend on it. Colours sample every 2° and one day; the exact reading uses the same model sampling as the globe. Latitude is not an equal-area axis.</p>
-      <p id="atlas-warning" class="atlas-warning" hidden>Extreme temperature extrapolation: this simplified model omits ice, evaporation and climate feedbacks. Values are not weather or habitability predictions.</p>
-    </dialog>
-
-    <script type="module" src="/src/main.ts"></script>
-  </body>
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="Explore how Earth's axial tilt changes sunlight, day length, seasons, and a simplified climate estimate." name="description"/>
+<title data-i18n="Earth Axial Tilt Lab">Earth Axial Tilt Lab</title>
+</head>
+<body>
+<div id="app">
+<canvas aria-label="Interactive 3D Earth" data-i18n-aria-label="Interactive 3D Earth" id="earth-canvas"></canvas>
+<header class="topbar glass">
+<div>
+<p class="eyebrow"><span data-i18n="MIZUKI PLAYGROUND / PLANET LAB · v0.8">MIZUKI PLAYGROUND / PLANET LAB · v0.8</span></p>
+<h1><span data-i18n="Earth Axial Tilt">Earth Axial Tilt</span></h1>
+</div>
+<div aria-live="polite" class="topbar__readout">
+<span id="season-label"><span data-i18n="June solstice">June solstice</span></span>
+<strong id="date-readout">Day 172</strong>
+</div>
+<div aria-label="Viewing controls" class="view-toolbar" data-i18n-aria-label="Viewing controls"><label for="language">Language / 言語 <select id="language"><option data-i18n="English" value="en">English</option><option data-i18n="日本語" value="ja">日本語</option></select></label>
+<div class="help-heading"><label data-help="view" for="scene-view"><span data-i18n="Viewpoint">Viewpoint</span><select id="scene-view"><option data-i18n="Earth close-up" value="earth">Earth close-up</option><option data-i18n="Orbit overview" value="orbit">Orbit overview</option></select></label></div>
+<div class="help-heading"><label data-help="quality" for="visual-quality"><span data-i18n="Quality">Quality</span><select id="visual-quality"><option data-i18n="Eco" value="eco">Eco</option><option data-i18n="Balanced" value="balanced">Balanced</option><option data-i18n="High" selected="" value="high">High</option></select></label></div>
+<button aria-pressed="false" id="focus-view"><span data-i18n="Focus view">Focus view</span></button>
+</div>
+</header>
+<p hidden="" id="focus-view-note"><span data-i18n="Focus view · drag to orbit, scroll / pinch to zoom · Esc or Show controls to return.">Focus view · drag to orbit, scroll / pinch to zoom · Esc or Show controls to return.</span></p>
+<aside aria-label="Simulation controls" class="controls glass" data-i18n-aria-label="Simulation controls">
+<section>
+<div class="control-heading">
+<div>
+<p class="eyebrow"><span data-i18n="OBLIQUITY">OBLIQUITY</span></p>
+<div class="help-heading"><h2 data-help="tilt"><span data-i18n="Axial tilt">Axial tilt</span></h2></div>
+</div>
+<output for="tilt" id="tilt-readout">23.44°</output>
+</div>
+<input aria-label="Axial tilt slider" data-i18n-aria-label="Axial tilt slider" id="tilt" max="90" min="0" step="0.01" type="range" value="23.44"/>
+<div aria-label="Axial tilt presets" class="presets" data-i18n-aria-label="Axial tilt presets">
+<button data-tilt="0">0°</button>
+<button class="active" data-tilt="23.44"><span data-i18n="Earth">Earth</span></button>
+<button data-tilt="45">45°</button>
+<button data-tilt="60">60°</button>
+<button data-tilt="90">90°</button>
+</div>
+<div class="numeric-tilt">
+<label for="tilt-number"><span data-i18n="Exact angle">Exact angle</span></label>
+<div><input aria-describedby="tilt-help" id="tilt-number" inputmode="decimal" max="90" min="0" step="0.01" type="number" value="23.44"/><span>°</span></div>
+</div>
+<p class="input-help" id="tilt-help" role="status"><span data-i18n="0–90° · Enter or leave the field to apply.">0–90° · Enter or leave the field to apply.</span></p>
+</section>
+<section>
+<div class="control-heading">
+<div>
+<p class="eyebrow"><span data-i18n="ORBIT">ORBIT</span></p>
+<div class="help-heading"><h2 data-help="year"><span data-i18n="Day of year">Day of year</span></h2></div>
+</div>
+<output for="day" id="day-readout">172</output>
+</div>
+<input aria-label="Day of year" data-i18n-aria-label="Day of year" id="day" max="365" min="1" step="1" type="range" value="172"/>
+<div class="transport">
+<button aria-pressed="false" class="primary" id="play-year"><span data-i18n="▶ Play year">▶ Play year</span></button>
+<button class="speed active" data-speed="1">×1</button>
+<button class="speed" data-speed="4">×4</button>
+<button class="speed" data-speed="12">×12</button>
+</div>
+</section>
+<section class="rotation-controls">
+<div class="control-heading">
+<div><p class="eyebrow"><span data-i18n="DAY / NIGHT">DAY / NIGHT</span></p><div class="help-heading"><h2 data-help="rotation"><span data-i18n="Earth rotation">Earth rotation</span></h2></div></div>
+<output for="rotation" id="rotation-readout">0.0°</output>
+</div>
+<input aria-label="Earth rotation angle" data-i18n-aria-label="Earth rotation angle" id="rotation" max="360" min="0" step="0.1" type="range" value="0"/>
+<div class="rotation-actions">
+<button aria-pressed="false" class="primary" id="play-day"><span data-i18n="▶ Play day">▶ Play day</span></button>
+<button id="noon-here"><span data-i18n="Noon here">Noon here</span></button>
+<button id="midnight-here"><span data-i18n="Midnight here">Midnight here</span></button>
+</div>
+<p class="input-help"><span data-i18n="Play day holds the date; Play year holds rotation. Speed ×1 / ×4 / ×12 above applies to both.">Play day holds the date; Play year holds rotation. Speed ×1 / ×4 / ×12 above applies to both.</span></p>
+</section>
+<section>
+<div class="help-heading"><p class="eyebrow" data-help="layers"><span data-i18n="SURFACE LAYER">SURFACE LAYER</span></p></div>
+<div class="segmented" id="mode-buttons">
+<button class="active" data-mode="normal"><span data-i18n="Earth">Earth</span></button>
+<button data-mode="instant"><span data-i18n="Sun now">Sun now</span></button>
+<button data-mode="insolation"><span data-i18n="Daily solar">Daily solar</span></button>
+<button data-mode="daylight"><span data-i18n="Daylight">Daylight</span></button>
+<button data-mode="temperature"><span data-i18n="Temp">Temp</span></button>
+</div>
+<div class="surface-legend" hidden="" id="surface-legend">
+<span id="surface-legend-title"></span>
+<div class="color-ramp" id="surface-legend-ramp"></div>
+<div class="legend-ticks" id="surface-legend-ticks"></div>
+</div>
+</section>
+<section aria-label="Temperature model controls" class="thermal-controls" data-i18n-aria-label="Temperature model controls">
+<p class="eyebrow"><span data-i18n="CLIMATE LAB">CLIMATE LAB</span></p>
+<div class="help-heading"><label data-help="temperature" for="temperature-model"><span data-i18n="Temperature model">Temperature model</span></label></div>
+<select id="temperature-model">
+<option data-i18n="Thermal EBM · experimental" selected="" value="energy-balance">Thermal EBM · experimental</option>
+<option data-i18n="Illustrative · v0.1–v0.4" value="illustrative">Illustrative · v0.1–v0.4</option>
+</select>
+<div class="help-heading"><label data-help="heat" for="heat-storage"><span data-i18n="Heat storage">Heat storage</span></label></div>
+<select aria-describedby="heat-help" id="heat-storage">
+<option data-i18n="Fast · 2.5 m equivalent" value="2.5">Fast · 2.5 m equivalent</option>
+<option data-i18n="Mixed · 10 m equivalent" selected="" value="10">Mixed · 10 m equivalent</option>
+<option data-i18n="Slow · 50 m equivalent" value="50">Slow · 50 m equivalent</option>
+</select>
+<p class="input-help" id="heat-help"><span data-i18n="Equivalent water depth measures heat capacity, not actual ocean depth. This experiment changes the whole planet.">Equivalent water depth measures heat capacity, not actual ocean depth. This experiment changes the whole planet.</span></p>
+</section>
+<section>
+<p class="eyebrow"><span data-i18n="LOCATION">LOCATION</span></p>
+<select aria-label="Choose a location" data-i18n-aria-label="Choose a location" id="location-select"></select>
+</section>
+<section aria-label="Earth appearance" class="appearance-controls" data-i18n-aria-label="Earth appearance">
+<p class="eyebrow"><span data-i18n="EARTH APPEARANCE">EARTH APPEARANCE</span></p>
+<label class="check-control"><input checked="" id="night-lights" type="checkbox"/><span data-i18n="Night lights in Earth view">Night lights in Earth view</span></label>
+<p class="input-help" id="visual-status" role="status"><span data-i18n="Loading local Earth maps…">Loading local Earth maps…</span></p>
+<p class="input-help"><span data-i18n="Day and night maps:">Day and night maps:</span><a href="https://www.solarsystemscope.com/textures/" rel="noopener noreferrer" target="_blank">Solar System Scope</a> / <a href="https://creativecommons.org/licenses/by/4.0/" rel="noopener noreferrer" target="_blank">CC BY 4.0</a><span data-i18n=", resized by three.js. Fixed geography and lights, not a response to tilt. Decorative lights and atmosphere are hidden in science modes.">, resized by three.js. Fixed geography and lights, not a response to tilt. Decorative lights and atmosphere are hidden in science modes.</span></p>
+</section>
+<section class="guide-controls">
+<div class="help-heading"><label class="check-control" data-help="guides"><input checked="" id="show-guides" type="checkbox"/><span data-i18n="Show science guides">Show science guides</span></label></div>
+<p><span class="key axis-key"></span><span data-i18n="Axis / N–S">Axis / N–S</span><span class="key sun-key"></span><span data-i18n="Subsolar point">Subsolar point</span></p>
+<p><span class="key terminator-key"></span><span data-i18n="Day–night boundary">Day–night boundary</span><span class="key arc-key"></span><span data-i18n="Tilt arc">Tilt arc</span></p>
+<p><span data-i18n="Subsolar latitude:">Subsolar latitude:</span><strong id="subsolar-readout">—</strong></p>
+<p><span data-i18n="Subsolar longitude:">Subsolar longitude:</span><strong id="subsolar-longitude">—</strong></p>
+</section>
+</aside>
+<section aria-label="Selected location details" class="location-panel glass" data-i18n-aria-label="Selected location details">
+<div class="location-title">
+<div>
+<p class="eyebrow"><span data-i18n="SELECTED LOCATION">SELECTED LOCATION</span></p>
+<h2 id="location-name"><span data-i18n="Taipei">Taipei</span></h2>
+</div>
+<span id="location-coords">25.03° N · 121.57° E</span>
+</div>
+<div class="panel-toolbar">
+<div class="location-actions">
+<button id="focus-location"><span data-i18n="View location">View location</span></button><button id="reset-view"><span data-i18n="Reset view">Reset view</span></button>
+</div>
+<label class="text-size-control" for="text-size"><span data-i18n="Text size">Text size</span><select id="text-size"><option data-i18n="Comfort" value="comfortable">Comfort</option><option data-i18n="Large" value="large">Large</option></select>
+</label>
+</div>
+<button aria-haspopup="dialog" class="jump-chart atlas-launch" id="open-atlas"><span data-i18n="Season atlas · explore every latitude ↗">Season atlas · explore every latitude ↗</span></button>
+<button class="jump-chart" id="jump-chart"><span data-i18n="Explore the graph ↓">Explore the graph ↓</span></button>
+<div class="solar-moment">
+<div class="moment-heading"><div class="help-heading"><p class="eyebrow" data-help="rotation"><span data-i18n="SUN AT THIS MOMENT">SUN AT THIS MOMENT</span></p></div><span id="illumination-state">—</span></div>
+<div class="moment-metrics">
+<article><span><span data-i18n="Local solar time">Local solar time</span></span><strong id="metric-solar-time">—</strong></article>
+<article><span><span data-i18n="Sun elevation">Sun elevation</span></span><strong id="metric-elevation">—</strong></article>
+<article><span><span data-i18n="Solar now (TOA)">Solar now (TOA)</span></span><strong id="metric-instant">—</strong></article>
+</div>
+<p><span data-i18n="Solar time is not your clock time. TOA = above the atmosphere.">Solar time is not your clock time. TOA = above the atmosphere.</span></p>
+</div>
+<div class="climate-status-box">
+<p data-status="loading" id="climate-status" role="status"><span data-i18n="Calculating a repeating thermal year…">Calculating a repeating thermal year…</span></p>
+<button hidden="" id="retry-climate"><span data-i18n="Retry thermal model">Retry thermal model</span></button>
+<p hidden="" id="climate-warning"></p>
+</div>
+<div class="metrics">
+<article><span><span data-i18n="Daylight">Daylight</span></span><strong id="metric-daylight">—</strong></article>
+<article><span><span data-i18n="Daily solar (TOA)">Daily solar (TOA)</span></span><strong id="metric-solar">—</strong></article>
+<article><span><span data-i18n="Mean temp (est.)">Mean temp (est.)</span></span><strong id="metric-temp">—</strong></article>
+<article><span><span data-i18n="Declination">Declination</span></span><strong id="metric-declination">—</strong></article>
+</div>
+<div aria-label="Graph timescale" class="segmented period-buttons" data-i18n-aria-label="Graph timescale" id="profile-section">
+<button aria-pressed="true" class="active" data-period="year"><span data-i18n="Year">Year</span></button>
+<button aria-pressed="false" data-period="day"><span data-i18n="Day">Day</span></button>
+</div>
+<div class="chart-heading">
+<div>
+<p class="eyebrow" id="profile-period"><span data-i18n="ANNUAL PROFILE">ANNUAL PROFILE</span></p>
+<div class="help-heading"><h3 data-help="chart" id="chart-title"><span data-i18n="Temperature estimate">Temperature estimate</span></h3></div>
+</div>
+<div class="segmented compact" id="chart-buttons">
+<button class="active" data-chart="temperature"><span data-i18n="Temp">Temp</span></button>
+<button data-chart="insolation"><span data-i18n="Solar">Solar</span></button>
+<button data-chart="daylight"><span data-i18n="Daylight">Daylight</span></button>
+</div>
+</div>
+<div class="help-heading"><label class="check-control compare-control" data-help="compare"><input id="compare-earth" type="checkbox"/><span data-i18n="Compare Earth 23.44° (same model)">Compare Earth 23.44° (same model)</span></label></div>
+<p class="profile-summary" id="profile-summary"></p>
+<div aria-describedby="chart-help" aria-label="Annual profile: select model day" aria-orientation="horizontal" aria-valuemax="365" aria-valuemin="1" aria-valuenow="172" class="chart" data-i18n-aria-label="Annual profile: select model day" id="annual-chart" role="slider" tabindex="0"></div>
+<p class="chart-selection" id="chart-selection"></p>
+<p class="input-help chart-help" id="chart-help"><span data-i18n="Click or drag the graph to select. Arrow keys also work.">Click or drag the graph to select. Arrow keys also work.</span></p>
+<p class="model-note" id="temperature-model-note"><span data-i18n="Thermal EBM: experimental latitude-band temperature driven by daily-mean sunlight. Not calibrated to local weather.">Thermal EBM: experimental latitude-band temperature driven by daily-mean sunlight. Not calibrated to local weather.</span></p>
+<details class="model-details">
+<summary><span data-i18n="What do these numbers mean?">What do these numbers mean?</span></summary>
+<p><span data-i18n="Temperature represents a typical daily-mean-style estimate including both day and night. It is not a maximum, minimum, or feels-like temperature. Places at the same latitude share the same estimate. Thermal EBM solves heat storage, absorbed sunlight, outgoing radiation and heat exchange between latitude bands. Oceans, altitude, clouds, ice feedback and city effects are not resolved.">Temperature represents a typical daily-mean-style estimate including both day and night. It is not a maximum, minimum, or feels-like temperature. Places at the same latitude share the same estimate. Thermal EBM solves heat storage, absorbed sunlight, outgoing radiation and heat exchange between latitude bands. Oceans, altitude, clouds, ice feedback and city effects are not resolved.</span></p>
+<p><span data-i18n="The annual summary averages all 365 model days. The comparison line uses the same simplified model at 23.44°, not observed climate normals. Thermal EBM compares the same heat-storage setting at both tilts. Illustrative mode retains v0.1's coefficients. The selected model is not calibrated to Taipei or Singapore.">The annual summary averages all 365 model days. The comparison line uses the same simplified model at 23.44°, not observed climate normals. Thermal EBM compares the same heat-storage setting at both tilts. Illustrative mode retains v0.1's coefficients. The selected model is not calibrated to Taipei or Singapore.</span></p>
+<p><span data-i18n="Changing tilt or heat storage solves a new repeating annual climate, not the first year after a sudden change. Thermal EBM uses 90 latitude bands and a half-day numerical timestep; temperatures are interpolated from the converged year. Heat capacity is uniform, albedo is fixed by latitude, and outgoing radiation is linear in temperature. Extreme results are model extrapolations, not habitability or weather predictions. Display colours saturate at the legend limits; numerical temperatures are not clipped.">Changing tilt or heat storage solves a new repeating annual climate, not the first year after a sudden change. Thermal EBM uses 90 latitude bands and a half-day numerical timestep; temperatures are interpolated from the converged year. Heat capacity is uniform, albedo is fixed by latitude, and outgoing radiation is linear in temperature. Extreme results are model extrapolations, not habitability or weather predictions. Display colours saturate at the legend limits; numerical temperatures are not clipped.</span></p>
+<p><span data-i18n="Solar is daily-mean incoming energy at the top of the atmosphere (TOA), not ground-level sunlight. Daylight uses a point Sun without refraction. At an exact all-day horizon, 12 h is a reporting convention and incoming energy is zero.">Solar is daily-mean incoming energy at the top of the atmosphere (TOA), not ground-level sunlight. Daylight uses a point Sun without refraction. At an exact all-day horizon, 12 h is a reporting convention and incoming energy is zero.</span></p>
+<p><span data-i18n="The globe is Earth-centred: the moving Sun indicates direction, not a scale orbit. The circular 365-day model does not reproduce exact calendar dates of the equinoxes. Rotation is an independently controlled phase around the tilted axis. A day experiment holds the orbital date fixed; a year experiment holds the rotational phase fixed. Neither is a civil-time calendar or a sidereal clock.">The globe is Earth-centred: the moving Sun indicates direction, not a scale orbit. The circular 365-day model does not reproduce exact calendar dates of the equinoxes. Rotation is an independently controlled phase around the tilted axis. A day experiment holds the orbital date fixed; a year experiment holds the rotational phase fixed. Neither is a civil-time calendar or a sidereal clock.</span></p>
+<p><span data-i18n="Sun now is instantaneous incoming flux on a horizontal surface at TOA, not weather-dependent sunlight at the ground. The Day graph holds declination fixed; its dashed line is the 24-hour mean used by Daily solar. Spinning the globe cannot change the daily-mean temperature or the annual profile.">Sun now is instantaneous incoming flux on a horizontal surface at TOA, not weather-dependent sunlight at the ground. The Day graph holds declination fixed; its dashed line is the 24-hour mean used by Daily solar. Spinning the globe cannot change the daily-mean temperature or the annual profile.</span></p>
+<p><span data-i18n="Local solar noon is 12:00 on a Sun-based clock, not necessarily 12:00 in a time zone. At a geographic pole, or when the Sun is exactly above a pole, that solar meridian is undefined. The Day graph then uses nominal rotation hours. A geometric horizon has zero direct horizontal flux.">Local solar noon is 12:00 on a Sun-based clock, not necessarily 12:00 in a time zone. At a geographic pole, or when the Sun is exactly above a pole, that solar meridian is undefined. The Day graph then uses nominal rotation hours. A geometric horizon has zero direct horizontal flux.</span></p>
+</details>
+</section>
+<div aria-hidden="true" class="axis-legend">
+<span class="axis-dot"></span>
+<span><span data-i18n="Rotation axis">Rotation axis</span></span>
+</div>
+<section aria-label="Season positions" class="orbit-toolbar" data-i18n-aria-label="Season positions" hidden="" id="orbit-toolbar">
+<div class="help-heading"><p data-help="view"><span data-i18n="Orbit view · sizes and distances are illustrative, not to scale.">Orbit view · sizes and distances are illustrative, not to scale.</span></p></div>
+<div class="orbit-season-buttons"><button id="fit-orbit" type="button"><span data-i18n="Fit orbit">Fit orbit</span></button><button data-season-day="80" type="button"><span data-i18n="March">March</span></button><button data-season-day="171.25" type="button"><span data-i18n="June">June</span></button><button data-season-day="262.5" type="button"><span data-i18n="September">September</span></button><button data-season-day="353.75" type="button"><span data-i18n="December">December</span></button></div>
+</section></div>
+<dialog aria-describedby="atlas-intro" aria-labelledby="atlas-title" class="season-atlas" id="season-atlas">
+<header class="atlas-heading">
+<div><p class="eyebrow"><span data-i18n="PLANET LAB / A YEAR AT EVERY LATITUDE">PLANET LAB / A YEAR AT EVERY LATITUDE</span></p><div class="help-heading"><h2 data-help="atlas" id="atlas-title"><span data-i18n="Season atlas">Season atlas</span></h2></div></div>
+<button aria-label="Close season atlas" autofocus="" data-i18n-aria-label="Close season atlas" id="atlas-close" type="button"><span data-i18n="Back to globe ×">Back to globe ×</span></button>
+</header>
+<p id="atlas-intro"><span data-i18n="North at the top. South at the bottom. One repeating model year from left to right.">North at the top. South at the bottom. One repeating model year from left to right.</span></p>
+<p class="atlas-context" id="atlas-context"></p>
+<div class="atlas-settings">
+<label><span data-i18n="Layer">Layer</span><select id="atlas-metric"><option data-i18n="Daily solar" value="insolation">Daily solar</option><option data-i18n="Daylight" value="daylight">Daylight</option><option data-i18n="Temperature" value="temperature">Temperature</option></select></label>
+<label><span data-i18n="View">View</span><select id="atlas-view"><option data-i18n="Model values" value="absolute">Model values</option><option data-i18n="Difference from 23.44°" value="difference">Difference from 23.44°</option></select></label>
+<label><span data-i18n="Heat storage">Heat storage</span><select id="atlas-heat"><option data-i18n="Fast" value="2.5">Fast</option><option data-i18n="Mixed" selected="" value="10">Mixed</option><option data-i18n="Slow" value="50">Slow</option></select></label>
+</div>
+<div class="atlas-angle-row">
+<label for="atlas-tilt"><span data-i18n="Tilt">Tilt</span><input aria-label="Atlas tilt in degrees" data-i18n-aria-label="Atlas tilt in degrees" id="atlas-tilt" inputmode="decimal" max="90" min="0" step="0.01" type="number" value="23.44"/> °</label>
+<div class="atlas-presets"><button data-atlas-tilt="0" type="button">0°</button><button data-atlas-tilt="23.44" type="button"><span data-i18n="Earth">Earth</span></button><button data-atlas-tilt="45" type="button">45°</button><button data-atlas-tilt="90" type="button">90°</button></div>
+<label class="check-control"><input checked="" id="atlas-trace" type="checkbox"/><span data-i18n="Sun's latitude (dashed)">Sun's latitude (dashed)</span></label>
+</div>
+<p class="input-help" id="atlas-input-status" role="status"></p>
+<div class="atlas-plot" id="atlas-plot">
+<canvas aria-describedby="atlas-map-help atlas-scale-note atlas-selection" aria-label="Season atlas" data-i18n-aria-label="Season atlas" id="atlas-field" role="img"></canvas>
+<svg aria-hidden="true" id="atlas-overlay" preserveaspectratio="none"></svg>
+<p hidden="" id="atlas-status" role="status"></p>
+</div>
+<div class="atlas-legend" id="atlas-legend"><div class="color-ramp" id="atlas-ramp"></div><div class="legend-ticks" id="atlas-scale-labels"></div></div>
+<p class="atlas-note" id="atlas-scale-note"></p>
+<div class="atlas-navigation">
+<label for="atlas-day"><span data-i18n="Model day">Model day</span><output for="atlas-day" id="atlas-day-output"></output><input id="atlas-day" max="365" min="1" step="1" type="range" value="172"/></label>
+<label for="atlas-latitude"><span data-i18n="Latitude">Latitude</span><output for="atlas-latitude" id="atlas-latitude-output"></output><input id="atlas-latitude" max="90" min="-90" step="0.1" type="range" value="25.033"/></label>
+</div>
+<p aria-live="polite" class="chart-selection" id="atlas-selection"></p>
+<p class="atlas-note" id="atlas-location-note"></p>
+<button class="primary" id="atlas-focus" type="button"><span data-i18n="View this selection on Earth ↗">View this selection on Earth ↗</span></button>
+<p class="atlas-note" id="atlas-map-help"><span data-i18n="Tap/click the map to change the day and latitude. Or use the labelled sliders with a keyboard. Vertical swipes scroll; hovering never changes the planet. Longitude is retained; these daily-mean fields do not depend on it. Colours sample every 2° and one day; the exact reading uses the same model sampling as the globe. Latitude is not an equal-area axis.">Tap/click the map to change the day and latitude. Or use the labelled sliders with a keyboard. Vertical swipes scroll; hovering never changes the planet. Longitude is retained; these daily-mean fields do not depend on it. Colours sample every 2° and one day; the exact reading uses the same model sampling as the globe. Latitude is not an equal-area axis.</span></p>
+<p class="atlas-warning" hidden="" id="atlas-warning"><span data-i18n="Extreme temperature extrapolation: this simplified model omits ice, evaporation and climate feedbacks. Values are not weather or habitability predictions.">Extreme temperature extrapolation: this simplified model omits ice, evaporation and climate feedbacks. Values are not weather or habitability predictions.</span></p>
+</dialog>
+<script src="/src/main.ts" type="module"></script>
+<dialog aria-labelledby="help-title" class="context-help" id="context-help">
+<header><h2 id="help-title"><span data-i18n="How to explore">How to explore</span></h2><button aria-label="Close help" autofocus="" data-i18n-aria-label="Close help" id="help-close" type="button">×</button></header><div id="help-body"></div></dialog></body>
 </html>
