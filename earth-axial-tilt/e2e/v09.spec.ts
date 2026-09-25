@@ -121,8 +121,28 @@ test('picking the B viewport uses its own projection and retains the shared loca
  await page.locator('#earth-canvas').scrollIntoViewIfNeeded();
  const point=await page.locator('#earth-canvas').evaluate((el:HTMLCanvasElement)=>{
    const r=el.getBoundingClientRect(),b=JSON.parse(el.dataset.viewB!).viewport;
-   return {x:r.left+el.clientLeft+b.x+b.width/2,y:r.top+el.clientTop+b.y+b.height/2};
+   const aspect=b.width/b.height;
+   const fov=Math.min(100,Math.min(100,2*Math.atan(Math.tan(19*Math.PI/180)/Math.min(1,aspect))*180/Math.PI)*1.12);
+   // At the centre, convert a 1 CSS-pixel pointing error into surface angle.
+   const degreesPerPixel=(8.2-2.15)/2.15*2*Math.tan(fov*Math.PI/360)/b.height*180/Math.PI;
+   return {x:r.left+el.clientLeft+b.x+b.width/2,y:r.top+el.clientTop+b.y+b.height/2,bound:degreesPerPixel*1.5};
  });
  await page.mouse.click(point.x,point.y);await expect(page.locator('#location-name')).toHaveText('Custom point');
- await expect(page.locator('#location-coords')).toHaveText('1.35° N · 103.82° E');
+ // Native WebKit input snaps fractional coordinates to device pixels; the
+ // geometric unit tests remain exact, while this real-pointer test is pixel-bounded.
+ const picked=(await page.locator('#location-coords').innerText()).match(/[0-9.]+/g)!.map(Number);
+ const angularError=Math.hypot(picked[0]-1.3521,(picked[1]-103.8198)*Math.cos(1.3521*Math.PI/180));
+ expect(angularError).toBeLessThan(point.bound);
+ expect(point.bound).toBeLessThan(0.5);
+});
+
+
+test('an extreme B climate is labelled even when A is not extrapolated',async({page})=>{
+ await ready(page);await compare(page);await page.locator('#heat-storage').selectOption('2.5');
+ await expect(page.locator('#compare-status')).toHaveAttribute('data-status','ready');
+ await expect(page.locator('#climate-warning')).toBeHidden();
+ await expect(page.locator('#compare-warning')).toBeVisible();
+ await expect(page.locator('#compare-warning')).toContainText('Extreme temperatures are not predictions');
+ await page.locator('#temperature-model').selectOption('illustrative');
+ await expect(page.locator('#compare-warning')).toBeHidden();
 });
