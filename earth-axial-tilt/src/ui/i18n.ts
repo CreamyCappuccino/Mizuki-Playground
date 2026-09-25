@@ -42,11 +42,13 @@ export function setLanguage(next: Language): void {
   try { localStorage.setItem('earth-lab:language', next); } catch { /* session-only */ }
   listeners.forEach(listener => listener());
 }
-export function initLanguageControl(): void {
+export function initLanguageControl(): () => void {
   document.documentElement.lang = language;
   translateStatic();
   const select = document.getElementById('language') as HTMLSelectElement;
   select.value = language;
-  select.addEventListener('change', () => setLanguage(select.value as Language));
+  const change = () => setLanguage(select.value as Language);
+  select.addEventListener('change', change);
+  return () => select.removeEventListener('change', change);
 }
 export function solarClockLabel(value: string): string { return value === 'Undefined' ? t('Undefined') : value; }
