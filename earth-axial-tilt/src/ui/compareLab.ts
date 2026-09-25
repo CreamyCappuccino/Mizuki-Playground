@@ -1,3 +1,4 @@
+import { CLASSIC_ORBIT, orbitKey, type OrbitParameters } from '../physics/orbit';
 import { compareMeasurements } from '../physics/comparison';
 import { isThermalReady, type TemperatureSource } from '../physics/temperatureModel';
 import type { ThermalSolution } from '../physics/energyBalance';
@@ -9,6 +10,7 @@ import { formatModelDate } from './chart';
 import type { Playback } from './playback';
 
 export interface CompareSnapshot {
+  orbitB: OrbitParameters;
   source: TemperatureSource; latitude: number; longitude: number; locationName: string;
   day: number; rotation: number; mode: SceneState['mode']; playback: Playback;
 }
@@ -18,9 +20,9 @@ interface CompareActions {
   day: (day: number) => void;
   mode: (mode: SceneState['mode']) => void;
   playback: (mode: Exclude<Playback,'paused'>) => void;
-  scene: (state: {tilt:number;thermal:ThermalSolution|null}|null) => void;
+  scene: (state: {tilt:number;thermal:ThermalSolution|null;orbit?:OrbitParameters}|null) => void;
 }
-/** A/B differ only in tilt. One shared clock/location/model/depth/camera is intentional. */
+/** A/B may differ in tilt and orbital parameters. One shared clock/location/model/depth/camera is intentional. */
 export class CompareLab {
   enabled = false;
   tiltB = 90;
@@ -73,7 +75,8 @@ export class CompareLab {
   get failed(): boolean { return !!this.error && !isThermalReady(this.sourceB); }
   get sourceB(): TemperatureSource {
     const a=this.snapshot!.source;
-    return {...a,tilt:this.tiltB,solution:this.tiltB===a.tilt?a.solution:this.solution};
+    const orbit=this.snapshot!.orbitB ?? CLASSIC_ORBIT;
+    return {...a,tilt:this.tiltB,orbit,solution:this.tiltB===a.tilt&&orbitKey(orbit)===orbitKey(a.orbit)?a.solution:this.solution};
   }
   /** Import validated settings without invoking synthetic clicks or moving keyboard focus. */
   configure(enabled: boolean, tiltB: number): void {
@@ -95,14 +98,15 @@ export class CompareLab {
     this.el('compare-toggle').textContent=t(this.enabled?'Single Earth':'Compare Earth A/B');
     this.el('compare-toggle').setAttribute('aria-pressed',String(this.enabled));
     if(!this.enabled)return;
-    const key=snapshot.source.model==='energy-balance' && this.tiltB!==snapshot.source.tilt ? `${this.tiltB}:${snapshot.source.depth}` : 'none';
+    const same=this.tiltB===snapshot.source.tilt&&orbitKey(snapshot.source.orbit)===orbitKey(snapshot.orbitB);
+    const key=snapshot.source.model==='energy-balance' && !same ? `${this.tiltB}:${snapshot.source.depth}:${orbitKey(snapshot.orbitB)}` : 'none';
     if(key!==this.key){
       this.key=key;this.solution=null;this.error='';this.revision++;
       this.worker.cancel();
-      if(key!=='none')this.worker.request(this.tiltB,snapshot.source.depth,false);
+      if(key!=='none')this.worker.request(this.tiltB,snapshot.source.depth,false,snapshot.orbitB);
     }
     const b=this.sourceB;
-    this.actions.scene({tilt:b.tilt,thermal:b.solution});
+    this.actions.scene({tilt:b.tilt,thermal:b.solution,orbit:b.orbit});
     const aInput=this.el<HTMLInputElement>('compare-tilt-a'),bInput=this.el<HTMLInputElement>('compare-tilt-b');
     if(document.activeElement!==aInput)aInput.value=String(snapshot.source.tilt);
     if(document.activeElement!==bInput)bInput.value=String(this.tiltB);
@@ -118,7 +122,12 @@ export class CompareLab {
     }
     this.el('comparison-label-a').textContent=`A · ${snapshot.source.tilt}°`;
     this.el('comparison-label-b').textContent=`B · ${this.tiltB}°`;
-    this.el('compare-context').textContent=msg`Same date, location, rotation, model and heat storage. Only tilt differs. ${t(snapshot.locationName)} · ${snapshot.latitude.toFixed(2)}° / ${snapshot.longitude.toFixed(2)}°`;
+    const advancedOrbit=orbitKey(snapshot.source.orbit)!=='0:0:0'||orbitKey(snapshot.orbitB)!=='0:0:0';
+    this.el('compare-context').textContent=advancedOrbit
+      ?msg`Same elapsed model day from equinox, location, rotation, model and heat storage. Tilt and orbit may differ. ${t(snapshot.locationName)} · ${snapshot.latitude.toFixed(2)}° / ${snapshot.longitude.toFixed(2)}°`
+      :msg`Same date, location, rotation, model and heat storage. Only tilt differs. ${t(snapshot.locationName)} · ${snapshot.latitude.toFixed(2)}° / ${snapshot.longitude.toFixed(2)}°`;
+    this.el('compare-orbits').hidden=!advancedOrbit;
+    this.el('compare-orbits').textContent=msg`A orbit e=${snapshot.source.orbit?.eccentricity??0}, peri=${snapshot.source.orbit?.perihelion??0}°, axis=${snapshot.source.orbit?.axis??0}° · B orbit e=${snapshot.orbitB.eccentricity}, peri=${snapshot.orbitB.perihelion}°, axis=${snapshot.orbitB.axis}°`;
     this.el('compare-model').textContent=snapshot.source.model==='energy-balance'
       ?msg`Thermal EBM · ${snapshot.source.depth} m heat storage`:t('Illustrative model');
     for(const row of compareMeasurements(snapshot.source,b,snapshot.latitude,snapshot.day)){
