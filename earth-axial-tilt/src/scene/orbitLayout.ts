@@ -11,5 +11,5 @@ export function orbitLayout(day: number, tilt: number): { position: Vector3Tuple
   if (!Number.isFinite(day) || !Number.isFinite(tilt) || tilt < 0 || tilt > 90) throw new RangeError('Invalid orbit view geometry.');
   const sun = sunDirection(day), angle = degToRad(tilt);
   return { position: sun.map(x => -ORBIT_RADIUS * x) as Vector3Tuple,
-    axis: [0, Math.cos(angle), Math.sin(angle)] };
+    axis: [0, Math.cos(angle), -Math.sin(angle)] };
 }
