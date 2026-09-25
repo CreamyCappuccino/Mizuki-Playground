@@ -1,9 +1,10 @@
+import { CLASSIC_ORBIT, orbitKey, orbitalMoment, normalizeOrbit, type OrbitParameters } from '../physics/orbit';
 import { comparisonViewports } from '../physics/comparison';
 import { OrbitOverview } from './orbitOverview';
 import { orbitLayout, ORBIT_EARTH_SCALE } from './orbitLayout';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { dailyMeanInsolation, dayLengthHours, SOLAR_CONSTANT } from '../physics/solar';
+import { dailyMeanInsolation, dayLengthHours, solarIrradiance, SOLAR_CONSTANT } from '../physics/solar';
 import { isThermalReady, temperatureFromSource, temperatureScale, type TemperatureModel } from '../physics/temperatureModel';
 import type { ThermalSolution } from '../physics/energyBalance';
 import type { LocationPreset } from '../data/locations';
@@ -16,6 +17,8 @@ import { parseVisualQuality, qualitySettings, viewFieldOfView, type VisualQualit
 export type SurfaceMode = 'normal' | 'insolation' | 'daylight' | 'temperature' | 'instant';
 
 export interface SceneState {
+  orbit?: OrbitParameters;
+  radiationMax?: number;
   tilt: number;
   day: number;
   mode: SurfaceMode;
@@ -44,7 +47,7 @@ export class EarthScene {
   private readonly controls: OrbitControls;
   private readonly appearance: EarthAppearance;
   private readonly resizeObserver: ResizeObserver;
-  private comparison: { tilt: number; thermal: ThermalSolution | null } | null = null;
+  private comparison: { tilt: number; thermal: ThermalSolution | null; orbit?: OrbitParameters } | null = null;
   private applyingPass = false;
   private colorCache: { key: string; thermal: ThermalSolution | null; values: Float32Array }[] = [];
   private quality: VisualQuality = 'high';
@@ -52,6 +55,10 @@ export class EarthScene {
   private dirty = true;
   private renderCount = 0;
   private readonly sunLocal = new THREE.Vector3();
+  private readonly axisY = new THREE.Vector3(0, 1, 0);
+  private readonly axisX = new THREE.Vector3(1, 0, 0);
+  private readonly spinQuaternion = new THREE.Quaternion();
+  private readonly tiltQuaternion = new THREE.Quaternion();
   private readonly earthRoot = new THREE.Group();
   private readonly orbitOverview = new OrbitOverview();
   private readonly localOrbitRing = this.createOrbitRing();
@@ -194,14 +201,16 @@ export class EarthScene {
     const previous = this.state;
     this.state = { ...this.state, ...next };
     this.state.rotation = wrapRotation(this.state.rotation);
-    // Intrinsic XYZ yields Rx(-tilt) * Ry(spin): spin around the tilted LOCAL axis,
-    // never the orbit-plane normal. All geographic children share this frame.
-    this.earthGroup.rotation.set(-THREE.MathUtils.degToRad(this.state.tilt),
-      THREE.MathUtils.degToRad(this.state.rotation), 0, 'XYZ');
-    const seasonChanged = previous.day !== this.state.day || previous.tilt !== this.state.tilt;
+    const orbit = normalizeOrbit(this.state.orbit);
+    const orbitChanged = orbitKey(previous.orbit) !== orbitKey(orbit);
+    // Geographic to inertial: Ry(axis azimuth) * Rx(-tilt) * Ry(eastward spin).
+    this.earthGroup.quaternion.setFromAxisAngle(this.axisY, THREE.MathUtils.degToRad(orbit.axis))
+      .multiply(this.tiltQuaternion.setFromAxisAngle(this.axisX, -THREE.MathUtils.degToRad(this.state.tilt)))
+      .multiply(this.spinQuaternion.setFromAxisAngle(this.axisY, THREE.MathUtils.degToRad(this.state.rotation)));
+    const seasonChanged = previous.day !== this.state.day || previous.tilt !== this.state.tilt || orbitChanged;
     const rotationChanged = previous.rotation !== this.state.rotation;
     if (seasonChanged || next.day !== undefined) {
-      this.sunDirectionVector.fromArray(sunDirection(this.state.day));
+      this.sunDirectionVector.fromArray(sunDirection(this.state.day, this.state.orbit));
       this.sunLight.position.copy(this.sunDirectionVector).multiplyScalar(10);
       this.sunMesh.position.copy(this.sunDirectionVector).multiplyScalar(SUN_MARKER_DISTANCE);
       this.subsolarMarker.position.copy(this.sunDirectionVector).multiplyScalar(EARTH_RADIUS * 1.018);
@@ -209,35 +218,36 @@ export class EarthScene {
       this.terminator.quaternion.setFromUnitVectors(this.ringNormal, this.sunDirectionVector);
     }
     this.guidesGroup.visible = this.state.guides;
-    if (previous.tilt !== this.state.tilt || next.tilt !== undefined) this.updateAxis();
+    if (previous.tilt !== this.state.tilt || next.tilt !== undefined || orbitChanged) this.updateAxis();
     if (next.location !== undefined) this.updateMarker();
     this.instantMesh.visible = this.state.mode === 'instant';
+    this.instantMesh.material.uniforms.fluxRatio.value = solarIrradiance(this.state.day, this.state.orbit) / (this.state.radiationMax ?? SOLAR_CONSTANT);
     if (seasonChanged || rotationChanged || next.mode !== undefined) {
       this.instantMesh.material.uniforms.sunLocal.value.fromArray(
-        rotatingSunDirection(this.state.day, this.state.tilt, this.state.rotation),
+        rotatingSunDirection(this.state.day, this.state.tilt, this.state.rotation, this.state.orbit),
       );
     }
     // Daily-mean maps do not depend on rotational phase. No CPU recoloring on spin.
-    if (seasonChanged || next.mode !== undefined || previous.thermal !== this.state.thermal || previous.temperatureModel !== this.state.temperatureModel || previous.heatDepth !== this.state.heatDepth) this.updateDataLayer();
+    if (seasonChanged || next.mode !== undefined || previous.radiationMax !== this.state.radiationMax || previous.thermal !== this.state.thermal || previous.temperatureModel !== this.state.temperatureModel || previous.heatDepth !== this.state.heatDepth) this.updateDataLayer();
     // Current world matrices are also needed for picking before the next frame.
     this.syncOrbitLayout();
     this.earthRoot.updateMatrixWorld(true);
-    this.sunLocal.fromArray(rotatingSunDirection(this.state.day, this.state.tilt, this.state.rotation));
+    this.sunLocal.fromArray(rotatingSunDirection(this.state.day, this.state.tilt, this.state.rotation, this.state.orbit));
     this.appearance.setSun(this.sunDirectionVector, this.sunLocal);
     this.appearance.setVisibility(this.state.mode === 'normal', this.nightLights);
     this.canvas.dataset.nightLightsVisible = String(this.state.mode === 'normal' && this.nightLights && this.canvas.dataset.nightTexture === 'ready');
     this.invalidate();
   }
 
-  setComparison(value: { tilt: number; thermal: ThermalSolution | null } | null): void {
-    if (value?.tilt === this.comparison?.tilt && value?.thermal === this.comparison?.thermal) return;
+  setComparison(value: { tilt: number; thermal: ThermalSolution | null; orbit?: OrbitParameters } | null): void {
+    if (value?.tilt === this.comparison?.tilt && value?.thermal === this.comparison?.thermal && orbitKey(value?.orbit) === orbitKey(this.comparison?.orbit)) return;
     this.comparison = value;
     this.canvas.dataset.comparison = String(value !== null);
     this.resize();
   }
 
   private comparisonState(): SceneState {
-    return { ...this.state, tilt: this.comparison!.tilt, thermal: this.comparison!.thermal };
+    return { ...this.state, tilt: this.comparison!.tilt, thermal: this.comparison!.thermal, orbit: this.comparison!.orbit ?? this.state.orbit };
   }
 
   /** Independent presentation passes over shared geometry/textures, not extra WebGL contexts. */
@@ -260,7 +270,8 @@ export class EarthScene {
         this.canvas.dataset[view.side === 'A' ? 'viewA' : 'viewB'] = JSON.stringify({
           tilt: this.state.tilt, day: this.state.day, rotation: this.state.rotation, axis,
           position: this.earthRoot.position.toArray(), temperature: this.canvas.dataset.temperatureLayer,
-          viewport: view,
+          viewport: view, orbit: normalizeOrbit(this.state.orbit),
+          orbital: orbitalMoment(this.state.day, this.state.orbit),
         });
       }
     } finally {
@@ -323,10 +334,11 @@ export class EarthScene {
   refreshLanguage(): void { this.orbitOverview.refreshLabels(); this.invalidate(); }
 
   private syncOrbitLayout(): void {
-    const layout = orbitLayout(this.state.day, this.state.tilt);
+    const layout = orbitLayout(this.state.day, this.state.tilt, this.state.orbit);
     this.earthRoot.position.fromArray(this.orbitView ? layout.position : [0, 0, 0]);
     this.earthRoot.scale.setScalar(this.orbitView ? ORBIT_EARTH_SCALE : 1);
     this.orbitOverview.visible = this.orbitView;
+    if (this.orbitView) this.orbitOverview.setOrbit(this.state.orbit);
     this.localOrbitRing.visible = !this.orbitView;
     this.sunMesh.visible = !this.orbitView;
     this.sunLight.position.copy(this.earthRoot.position).addScaledVector(this.sunDirectionVector, 10);
@@ -583,7 +595,9 @@ export class EarthScene {
 
   private updateAxis(): void {
     const axis = this.scene.getObjectByName('axis-indicator');
-    if (axis) axis.rotation.x = -THREE.MathUtils.degToRad(this.state.tilt);
+    const azimuth = THREE.MathUtils.degToRad((this.state.orbit ?? CLASSIC_ORBIT).axis);
+    if (axis) axis.quaternion.setFromAxisAngle(this.axisY, azimuth).multiply(this.tiltQuaternion.setFromAxisAngle(this.axisX, -THREE.MathUtils.degToRad(this.state.tilt)));
+    this.tiltArc.rotation.y = azimuth;
     const positions = this.tiltArc.geometry.attributes.position as THREE.BufferAttribute;
     for (let i = 0; i <= 64; i += 1) {
       const angle = THREE.MathUtils.degToRad(this.state.tilt) * i / 64;
@@ -602,11 +616,11 @@ export class EarthScene {
 
   private updateDataLayer(): void {
     this.dataMesh.visible = this.state.mode !== 'normal' && this.state.mode !== 'instant' &&
-      (this.state.mode !== 'temperature' || isThermalReady({ model: this.state.temperatureModel, tilt: this.state.tilt, depth: this.state.heatDepth, solution: this.state.thermal }));
+      (this.state.mode !== 'temperature' || isThermalReady({ model: this.state.temperatureModel, tilt: this.state.tilt, depth: this.state.heatDepth, orbit: this.state.orbit, solution: this.state.thermal }));
     this.canvas.dataset.temperatureLayer = this.state.mode === 'temperature' ? (this.dataMesh.visible ? this.state.temperatureModel : 'pending') : 'off';
     if (!this.dataMesh.visible) return;
 
-    const cacheKey = `${this.state.mode}:${this.state.tilt}:${this.state.day}:${this.state.temperatureModel}:${this.state.heatDepth}`;
+    const cacheKey = `${this.state.mode}:${this.state.tilt}:${this.state.day}:${this.state.temperatureModel}:${this.state.heatDepth}:${orbitKey(this.state.orbit)}:${this.state.radiationMax}`;
     const cachedLayer = this.colorCache.find(c => c.key === cacheKey && c.thermal === this.state.thermal);
     if (cachedLayer) {
       (this.dataMesh.geometry.attributes.color.array as Float32Array).set(cachedLayer.values);
@@ -626,16 +640,16 @@ export class EarthScene {
 
       if (this.state.mode === 'insolation') {
         t = THREE.MathUtils.clamp(
-          dailyMeanInsolation(latitude, this.state.day, this.state.tilt) / SOLAR_CONSTANT,
+          dailyMeanInsolation(latitude, this.state.day, this.state.tilt, this.state.orbit) / (this.state.radiationMax ?? SOLAR_CONSTANT),
           0,
           1,
         );
         color.setHSL(0.66 - t * 0.55, 0.88, 0.22 + t * 0.42, THREE.SRGBColorSpace);
       } else if (this.state.mode === 'daylight') {
-        t = dayLengthHours(latitude, this.state.day, this.state.tilt) / 24;
+        t = dayLengthHours(latitude, this.state.day, this.state.tilt, this.state.orbit) / 24;
         color.setHSL(0.68 - t * 0.53, 0.82, 0.2 + t * 0.48, THREE.SRGBColorSpace);
       } else {
-        const temperature = temperatureFromSource({ model: this.state.temperatureModel, tilt: this.state.tilt, depth: this.state.heatDepth, solution: this.state.thermal }, latitude, this.state.day)!;
+        const temperature = temperatureFromSource({ model: this.state.temperatureModel, tilt: this.state.tilt, depth: this.state.heatDepth, orbit: this.state.orbit, solution: this.state.thermal }, latitude, this.state.day)!;
         const scale = temperatureScale(this.state.temperatureModel);
         t = THREE.MathUtils.clamp((temperature - scale.min) / (scale.max - scale.min), 0, 1);
         color.setHSL(0.65 - t * 0.65, 0.88, 0.24 + Math.sin(t * Math.PI) * 0.22, THREE.SRGBColorSpace);
