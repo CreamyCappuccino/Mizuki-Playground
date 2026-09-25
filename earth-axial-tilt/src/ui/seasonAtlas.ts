@@ -16,7 +16,7 @@ export interface AtlasSnapshot {
     locationName: string;
     error: string;
 }
-interface AtlasActions {
+export interface AtlasActions {
     onOpen: () => void;
     onSettings: () => void;
     onSelect: (day: number, latitude: number) => void;
@@ -33,6 +33,7 @@ const signed = (n: number) => `${n >= 0 ? '+' : ''}${Math.abs(n) < 0.05 ? '0.0' 
 const latitudeLabel = (lat: number) => lat === 0 ? tr('Equator') : `${Math.abs(lat).toFixed(1)}° ${lat > 0 ? 'N' : 'S'}`;
 /** A modal overview, not another model. Only field/config/size changes repaint the raster. */
 export class SeasonAtlas {
+    private readonly events = new AbortController();
     private readonly dialog: HTMLDialogElement;
     private readonly plot: HTMLElement;
     private readonly canvas: HTMLCanvasElement;
@@ -59,33 +60,29 @@ export class SeasonAtlas {
             throw new Error(`Missing atlas element: ${id}`);
         return element as unknown as T;
     };
-    constructor(private readonly actions: AtlasActions) {
+    constructor(private readonly actions: AtlasActions, bindLauncher = true) {
         this.dialog = this.el('season-atlas');
         this.plot = this.el('atlas-plot');
         this.canvas = this.el('atlas-field');
         this.overlay = this.el('atlas-overlay');
         this.metric = this.el('atlas-metric');
         this.view = this.el('atlas-view');
-        this.el('open-atlas').addEventListener('click', () => {
-            if (this.dialog.open)
-                return;
-            this.dialog.showModal();
-            this.actions.onOpen();
-        });
-        this.el('atlas-close').addEventListener('click', () => this.dialog.close());
-        this.el('atlas-focus').addEventListener('click', () => { this.dialog.close(); this.actions.onFocus(); });
-        this.dialog.addEventListener('close', () => { this.gesture = null; this.actions.onSettings(); });
+        if (bindLauncher)
+            this.el('open-atlas').addEventListener('click', () => this.open(), { signal: this.events.signal });
+        this.el('atlas-close').addEventListener('click', () => this.dialog.close(), { signal: this.events.signal });
+        this.el('atlas-focus').addEventListener('click', () => { this.dialog.close(); this.actions.onFocus(); }, { signal: this.events.signal });
+        this.dialog.addEventListener('close', () => { this.gesture = null; this.actions.onSettings(); }, { signal: this.events.signal });
         for (const element of [this.metric, this.view])
-            element.addEventListener('change', () => this.actions.onSettings());
-        this.el('atlas-trace').addEventListener('change', () => this.overlay.querySelector('.atlas-trace')?.toggleAttribute('hidden', !this.el<HTMLInputElement>('atlas-trace').checked));
+            element.addEventListener('change', () => this.actions.onSettings(), { signal: this.events.signal });
+        this.el('atlas-trace').addEventListener('change', () => this.overlay.querySelector('.atlas-trace')?.toggleAttribute('hidden', !this.el<HTMLInputElement>('atlas-trace').checked), { signal: this.events.signal });
         this.el('atlas-day').addEventListener('input', event => {
             if (this.snapshot)
                 this.actions.onSelect(Number((event.target as HTMLInputElement).value), this.snapshot.latitude);
-        });
+        }, { signal: this.events.signal });
         this.el('atlas-latitude').addEventListener('input', event => {
             if (this.snapshot)
                 this.actions.onSelect(this.snapshot.day, Number((event.target as HTMLInputElement).value));
-        });
+        }, { signal: this.events.signal });
         const angle = this.el<HTMLInputElement>('atlas-tilt');
         const commit = () => {
             const value = parseTiltInput(angle.value);
@@ -98,30 +95,30 @@ export class SeasonAtlas {
                 this.actions.onTilt(value);
             }
         };
-        angle.addEventListener('change', commit);
+        angle.addEventListener('change', commit, { signal: this.events.signal });
         angle.addEventListener('keydown', event => {
             if (event.key === 'Enter') {
                 event.preventDefault();
                 commit();
             }
-        });
+        }, { signal: this.events.signal });
         this.dialog.querySelectorAll<HTMLButtonElement>('[data-atlas-tilt]').forEach(button => {
-            button.addEventListener('click', () => { this.el('atlas-input-status').textContent = ''; this.actions.onTilt(Number(button.dataset.atlasTilt)); });
+            button.addEventListener('click', () => { this.el('atlas-input-status').textContent = ''; this.actions.onTilt(Number(button.dataset.atlasTilt)); }, { signal: this.events.signal });
         });
-        this.el('atlas-heat').addEventListener('change', event => this.actions.onHeat(Number((event.target as HTMLSelectElement).value)));
+        this.el('atlas-heat').addEventListener('change', event => this.actions.onHeat(Number((event.target as HTMLSelectElement).value)), { signal: this.events.signal });
         this.plot.addEventListener('pointerdown', event => {
             if (!event.isPrimary || event.button !== 0 || this.gesture) {
                 this.gesture = null;
                 return;
             }
             this.gesture = { id: event.pointerId, x: event.clientX, y: event.clientY, moved: false };
-        });
+        }, { signal: this.events.signal });
         this.plot.addEventListener('pointermove', event => {
             if (this.gesture && this.gesture.id === event.pointerId && Math.hypot(event.clientX - this.gesture.x, event.clientY - this.gesture.y) > 8)
                 this.gesture.moved = true;
-        });
-        this.plot.addEventListener('pointercancel', () => { this.gesture = null; });
-        this.plot.addEventListener('pointerleave', () => { this.gesture = null; });
+        }, { signal: this.events.signal });
+        this.plot.addEventListener('pointercancel', () => { this.gesture = null; }, { signal: this.events.signal });
+        this.plot.addEventListener('pointerleave', () => { this.gesture = null; }, { signal: this.events.signal });
         this.plot.addEventListener('pointerup', event => {
             const start = this.gesture;
             this.gesture = null;
@@ -135,18 +132,24 @@ export class SeasonAtlas {
             const selected = atlasSelection((x - l.left) / (l.right - l.left), (y - l.top) / (l.bottom - l.top));
             if (selected)
                 this.actions.onSelect(selected.day, selected.latitude);
-        });
+        }, { signal: this.events.signal });
         this.observer = new ResizeObserver(() => {
             cancelAnimationFrame(this.resizeFrame);
-            this.resizeFrame = requestAnimationFrame(() => { if (this.snapshot)
-                this.update(this.snapshot); });
+            this.resizeFrame = requestAnimationFrame(() => {
+                if (this.snapshot)
+                    this.update(this.snapshot);
+            });
         });
         this.observer.observe(this.plot);
     }
+    open(): void { if (!this.dialog.open) {
+        this.dialog.showModal();
+        this.actions.onOpen();
+    } }
     get needsReference(): boolean {
         return this.dialog.open && this.metric.value === 'temperature' && this.view.value === 'difference';
     }
-    dispose(): void { cancelAnimationFrame(this.resizeFrame); this.observer.disconnect(); }
+    dispose(): void { this.events.abort(); cancelAnimationFrame(this.resizeFrame); this.observer.disconnect(); this.field = null; this.snapshot = null; }
     update(snapshot: AtlasSnapshot): void {
         this.snapshot = snapshot;
         if (!this.dialog.open)
