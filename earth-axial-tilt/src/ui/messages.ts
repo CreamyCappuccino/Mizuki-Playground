@@ -48,6 +48,7 @@ export const jaMessages: Readonly<Record<string, string>> = {
   ", resized by three.js. Fixed geography and lights, not a response to tilt. Decorative lights and atmosphere are hidden in science modes.": "（three.js で縮小）。地形と夜景は固定画像で、傾きの変化には応答しません。科学レイヤーでは夜景と大気の装飾を隠します。",
   "Show science guides": "科学ガイドを表示",
   "Axis / N–S": "地軸／北・南",
+  "Selected location": "選択地点",
   "Subsolar point": "太陽直下点",
   "Day–night boundary": "昼夜の境界",
   "Tilt arc": "傾斜角の弧",
