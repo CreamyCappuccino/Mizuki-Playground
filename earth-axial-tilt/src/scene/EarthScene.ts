@@ -383,6 +383,7 @@ export class EarthScene {
       }
     });
     this.renderer.dispose();
+    this.renderer.forceContextLoss();
   }
 
   private readonly resize = (): void => {
@@ -392,7 +393,8 @@ export class EarthScene {
     const config = qualitySettings(this.quality, window.devicePixelRatio, this.renderer.capabilities.getMaxAnisotropy());
     if (this.renderer.getPixelRatio() !== config.pixelRatio) this.renderer.setPixelRatio(config.pixelRatio);
     this.appearance.setAnisotropy(config.anisotropy);
-    this.renderer.setSize(width, height, false);
+    const size = this.renderer.getSize(new THREE.Vector2());
+    if (size.x !== width || size.y !== height) this.renderer.setSize(width, height, false);
     this.canvas.dataset.quality = this.quality;
     this.canvas.dataset.pixelRatio = String(config.pixelRatio);
     const viewport = comparisonViewports(width,height,this.comparison !== null)[0];
