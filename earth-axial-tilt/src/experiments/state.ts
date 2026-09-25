@@ -1,7 +1,10 @@
+import type { OrbitParameters } from '../physics/orbit';
 import { DEFAULT_LOCATION, LOCATIONS, type LocationPreset } from '../data/locations';
 
 /** Public experiment data only. No playback, language, camera pose or user identity. */
 export interface ExperimentState {
+  eccentricity:number; perihelion:number; axisAzimuth:number;
+  eccentricityB:number; perihelionB:number; axisAzimuthB:number;
   tilt: number;
   tiltB: number;
   day: number;
@@ -19,9 +22,10 @@ export interface ExperimentState {
   guides: boolean;
   speed: 1 | 4 | 12;
 }
-export const EXPERIMENT_VERSION = 1;
+export const EXPERIMENT_VERSION = 2;
 export const MAX_EXPERIMENT_LENGTH = 4096;
 export const DEFAULT_EXPERIMENT: Readonly<ExperimentState> = Object.freeze({
+  eccentricity:0,perihelion:0,axisAzimuth:0,eccentricityB:0,perihelionB:0,axisAzimuthB:0,
   tilt: 23.44, tiltB: 90, day: 172, rotation: 0,
   latitude: DEFAULT_LOCATION.latitude, longitude: DEFAULT_LOCATION.longitude,
   dual: false, surfaceMode: 'normal', temperatureModel: 'energy-balance', heatDepth: 10,
@@ -29,10 +33,12 @@ export const DEFAULT_EXPERIMENT: Readonly<ExperimentState> = Object.freeze({
   guides: true, speed: 1,
 });
 const KEYS: Record<keyof ExperimentState, string> = {
+  eccentricity:'e',perihelion:'peri',axisAzimuth:'axis',eccentricityB:'be',perihelionB:'bperi',axisAzimuthB:'baxis',
   tilt: 'a', tiltB: 'b', day: 'day', rotation: 'spin', latitude: 'lat', longitude: 'lon',
   dual: 'dual', surfaceMode: 'layer', temperatureModel: 'model', heatDepth: 'heat',
   sceneView: 'view', period: 'period', chartMetric: 'chart', reference: 'ref', guides: 'guides', speed: 'speed',
 };
+const ORBIT_FIELDS = new Set<keyof ExperimentState>(['eccentricity','perihelion','axisAzimuth','eccentricityB','perihelionB','axisAzimuthB']);
 const OWNED_KEYS = new Set(['lab', ...Object.values(KEYS)]);
 export type ExperimentParse =
   | { status: 'none' }
@@ -50,6 +56,9 @@ export function validateExperiment(value: unknown): ExperimentState | null {
   if (!record(value)) return null;
   const field = <K extends keyof ExperimentState>(key: K): unknown =>
     Object.prototype.hasOwnProperty.call(value, key) ? value[key] : DEFAULT_EXPERIMENT[key];
+  const eccentricity=field('eccentricity'),eccentricityB=field('eccentricityB');
+  const perihelion=field('perihelion'),perihelionB=field('perihelionB'),axisAzimuth=field('axisAzimuth'),axisAzimuthB=field('axisAzimuthB');
+  if(!numberIn(eccentricity,0,.3)||!numberIn(eccentricityB,0,.3)||!numberIn(perihelion,0,360)||!numberIn(perihelionB,0,360)||!numberIn(axisAzimuth,0,360)||!numberIn(axisAzimuthB,0,360))return null;
   const tilt=field('tilt'), tiltB=field('tiltB'), day=field('day'), rotation=field('rotation');
   const latitude=field('latitude'), longitude=field('longitude'), heatDepth=field('heatDepth'), speed=field('speed');
   const dual=field('dual'), reference=field('reference'), guides=field('guides');
@@ -64,7 +73,7 @@ export function validateExperiment(value: unknown): ExperimentState | null {
       !['year','day'].includes(period as string) || !['temperature','insolation','daylight'].includes(chartMetric as string)) return null;
   // A partial coordinate pair is not a meaningful replacement for the selected place.
   if (Object.hasOwn(value,'latitude') !== Object.hasOwn(value,'longitude')) return null;
-  return { tilt, tiltB, day, rotation: rotation===360?0:rotation, latitude, longitude,
+  return { eccentricity,eccentricityB,perihelion:perihelion%360,perihelionB:perihelionB%360,axisAzimuth:axisAzimuth%360,axisAzimuthB:axisAzimuthB%360, tilt, tiltB, day, rotation: rotation===360?0:rotation, latitude, longitude,
     heatDepth:heatDepth as ExperimentState['heatDepth'], speed:speed as ExperimentState['speed'], dual, reference, guides,
     surfaceMode:surfaceMode as ExperimentState['surfaceMode'], temperatureModel:temperatureModel as ExperimentState['temperatureModel'],
     sceneView:sceneView as ExperimentState['sceneView'], period:period as ExperimentState['period'], chartMetric:chartMetric as ExperimentState['chartMetric'] };
@@ -85,9 +94,10 @@ export function decodeExperiment(hash: string): ExperimentParse {
   const params=new URLSearchParams(hash.startsWith('#')?hash.slice(1):hash);
   if (!params.has('lab')) return {status:'none'};
   for (const key of OWNED_KEYS) if (params.getAll(key).length>1) return {status:'error',reason:'invalid'};
-  if (params.get('lab')!==String(EXPERIMENT_VERSION)) return {status:'error',reason:'version'};
+  if (!['1',String(EXPERIMENT_VERSION)].includes(params.get('lab')!)) return {status:'error',reason:'version'};
   const data: Record<string,unknown>={};
   for (const key of Object.keys(KEYS) as (keyof ExperimentState)[]) {
+    if(params.get('lab')==='1'&&ORBIT_FIELDS.has(key))continue;
     const input=params.get(KEYS[key]); if(input===null)continue;
     const fallback=DEFAULT_EXPERIMENT[key];
     if (typeof fallback==='boolean') {
@@ -124,8 +134,16 @@ export function decodeExperimentFile(text: string): ExperimentParse {
   try {
     const value:unknown=JSON.parse(text);
     if(!record(value)||value.application!=='earth-axial-tilt')return {status:'error',reason:'invalid'};
-    if(value.version!==EXPERIMENT_VERSION)return {status:'error',reason:'version'};
-    const state=validateExperiment(value.state);
+    if(value.version!==1&&value.version!==EXPERIMENT_VERSION)return {status:'error',reason:'version'};
+    let data=value.state;
+    if(value.version===1&&record(data))data=Object.fromEntries(Object.entries(data).filter(([key])=>!ORBIT_FIELDS.has(key as keyof ExperimentState)));
+    const state=validateExperiment(data);
     return state ? {status:'ok',state} : {status:'error',reason:'invalid'};
   } catch { return {status:'error',reason:'invalid'}; }
+}
+
+/** Explicit astronomy settings for one world. Old schema1 restores the exact circular baseline. */
+export function experimentOrbit(state:ExperimentState,side:'A'|'B'='A'):OrbitParameters {
+  return side==='A'?{eccentricity:state.eccentricity,perihelion:state.perihelion,axis:state.axisAzimuth}
+    :{eccentricity:state.eccentricityB,perihelion:state.perihelionB,axis:state.axisAzimuthB};
 }
