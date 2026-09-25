@@ -160,9 +160,10 @@ test.describe('mobile atlas', () => {
       await session.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
       await session.detach();
     } else {
-      // WebKit checks real wheel scrolling + tap. This is NOT an on-device swipe claim.
-      await page.mouse.move(p.x,p.y);
-      await page.mouse.wheel(0,-120);
+      // Mobile WebKit automation has neither CDP swipe nor mouse wheel.
+      // The real tap above and a programmatic scroll check selection isolation;
+      // native physical-iPhone scrolling remains an explicit release gate.
+      await page.locator('#season-atlas').evaluate(el => el.scrollBy(0,-120));
     }
     await expect.poll(()=>page.locator('#season-atlas').evaluate(e=>e.scrollTop)).toBeLessThan(before);
     await expect(page.locator('#atlas-day')).toHaveValue(String(p.day));
