@@ -160,68 +160,14 @@ A/Bで
 
 ---
 
-# v1.3 — Other Worlds: Mars & Uranus
-
-## 目的
-
-Earth Labを壊さずに、**同じ幾何学が別惑星ではどう見えるか**へ進む。
-
-最初から万能planet engineにはしない。まず信頼できるastronomy layerを作る。
-
-## Phase A — astronomy first
-
-planet preset:
-- Earth
-- Mars
-- Uranus
-
-各presetで少なくとも:
-- obliquity
-- orbital period
-- rotation period / direction
-- eccentricity
-- solar distance baseline
-- axial orientation conventions
-
-を明示。
-
-### Mars
-
-- 約25°の傾きだが、Earthよりeccentricityが大きい。
-- axial tiltだけ似ていても、季節強度がEarthと同じではないことを示す。
-
-### Uranus
-
-- 約98°級の軸で、現在の90°実験を現実のplanetへ接続。
-- retrograde/axis conventionを曖昧にしない。
-- 「98°」を単純にEarthの90°sliderへ押し込まず、planet-specific orientationを定義。
-
-## Climate policy
-
-v1.3初期は **Earth Thermal EBMをMars/Uranusへそのまま流用しない**。
-
-- Solar / Daylight / Sun now はplanet physicsで表示可能。
-- Temperatureはplanet-specific modelがない場合「未提供」と明示。
-- 後から簡易planet climateを追加するなら、係数・意味・限界を別文書化する。
-
-## Compare
-
-Earth vs Mars / Earth vs Uranusをastronomy metricsで比較。
-
-## Definition of Done
-
-「Earthの横倒し実験」と「実際のUranusの極端な季節」を同じUIで比較できるが、Earth気候モデルを偽装転用しない。
-
----
-
-# v1.4 — Climate Geography Lab
+# v1.3 — Climate Geography Lab
 
 ## 目的
 
 現在の「同じ緯度なら同じ熱容量」という世界から、
 **海と陸が季節応答を変える**ところまで進める。
 
-これはv1.2/v1.3より計算・説明コストが高いため独立版にする。
+他惑星へ進む前に、Earth自身の気候実験を完成させる。
 
 ## 1. Land / ocean heat capacity
 
@@ -235,28 +181,11 @@ Earth vs Mars / Earth vs Uranusをastronomy metricsで比較。
 - 地形データを入れる場合は出典・解像度・単位を明示。
 - lapse-rateを使うなら教材近似として説明。
 
-## 3. Ice-albedo feedback — stretch goal
+## 3. Geography-aware Compare / Atlas
 
-- temperature dependent albedo
-- snowball / ice retreatの可能性
-- equilibrium sensitivity
-
-を実験できる候補。
-
-ただし非線形feedbackを入れる場合:
-- initial condition dependence
-- multiple equilibria
-- spin-up
-- hysteresis
-
-を隠さない。
-
-## 4. Clouds
-
-**visual clouds**と**climate clouds**を完全に分離。
-
-- visual cloud layerはpresentation only。
-- climate cloud parameterizationは別機能として、入れるなら科学仕様へ明記。
+- 同じ緯度でもland/oceanで温度振幅とlagが違うことをA/Bで比較。
+- Season atlasは緯度だけの場から、地理依存をどの形で表現するかを再設計。
+- 既存の緯度帯モードはEarth Classicとして残す。
 
 ## Definition of Done
 
@@ -264,26 +193,78 @@ Earth vs Mars / Earth vs Uranusをastronomy metricsで比較。
 
 ---
 
-# v1.5 — Milankovitch Explorer
+# v1.4 — Earth Feedbacks Lab
 
 ## 目的
 
-v1.2のorbital controlsを、単発のsliderから
-**長期的な軌道要素の組み合わせを理解する教材**へ進める。
+Earthの気候を「受け身の温度応答」から、
+**状態が次の放射収支へ戻るfeedback experiment**へ進める。
+
+ここはEarth専用章として閉じる。他惑星の気候係数は混ぜない。
+
+## 1. Ice-albedo feedback
+
+- temperature dependent albedo
+- ice advance / retreat
+- snowball tendency
+- equilibrium sensitivity
+
+を実験できるようにする。
+
+非線形feedbackを入れる場合は必ず:
+
+- initial condition dependence
+- multiple equilibria
+- spin-up
+- hysteresis
+
+を隠さない。
+
+## 2. Initial condition / hysteresis experiments
+
+- warm start / cold start
+- same forcing, different history
+- warming and cooling sweeps
+
+を比較できるようにする。
+
+## 3. Clouds
+
+**visual clouds**と**climate clouds**を完全に分離。
+
+- visual cloud layerはpresentation only。
+- climate cloud parameterizationは別機能として、入れるなら科学仕様へ明記。
+- 雲を入れない場合も、それをモデル限界として明示。
+
+## Scientific guardrails
+
+- feedback導入前のEBMをEarth Classicとして残す。
+- 数値安定性のためのclipを物理現象として見せない。
+- 収束しない条件、複数平衡、極端値を「失敗」として隠さない。
+
+## Definition of Done
+
+同じ外力でも初期状態やfeedbackによって異なるEarthの平衡へ行きうることを、再現可能な実験として説明できる。
+
+---
+
+# v1.5 — Milankovitch & Earth Synthesis
+
+## 目的
+
+v1.2の軌道力学、v1.3の地理、v1.4のfeedbackをまとめ、
+**Earthを一つの完成した季節・軌道・簡易気候実験Labとして閉じる。**
 
 対象:
+
 - obliquity
 - eccentricity
 - precession / climatic precession
 - perihelion season
+- land/ocean heat response
+- optional ice-albedo feedback
 
-## 方針
-
-- 数万年の実Earth時系列を扱うなら、信頼できる外部データセット／近似式を採用し出典を固定。
-- 単なるsin波を「実Earth history」と呼ばない。
-- first versionでは「parameter sweep」と「概念実験」を優先してもよい。
-
-## UI
+## 1. Milankovitch Explorer
 
 - orbital parameter timeline
 - selected epoch
@@ -291,20 +272,48 @@ v1.2のorbital controlsを、単発のsliderから
 - compare epochs
 - Season atlas across orbital configurations
 
+数万年の実Earth時系列を扱うなら、信頼できる外部データセット／近似式を採用し出典を固定。
+単なるsin波を「実Earth history」と呼ばない。
+first versionではparameter sweepと概念実験を優先してもよい。
+
+## 2. Earth synthesis presets
+
+例:
+
+- modern-like Earth
+- zero tilt Earth
+- 90° Earth
+- high-eccentricity Earth
+- summer-at-perihelion vs summer-at-aphelion
+- warm-start vs cold-start feedback
+- land vs ocean seasonal lag
+
+各presetは「何が違うか」を明示し、観測値再現を装わない。
+
+## 3. Earth completion pass
+
+- Earth専用UIの重複整理。
+- Orbit / Compare / Atlas / Climate / Share URLを一貫させる。
+- performance、memory、mobile、accessibilityを再点検。
+- Earth Classicでv1.0代表値が維持される回帰テスト。
+- Earth向け科学文書を一度完成形へ整理。
+
 ## Definition of Done
 
-「Milankovitch cycles」という名前だけでなく、どの軌道要素がどの緯度・季節の日射へ効くのかを操作で分解できる。
+「地軸傾斜から始め、軌道・地理・feedback・Milankovitchまで」を一つのEarth教材として連続して操作できる。
+**この時点をEarth章の完成とする。**
 
 ---
 
-# v2.0 — Planet Lab
+# v2.0 — Planet Lab Foundation
 
 ## 目的
 
-ここまでEarth Axial Tilt Labへ足してきた機能を、
-**planet + orbit + rotation + climate experiment**の一般化されたLabとして整理し直す。
+Earth v1.xで得た概念を壊さずに、
+**planet + orbit + rotation + climate capability**へ一般化する。
 
-v2.0は機能追加よりarchitecture milestone。
+この版では、まずarchitectureを一般化し、Earthを新構造へ移す。
+Mars/Uranusを急いで同時実装しない。
 
 ## Core concepts
 
@@ -315,6 +324,13 @@ v2.0は機能追加よりarchitecture milestone。
 - World A / World B experiment state
 - shared presentation state
 - versioned share URL
+
+## Migration
+
+- v1.x share URLを読み込めるmigration。
+- Earth Classic presetでv1.xの代表結果が一致。
+- old docs/historyを保持。
+- PlanetDefinition化してもEarth側の科学結果を変えない。
 
 ## UI
 
@@ -330,31 +346,97 @@ v2.0は機能追加よりarchitecture milestone。
 
 Earth初心者がいきなり全設定を浴びないようBasic experienceを維持する。
 
-## Migration
+## Definition of Done
 
-- v1.x share URLを読み込めるmigration。
-- Earth Classic presetでv1.xの代表結果が一致。
-- old docs/historyを保持。
+Earthが一般化された内部構造の上で、v1.xと同じ実験を再現できる。
+**まだ他惑星がなくても2.0 foundationとして成立する。**
+
+---
+
+# v2.1 — Mars
+
+## 目的
+
+Planet Lab最初の別世界としてMarsを追加する。
+
+- obliquity
+- orbital period
+- rotation period / direction
+- eccentricity
+- solar distance baseline
+- axial orientation conventions
+
+を信頼できる根拠から定義。
+
+MarsはEarthと傾きが近い一方、eccentricityが大きい。
+**「傾斜角が似ていても季節強度は同じではない」**を主題にする。
+
+### Climate policy
+
+Earth Thermal EBMをそのままMarsへ流用しない。
+最初はSolar / Daylight / Sun now / orbitを中心にし、Mars専用温度モデルがなければTemperatureは未提供と明示。
 
 ## Definition of Done
 
-Earthを特別ケースとして維持しつつ、Mars/Uranusや異なる軌道条件を同じ実験フレームで安全に扱える。
+Earth vs Marsをastronomy metricsで比較でき、Earth用気候係数を偽装転用しない。
+
+---
+
+# v2.2 — Uranus
+
+## 目的
+
+Earthの90°実験を、実在する極端なobliquity worldへ接続する。
+
+- 約98°級のobliquity
+- rotation / retrograde convention
+- orbital period
+- solar distance
+- seasonal illumination geometry
+
+をplanet-specificに定義。
+
+「98°」を単純にEarthの90°sliderへ押し込まず、軸方向と回転方向のconventionを明文化する。
+
+### Climate policy
+
+Earth/Marsと同様、専用モデルがないTemperatureは未提供。
+まず極端な昼夜・季節照明を正しく見せる。
+
+## Definition of Done
+
+「地球を横倒しにした思考実験」と「実際のUranusの極端な季節」を同じLabで比較できる。
+
+---
+
+# v2.x — その先
+
+候補:
+
+- Venus / Mercury / giant planetsのrotation/orbit experiments
+- planet-specific simple climate models
+- more generalized atmosphere capability
+- export / classroom scenario packs
+
+惑星数を増やすこと自体を目的にせず、各worldで何が学べるかを優先する。
 
 ---
 
 # 長距離実装の推奨順
 
-依存関係を考えると、次の順で進める。
-
 1. **1.0 marker polish — 完了**
 2. **1.1 presets + shareable state URL**
-3. **1.2 eccentricity / perihelion / precession**
-4. **1.3 Mars / Uranus astronomy**
-5. **1.4 land/ocean climate geography**
-6. **1.5 Milankovitch Explorer**
-7. **2.0 architecture consolidation**
+3. **1.2 Earth orbit mechanics: eccentricity / perihelion / precession**
+4. **1.3 Earth climate geography: land / ocean / altitude**
+5. **1.4 Earth feedbacks: ice-albedo / hysteresis**
+6. **1.5 Milankovitch + Earth synthesis — Earth章完成**
+7. **2.0 Planet Lab architecture foundation**
+8. **2.1 Mars**
+9. **2.2 Uranus**
 
-一晩で無理に全版を完成させる必要はない。
+**Earthを終えてから他惑星へ進む。**
+途中でMars/Uranusを挟まず、Earthで科学・UI・比較・Atlas・URL schemaを成熟させてから一般化する。
+
 各版ごとに typecheck → unit → build → browser → docs → same-HEAD CI を閉じてから次へ進む。
 前版の不具合を抱えたまま版番号だけ進めない。
 
