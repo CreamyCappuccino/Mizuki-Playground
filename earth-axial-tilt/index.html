@@ -12,7 +12,7 @@
 <canvas aria-label="Interactive 3D Earth" data-i18n-aria-label="Interactive 3D Earth" id="earth-canvas"></canvas>
 <header class="topbar glass">
 <div>
-<p class="eyebrow"><span data-i18n="MIZUKI PLAYGROUND / PLANET LAB · v1.0 RC">MIZUKI PLAYGROUND / PLANET LAB · v1.0 RC</span></p>
+<p class="eyebrow"><span data-i18n="MIZUKI PLAYGROUND / PLANET LAB · v1.1 RC">MIZUKI PLAYGROUND / PLANET LAB · v1.1 RC</span></p>
 <h1><span data-i18n="Earth Axial Tilt">Earth Axial Tilt</span></h1>
 </div>
 <div aria-live="polite" class="topbar__readout">
@@ -44,6 +44,23 @@
 </section>
 <div id="comparison-labels" hidden aria-hidden="true"><strong id="comparison-label-a"></strong><strong id="comparison-label-b"></strong></div>
 <aside aria-label="Simulation controls" class="controls glass" data-i18n-aria-label="Simulation controls">
+<section class="experiment-tools">
+  <details id="experiment-workbench">
+    <summary><span data-i18n="Experiments &amp; sharing">Experiments &amp; sharing</span></summary>
+    <div class="help-heading"><h2 data-help="experiments" data-i18n="Choose a question">Choose a question</h2></div>
+    <label for="experiment-preset" data-i18n="Experiment preset">Experiment preset</label>
+    <select id="experiment-preset"></select>
+    <p id="experiment-question" class="experiment-question"></p>
+    <p id="experiment-observe" class="input-help"></p>
+    <div class="experiment-actions"><button id="experiment-apply" data-i18n="Prepare experiment" disabled>Prepare experiment</button><button id="experiment-undo" data-i18n="Undo experiment" disabled>Undo experiment</button></div>
+    <p id="experiment-current" class="input-help"></p>
+    <div class="experiment-actions"><button id="experiment-copy" data-i18n="Copy experiment link">Copy experiment link</button><button id="experiment-export" data-i18n="Save settings file">Save settings file</button><button id="experiment-import" data-i18n="Load settings file">Load settings file</button></div>
+    <input id="experiment-file" type="file" accept=".json,application/json" hidden aria-label="Experiment settings file" data-i18n-aria-label="Experiment settings file"/>
+    <p id="experiment-notice" role="status" class="input-help"></p>
+    <div id="experiment-link-box" hidden><label for="experiment-link" data-i18n="Experiment link">Experiment link</label><textarea id="experiment-link" readonly rows="4" spellcheck="false"></textarea><p id="experiment-link-stale" class="input-help" data-i18n="This link is a snapshot. Copy again after changing settings." hidden>This link is a snapshot. Copy again after changing settings.</p></div>
+    <p class="input-help" data-i18n="Links restore settings on the same app address. A localhost link does not open your Mac on someone else's device; use a settings file in another copy of the app.">Links restore settings on the same app address. A localhost link does not open your Mac on someone else's device; use a settings file in another copy of the app.</p>
+  </details>
+</section>
 <section>
 <div class="control-heading">
 <div>
