@@ -1,5 +1,6 @@
+import type { OrbitParameters } from './orbit';
 import { geographicToCartesian, subsolarDirectionLocal, type Vector3Tuple } from './geometry';
-import { clamp, degToRad, radToDeg, solarDeclinationDeg, SOLAR_CONSTANT } from './solar';
+import { clamp, degToRad, radToDeg, solarDeclinationDeg, solarIrradiance } from './solar';
 
 const HORIZON_EPSILON = 1e-12;
 
@@ -14,16 +15,16 @@ export function wrapSolarHours(hours: number): number {
 }
 
 /** Sun in the rotating geographic frame: inverse Y spin after inverse X tilt. */
-export function rotatingSunDirection(day: number, tilt: number, rotation: number): Vector3Tuple {
-  const [x, y, z] = subsolarDirectionLocal(day, tilt);
+export function rotatingSunDirection(day: number, tilt: number, rotation: number, orbit?: OrbitParameters): Vector3Tuple {
+  const [x, y, z] = subsolarDirectionLocal(day, tilt, orbit);
   const angle = degToRad(wrapRotation(rotation));
   return [x * Math.cos(angle) - z * Math.sin(angle), y,
     x * Math.sin(angle) + z * Math.cos(angle)];
 }
 
 /** Longitude is undefined when the Sun is exactly over a pole. */
-export function subsolarLongitude(day: number, tilt: number, rotation: number): number | null {
-  const [x, , z] = rotatingSunDirection(day, tilt, rotation);
+export function subsolarLongitude(day: number, tilt: number, rotation: number, orbit?: OrbitParameters): number | null {
+  const [x, , z] = rotatingSunDirection(day, tilt, rotation, orbit);
   return Math.hypot(x, z) < HORIZON_EPSILON ? null : radToDeg(Math.atan2(-z, x));
 }
 
@@ -36,17 +37,17 @@ export interface SolarMoment {
 
 /** Geometric point Sun, horizontal surface, top of atmosphere; not surface irradiance. */
 export function solarMoment(
-  latitude: number, longitude: number, day: number, tilt: number, rotation: number,
+  latitude: number, longitude: number, day: number, tilt: number, rotation: number, orbit?: OrbitParameters,
 ): SolarMoment {
   const normal = geographicToCartesian(latitude, longitude);
-  const sun = rotatingSunDirection(day, tilt, rotation);
+  const sun = rotatingSunDirection(day, tilt, rotation, orbit);
   let cosine = clamp(normal[0] * sun[0] + normal[1] * sun[1] + normal[2] * sun[2], -1, 1);
   if (Math.abs(cosine) < HORIZON_EPSILON) cosine = 0;
-  const sunLongitude = subsolarLongitude(day, tilt, rotation);
+  const sunLongitude = subsolarLongitude(day, tilt, rotation, orbit);
   const undefinedMeridian = sunLongitude === null || Math.abs(Math.cos(degToRad(latitude))) < HORIZON_EPSILON;
   return {
     elevationDeg: radToDeg(Math.asin(cosine)),
-    insolation: SOLAR_CONSTANT * Math.max(0, cosine),
+    insolation: solarIrradiance(day, orbit) * Math.max(0, cosine),
     solarHours: undefinedMeridian ? null : wrapSolarHours(12 + (longitude - sunLongitude!) / 15),
     illumination: cosine > 0 ? 'day' : cosine < 0 ? 'night' : 'horizon',
   };
@@ -54,28 +55,28 @@ export function solarMoment(
 
 /** Orient a selected meridian to apparent solar noon/midnight, not a time zone. */
 export function rotationAtSolarHour(
-  longitude: number, day: number, tilt: number, solarHours: number,
+  longitude: number, day: number, tilt: number, solarHours: number, orbit?: OrbitParameters,
 ): number | null {
-  const longitudeAtZero = subsolarLongitude(day, tilt, 0);
+  const longitudeAtZero = subsolarLongitude(day, tilt, 0, orbit);
   if (longitudeAtZero === null) return null;
   return wrapRotation(longitudeAtZero - longitude + 15 * (wrapSolarHours(solarHours) - 12));
 }
 
 /** Independent hour-angle formulation used to plot a full local solar day. */
-export function insolationAtSolarHour(latitude: number, day: number, tilt: number, hours: number): number {
+export function insolationAtSolarHour(latitude: number, day: number, tilt: number, hours: number, orbit?: OrbitParameters): number {
   const phi = degToRad(latitude);
-  const delta = degToRad(solarDeclinationDeg(day, tilt));
+  const delta = degToRad(solarDeclinationDeg(day, tilt, orbit));
   const hourAngle = degToRad(15 * (wrapSolarHours(hours) - 12));
   const cosine = Math.sin(phi) * Math.sin(delta) + Math.cos(phi) * Math.cos(delta) * Math.cos(hourAngle);
-  return cosine < HORIZON_EPSILON ? 0 : SOLAR_CONSTANT * Math.min(1, cosine);
+  return cosine < HORIZON_EPSILON ? 0 : solarIrradiance(day, orbit) * Math.min(1, cosine);
 }
 
 export interface DiurnalPoint { hour: number; insolation: number }
 
-export function diurnalProfile(latitude: number, day: number, tilt: number): DiurnalPoint[] {
+export function diurnalProfile(latitude: number, day: number, tilt: number, orbit?: OrbitParameters): DiurnalPoint[] {
   return Array.from({ length: 145 }, (_, i) => ({
     hour: i / 6,
-    insolation: insolationAtSolarHour(latitude, day, tilt, i / 6),
+    insolation: insolationAtSolarHour(latitude, day, tilt, i / 6, orbit),
   }));
 }
 
