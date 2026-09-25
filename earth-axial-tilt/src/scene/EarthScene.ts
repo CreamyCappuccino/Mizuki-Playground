@@ -62,20 +62,14 @@ export class EarthScene {
   private readonly earthMesh: THREE.Mesh<THREE.SphereGeometry, THREE.MeshPhongMaterial>;
   private readonly dataMesh: THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial>;
   private readonly instantMesh: THREE.Mesh<THREE.SphereGeometry, THREE.ShaderMaterial>;
-  private readonly marker = new THREE.Mesh(
-    new THREE.SphereGeometry(0.045, 18, 18),
-    new THREE.MeshBasicMaterial({ color: 0xffffff }),
-  );
+  private readonly marker = this.createLocationMarker();
   private readonly sunLight = new THREE.DirectionalLight(0xffffff, 3.4);
   private readonly sunMesh = new THREE.Mesh(
     new THREE.SphereGeometry(0.4, 32, 32),
     new THREE.MeshBasicMaterial({ color: 0xffdc7d }),
   );
   private readonly guidesGroup = new THREE.Group();
-  private readonly subsolarMarker = new THREE.Mesh(
-    new THREE.SphereGeometry(0.06, 18, 18),
-    new THREE.MeshBasicMaterial({ color: 0xffdc7d, toneMapped: false }),
-  );
+  private readonly subsolarMarker = this.createSubsolarMarker();
   private readonly terminator = new THREE.LineLoop(
     new THREE.BufferGeometry().setFromPoints(Array.from({ length: 180 }, (_, i) => {
       const a = i * Math.PI * 2 / 180;
@@ -110,6 +104,8 @@ export class EarthScene {
 
   constructor(canvas: HTMLCanvasElement, options: EarthSceneOptions = {}) {
     this.canvas = canvas;
+    this.canvas.dataset.locationMarker = 'pin';
+    this.canvas.dataset.subsolarMarker = 'sun-target';
     this.onLocationPick = options.onLocationPick;
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -208,7 +204,8 @@ export class EarthScene {
       this.sunDirectionVector.fromArray(sunDirection(this.state.day));
       this.sunLight.position.copy(this.sunDirectionVector).multiplyScalar(10);
       this.sunMesh.position.copy(this.sunDirectionVector).multiplyScalar(SUN_MARKER_DISTANCE);
-      this.subsolarMarker.position.copy(this.sunDirectionVector).multiplyScalar(EARTH_RADIUS * 1.027);
+      this.subsolarMarker.position.copy(this.sunDirectionVector).multiplyScalar(EARTH_RADIUS * 1.018);
+      this.subsolarMarker.quaternion.setFromUnitVectors(this.ringNormal, this.sunDirectionVector);
       this.terminator.quaternion.setFromUnitVectors(this.ringNormal, this.sunDirectionVector);
     }
     this.guidesGroup.visible = this.state.guides;
@@ -454,6 +451,56 @@ export class EarthScene {
     );
   }
 
+  private createLocationMarker(): THREE.Group {
+    const marker = new THREE.Group();
+    marker.name = 'selected-location-pin';
+
+    const material = new THREE.MeshBasicMaterial({ color: 0xffffff, toneMapped: false });
+    const pointer = new THREE.Mesh(new THREE.ConeGeometry(0.075, 0.18, 3), material);
+    pointer.rotation.x = Math.PI;
+    pointer.position.y = 0.09;
+
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.062, 16, 12), material);
+    head.position.y = 0.205;
+
+    const halo = new THREE.Mesh(
+      new THREE.TorusGeometry(0.09, 0.012, 8, 24),
+      new THREE.MeshBasicMaterial({ color: 0x8fe8ff, toneMapped: false }),
+    );
+    halo.rotation.x = Math.PI / 2;
+    halo.position.y = 0.205;
+
+    marker.add(pointer, head, halo);
+    return marker;
+  }
+
+  private createSubsolarMarker(): THREE.Group {
+    const marker = new THREE.Group();
+    marker.name = 'subsolar-target-marker';
+
+    const material = new THREE.MeshBasicMaterial({
+      color: 0xffdc7d, toneMapped: false, side: THREE.DoubleSide,
+    });
+    marker.add(
+      new THREE.Mesh(new THREE.RingGeometry(0.07, 0.105, 32), material),
+      new THREE.Mesh(new THREE.CircleGeometry(0.024, 20), material),
+    );
+
+    const rayPoints: THREE.Vector3[] = [];
+    for (let i = 0; i < 4; i += 1) {
+      const angle = i * Math.PI / 2;
+      rayPoints.push(
+        new THREE.Vector3(Math.cos(angle) * 0.13, Math.sin(angle) * 0.13, 0),
+        new THREE.Vector3(Math.cos(angle) * 0.18, Math.sin(angle) * 0.18, 0),
+      );
+    }
+    marker.add(new THREE.LineSegments(
+      new THREE.BufferGeometry().setFromPoints(rayPoints),
+      new THREE.LineBasicMaterial({ color: 0xffdc7d, toneMapped: false }),
+    ));
+    return marker;
+  }
+
   private createLatitudeGrid(): THREE.Group {
     const group = new THREE.Group();
     const material = new THREE.LineBasicMaterial({
@@ -534,9 +581,12 @@ export class EarthScene {
   }
 
   private updateMarker(): void {
-    this.marker.position.fromArray(geographicToCartesian(
-      this.state.location.latitude, this.state.location.longitude, EARTH_RADIUS * 1.025,
+    const point = new THREE.Vector3(...geographicToCartesian(
+      this.state.location.latitude, this.state.location.longitude, EARTH_RADIUS * 1.012,
     ));
+    const outward = point.clone().normalize();
+    this.marker.position.copy(point);
+    this.marker.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), outward);
   }
 
   private updateDataLayer(): void {
