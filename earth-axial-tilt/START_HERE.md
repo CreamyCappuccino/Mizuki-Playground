@@ -1,75 +1,57 @@
 # 次の瑞希へ — Earth Axial Tilt Lab
 
-## まずここだけ（v0.8）
+## 現在地
 
-場所は `CreamyCappuccino/Mizuki-Playground/earth-axial-tilt/`。独立した静的フロントエンドで、repo全体をworkspaceにはしていない。
+`CreamyCappuccino/Mizuki-Playground/earth-axial-tilt/`。独立した静的フロントエンド。**v0.9の比較・同時再生を実装し、v1.0.0-rc.1として仕上げ・検証中／検証記録を確認する段階。** 正式版の実機iPhone確認は未完了。公開はしていない。
 
-**v0.8 = 日本語/English切替 +「？」解説 + 太陽中心の公転俯瞰 + 引き継ぎ資料整理。**
-v0.7の4K昼夜画像・Focus・画質、v0.6の季節マップ、v0.5の熱収支モデルは維持。今回、既存の8つの `src/physics/` ファイルは変更していない。
+最短の復帰は **この文書 → ROADMAP.md → docs/V1.0.md → 変更分野のコード**。MCP索引は **Mizuki MM410**。メモリは道案内、最新コード・CI・文書が正本。
 
-最初の目的は「地球を0〜90°に傾け、季節・日射・昼時間・推定気温の関係を触って発見する」。機能数より、分かることと操作の対応を重視する。
+## 今できること
 
-## 最短で読む順番
+v0.8の日英・?・公転俯瞰・大文字・Atlas・EBMを保持。A/B別傾斜の比較、共通時計の自転＋公転、比較年グラフ、両画面のFocus、Basic/All、初回の短い案内を追加。CompareとAtlasは後読み込み。package-lockを保存、CIはnpm ci。正式完了とCI合格は最新HEADで確認し、未実施の実機試験を合格にしない。
 
-1. このページ：現在地、守る条件、ファイルの入口。
-2. `ROADMAP.md`：v0.9 Compare Lab、Coupled motion、v1.0の完成条件、その先の候補。
-3. `docs/V0.8.md`：直近の変更と確認項目。以前の全会話を読む必要はない。
-4. `docs/GUIDE.ja.md`：利用者の操作と、何を読み取るか。
-5. 変更する分野のファイルだけ（下表）。物理を変更するときだけ `docs/SCIENCE.md` を精読。
+## 読む入口
 
-READMEの過去版節と `docs/V0.4.md`〜`V0.7.md` は履歴。旧版の未実装記述を現在の制限として引用しない。v0.7で外部画像URL依存を解消、v0.8で公転俯瞰を実装している。
-
-## 変更箇所ごとの入口
-
-| 対象 | 最初に読むファイル |
+| 変更対象 | ファイル |
 |---|---|
-| 画面と共有状態、再計算の条件 | `src/main.ts`、`index.html` |
-| 日英の言葉と日付、表示更新 | `src/ui/i18n.ts`、`messages.ts`、`chart.ts` |
-| 「？」の内容・hoverとclick | `src/ui/contextHelp.ts`（意味→操作→観察→限界） |
-| 3D、座標、クリック、視点切替 | `src/scene/EarthScene.ts` |
-| 公転配置と太陽の見た目 | `src/scene/orbitLayout.ts`、`orbitOverview.ts` |
-| 画質・Focus・ヘッダー実測レイアウト | `src/ui/viewControls.ts`、`src/scene/visualQuality.ts`、`src/style.css` |
-| 年間／一日グラフ | `src/ui/chart.ts`、`dayChart.ts`、`chartLayout.ts`、`chartScrubber.ts` |
-| 全緯度の季節マップ | `src/ui/seasonAtlas.ts`、`src/physics/atlas.ts` |
-| 太陽の幾何と自転 | `src/physics/solar.ts`、`geometry.ts`、`diurnal.ts` |
-| 推定気温 | `src/physics/energyBalance.ts`、`temperatureModel.ts`、`climate.worker.ts`、`src/ui/thermalClient.ts` |
-| テスト | `tests/`（数値・不変条件）と `e2e/`（実ブラウザ） |
-| CI | repo rootの `.github/workflows/earth-axial-tilt.yml` |
+| 現在できること／起動 | `README.md` |
+| 今後と残りの検証 | `ROADMAP.md`、`docs/RELEASE_CHECKLIST.md` |
+| 日英の利用者ガイド | `docs/GUIDE.ja.md`、`docs/GUIDE.en.md` |
+| 共有A状態とUIの連携 | `src/main.ts`、`index.html` |
+| 比較B、待機・失敗、差分 | `src/ui/compareLab.ts`、`src/physics/comparison.ts` |
+| 時計 | `src/physics/motion.ts`、`src/ui/playback.ts` |
+| 描画と二画面・ピッキング | `src/scene/EarthScene.ts` |
+| 公転配置と太陽 | `src/scene/orbitLayout.ts`、`orbitOverview.ts` |
+| Atlasの後読み込み | `src/ui/lazyAtlas.ts`、`seasonAtlas.ts` |
+| 日英辞書・? | `src/ui/i18n.ts`、`messages.ts`、`contextHelp.ts` |
+| 表示設定・導入 | `src/ui/releaseControls.ts`、`viewControls.ts`、`src/style.css` |
+| 気候・天文の仕様 | `docs/SCIENCE.md` と `src/physics/` |
+| 自動検証 | `tests/`、`e2e/`、`scripts/check-docs.mjs`、ルート `.github/workflows/earth-axial-tilt.yml` |
 
-## 壊したくない条件
+## 特に壊したくない条件
 
-- 表示言語、画質、Focus、視点モードは表示設定。気温・日射の条件、地点、日付、自転角を勝手に変えない。
-- 言語選択はlocalStorageを優先。未設定なら日本語ブラウザだけja、それ以外en。ストレージが使えなくても操作可能。DOMは`lang`も更新。
-- 翻訳は固定キーの辞書とテンプレート。DOMを監視して後から推測翻訳する方式ではない。内部の都市ID・モデルIDは翻訳しない。
-- 長い日本語、Large、390px幅を確認する。文字を小さくして押し込まない。ヘッダーと公転バーは実測高で配置。
-- `Play day`は日付を固定して自転。`Play year`は自転角を固定して公転位相を動かす。v0.8では両方同時再生ではない。**Coupled motionはv0.9の計画で、既存2モードの意味を変えず第三のモードとして追加する。**
-- 物理のSun方向は `[cos(lambda), 0, sin(lambda)]`。公転俯瞰の地球中心はその **負方向×14**。軸は宇宙空間で固定し、`Rx(tilt)*Ry(spin)`を維持する。
-- 地球中心表示のカメラは公転切替から戻せる。`View location`は公転表示を抜けて地球を拡大。地理座標ピッキングの逆変換を壊さない。
-- 公転表示の距離・地球サイズ・太陽サイズは説明用。日射の強度を表示距離で再計算しない。太陽の模様は静的な装飾。
-- 気温は日平均相当の緯度帯モデルで、最高気温や観測点に合わせた予報ではない。比較相手も同じモデル・同じ蓄熱条件の23.44°。
-- Workerの古い返信で新条件の気温を上書きしない。計算待ち／失敗時は古い気温を新条件の結果として見せない。
-- UI全体の「?」は解説するだけで状態を変えない。Escは一番上のダイアログを閉じ、Focusまで一緒に解除しない。
+- AとBは**傾きだけ別**。日付・自転角・地点・気温モデル・蓄熱・視点・凡例は共有。同期解除は未実装で意図的に保留。
+- A−Bは日平均系だけ。同じ自転位相でも、傾きが異なれば視太陽時まで同じとは限らない。瞬間差を無説明で追加しない。
+- 地点パネルはA。比較中の年間破線はB。一日のグラフはA。AtlasはA対23.44°で、Bとの差ではない。
+- Play day＝日付固定、Play year＝自転角固定。Coupled＝共通モデル時計。365平均太陽日で366慣性回転、×1で0.1モデル日／実秒。日付ラップで回転をリセットしない。
+- **v0.9で座標系を修正済み。** 太陽方向は `[cosλ,0,-sinλ]`、地球は `Rx(-tilt)*Ry(spin)`、公転中心位置は太陽方向の負×14。公転と東向き自転は+Y回りの順行。過去版の正負をコピーしない。
+- 傾き・表示方向の修正に合わせ初期カメラも反対側へ移し、夏至付近の初期画面を昼側から見る。緯度別の日射・昼時間・気候方程式は変えていない。
+- 一つのWebGLRenderer／sceneを二つのscissor viewportへ描画。Bパスの後は必ずA状態を復元。別々の太陽系を比べる画面であって、同じ軌道に惑星を二つ置いた物理モデルではない。
+- Bの熱計算は独立したrequest管理。A=BならAの解を再利用。待機・失敗時に古い温度を新条件の値にしない。
+- 言語・画質・Basic/All・Focusは表示だけ。小さい画面で文字を縮めず、並び替えやスクロールを使う。比較時に旧Singleのmargin-top/translateXが復活しないよう確認。
+- 解除可能な任意モジュールの読込失敗は、数値機能を壊さず、明示したページ再読み込みで回復する。
+- bfcacheに入るpagehideはdisposeしない。通常終了ではRAF・Observer・listener・worker・GL資源を片づける。
 
-## 作業手順と権限
+## 検証と作業
 
-作業開始時はGitHubの最新tree/HEADを読む。会話に残った同名ファイルには過去版が混ざりやすいので、変更対象はSHAも確認する。repo全体の規則はroot `AGENTS.md`。
+最初にGitHub最新HEADと対象ファイルSHAを読む。会話添付には古い同名コードが多数ある。repoルート `AGENTS.md` も読む。変更はこのプロジェクト内、他作品を巻き込まない。
 
-ローカル確認：project directoryで `npm install` → `npm run typecheck` → `npm test` → `npm run build` → `npx playwright install chromium` → `npm run test:e2e`。
+`npm ci` → `npm run verify` → `npx playwright install chromium` → `npm run test:e2e`。Mac側エンジン検証は `npm run test:e2e:webkit`。Playwright WebKit ≠ 実機Safari。実機の未確認項目は `docs/RELEASE_CHECKLIST.md` に残す。
 
-GitHub Actionsの**対象コードと同じhead_sha**がsuccessかを確認。テスト名だけ・スクリーンショット保存だけで成功としない。この環境ではnpm/network/WebGLが使えない場合がある。UIだけの代替確認と、本物の依存関係で実行したCIを区別して報告する。
+CIの同じhead_shaを確認。Chromiumの画像基準を変更するときはactual/diffを読んでから更新し、自動で毎回基準を上書きしない。WebGLのスクリーンショットを、DOMだけの代替画像と混同しない。
 
-潮さんから、完了後のMacへのpullは許可済み。GitHub Liteのtargetは **`mizuki-playground`**。status確認→clean/非分岐を確認→`pull_local_repository(confirm_pull=true)`→status再確認。dirtyを破壊して進めない。公開サイトのdeployや新repo作成は別の境界で、自動実施しない。
+完了後のMac pullは潮さんから許可済み。GitHub Lite target=`mizuki-playground`。status→clean/非分岐→pull(confirm_pull=true)→status。dirtyを消さない。公開・新repo作成は別承認。
 
-## 今回の資料点検で整理したこと
+## 文書とメモリ
 
-各版のREADME・科学説明・変更履歴・画像の出典は既に残っていた。一方、現状への入口と操作ガイドがなく、過去版の制限と現在の機能が混ざりやすかった。`START_HERE.md`を入口、`ROADMAP.md`を未来の正本、操作をGUIDE、最新変更をV0.8、科学の仕様をSCIENCEへ分離した。
-
-## 残っている候補（未着手を完成と混同しない）
-
-**v0.9 / v1.0の計画は `ROADMAP.md` を正本とする。** 近い順ではDual Earth、Coupled motion、比較ガイド、実機Safari、packaging/performance、1.0向けUI整理・回帰テスト。さらに先は雲、海陸／氷のフィードバック、離心率・歳差、別惑星など。
-
-日英化・解説・公転俯瞰はv0.8で実装済み。ROADMAP上の未実装項目と混同しない。
-
-## この文書の更新
-
-次の版で「まずここだけ」と残作業を更新し、直近のV0.xへリンクする。大きな優先順位や版計画を変えた場合は `ROADMAP.md` も同時更新する。検証runと正確なcommitはGitHubの履歴／CIと各リリースの報告を正本にし、古い会話の番号だけに依存しない。
+README＝今できること、START_HERE＝復帰入口、ROADMAP＝未来、SCIENCE＝数式、V0.x/V1.x＝変更履歴。関連する文書をコードと同時更新する。Mizuki MM410は短い索引として更新し、版ごとの長文を無限に追記しない。
