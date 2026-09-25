@@ -75,15 +75,18 @@ export class CompareLab {
     const a=this.snapshot!.source;
     return {...a,tilt:this.tiltB,solution:this.tiltB===a.tilt?a.solution:this.solution};
   }
+  /** Import validated settings without invoking synthetic clicks or moving keyboard focus. */
+  configure(enabled: boolean, tiltB: number): void {
+    this.tiltB=tiltB; this.enabled=enabled;
+    document.documentElement.dataset.comparison=String(enabled);
+    this.el('compare-controls').hidden=!enabled;
+    this.el('compare-results').hidden=!enabled;
+    this.el('comparison-labels').hidden=!enabled;
+    if(!enabled){this.worker.cancel();this.solution=null;this.key='';this.error='';this.actions.scene(null);}
+  }
   toggle(): void {
     if(!this.enabled && this.el('focus-view').getAttribute('aria-pressed')==='true') this.el('focus-view').click();
-    this.enabled=!this.enabled;
-    document.documentElement.dataset.comparison=String(this.enabled);
-    this.el('compare-controls').hidden=!this.enabled;
-    this.el('compare-results').hidden=!this.enabled;
-    this.el('comparison-labels').hidden=!this.enabled;
-    // Focus hides controls in either mode; it never changes A/B science.
-    if(!this.enabled){this.worker.cancel();this.solution=null;this.key='';this.actions.scene(null);}
+    this.configure(!this.enabled,this.tiltB);
     this.actions.change();
     this.el('compare-toggle').focus({preventScroll:true});
   }
