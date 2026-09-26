@@ -1,7 +1,7 @@
 # Earth geography — isolated physics/data design candidate
 
 Updated: 2026-09-26. Decision sources: Chat-side science designer's
-CX-MSG0211–0213 and CX-MSG0216; 0212 supersedes the original grid reuse.
+CX-MSG0211–0213 and CX-MSG0216–0217; 0212 supersedes the original grid reuse.
 Status: **physics/data implementation authorized; no solver or UI release yet**.
 Display follow-up at `a8c096f` was accepted and FF-integrated into main and
 the existing serving clone. Same-head CI #53 / run 36246368748 and main CI #54 /
@@ -78,6 +78,19 @@ The revised geometry reportedly gives RMS 0.002881 / 0.000785 / 0.000211 /
 prototype results**, not local verified fixtures. Longitude counts, norm
 normalization, scripts and tolerances must accompany the reproducible test.
 
+CX-MSG0217 supplies the exact definition: nlat=[18,36,72,144], nlon=2*nlat,
+`error = L_D(T) + 2*D*T`, D=0.55, and
+`areaRMS = sqrt(sum(w_i*error_ij^2)/(2*nlon))`. This includes D; it is not
+the bare Laplacian norm. Targets are 0.0028811671 / 0.0007849835 /
+0.0002109333 / 0.0000561486, maximum errors 0.0234076 / 0.0119250 /
+0.0059903 / 0.0029986. The largest grid only requires matvec, not annual solve.
+
+The isolated `src/physics/geographyGrid.ts` implements this geometry and pairwise
+weighted transport. `tests/geographyGrid.test.ts` checks the stated harmonic
+norm, shared-face symmetry/dissipation, constant field, seam/poles, spherical
+area and variable-capacity weighted conservation. This is not a PCG solver or
+completed annual climate validation; Classic code and UI are unchanged.
+
 ## Gates before UI integration
 
 1. Reproduce the harmonic convergence test and area-weighted transport sum
@@ -88,6 +101,10 @@ normalization, scripts and tolerances must accompany the reproducible test.
    5.4e-8 °C (uniform land), 2.93e-6 °C (uniform ocean), 2.80e-6 °C
    (longitude >0 land). These remain designer-reported, not local fixtures.
    The old-geometry `<=2.2e-10` comparison must not certify the replacement.
+   CX-MSG0217 additionally reports new-grid smooth fractional-mask PCG vs sparse
+   direct max difference 6.34e-11, actual relative-L2 residual 2.34e-11,
+   matrix symmetry error 8.9e-16. These are independent designer results;
+   local PCG still needs implementation and oracle comparison.
 3. Uniform land/ocean must reduce to an independently implemented 1D finite
    volume solve on the **same new grid**, not byte-match an old 18-band
    x-center discretization. Independently retain Classic byte regressions.
@@ -127,6 +144,10 @@ checks. Test major continents, Pacific ocean, antimeridian wrapping, polar
 caps, holes and small-island resolution limits. Pin the builder, parameters
 and output checksum. Source is acquired; fractional mask generation and its
 tests, output hash and solver implementation are still pending.
+The designer has prepared an independent Shapely cell-clipping / line-integral
+area oracle (`-integral sin(phi) d_lambda` for lon/lat-linear polygon edges),
+with rectangle/holes/poles/4π fixtures. Compare its results against the local
+subsample mask when generated; neither method is already verified here.
 
 ## UI contract to review later
 
