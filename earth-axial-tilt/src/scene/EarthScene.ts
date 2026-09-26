@@ -469,8 +469,8 @@ export class EarthScene {
     canvas.height = 96;
     const context = canvas.getContext('2d');
     if (context) {
-      context.shadowColor = '#8fe8ff';
-      context.shadowBlur = 8;
+      context.shadowColor = 'rgba(120, 0, 0, 0.5)';
+      context.shadowBlur = 5;
       context.beginPath();
       context.moveTo(32, 92);
       context.bezierCurveTo(27, 75, 8, 56, 8, 34);
@@ -478,15 +478,15 @@ export class EarthScene {
       context.bezierCurveTo(46, 6, 56, 16, 56, 34);
       context.bezierCurveTo(56, 56, 37, 75, 32, 92);
       context.closePath();
-      context.fillStyle = '#f7fbff';
+      context.fillStyle = '#ef4444';
       context.fill();
       context.shadowBlur = 0;
       context.lineWidth = 3;
-      context.strokeStyle = '#8fe8ff';
+      context.strokeStyle = '#991b1b';
       context.stroke();
       context.beginPath();
       context.arc(32, 33, 9, 0, Math.PI * 2);
-      context.fillStyle = '#18364f';
+      context.fillStyle = '#ffffff';
       context.fill();
     }
     const texture = new THREE.CanvasTexture(canvas);
@@ -496,7 +496,7 @@ export class EarthScene {
     }));
     marker.name = 'selected-location-pin';
     marker.center.set(0.5, 0.04);
-    marker.scale.set(0.34, 0.51, 1);
+    marker.scale.set(0.15, 0.225, 1);
     return marker;
   }
 
