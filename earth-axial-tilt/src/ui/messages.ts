@@ -1,5 +1,6 @@
 /** English source phrases are stable keys. Placeholders {0}… retain ordering in both languages. */
 export const jaMessages: Readonly<Record<string, string>> = {
+  "Reference temperature unavailable. Retry the thermal model; Earth A remains usable.": "基準の気温を取得できません。熱モデルを再試行してください。地球Aは引き続き使えます。",
   "Spring": "春",
   "Summer": "夏",
   "Autumn": "秋",
