@@ -6,7 +6,7 @@ test('feedback real worker distinguishes warm/cold and off restores a common cli
  await openLab(page);await run(page);
  const values=await page.locator('[data-mean]').evaluateAll(nodes=>nodes.map(n=>Number((n as HTMLElement).dataset.mean)));
  expect(values[0]).toBeGreaterThan(10);expect(values[1]).toBeLessThan(-30);expect(values).toHaveLength(2);
- await expect(page.locator('.feedback-curve')).toHaveCount(2);await expect(page.locator('#fb-ramp')).toBeVisible();await page.screenshot({path:info.outputPath('v14-feedback-warm-cold.png'),fullPage:true});
+ await expect(page.locator('#fb-annual .feedback-curve')).toHaveCount(2);await expect(page.locator('#fb-ramp')).toBeVisible();await page.screenshot({path:info.outputPath('v14-feedback-warm-cold.png'),fullPage:true});
  await page.locator('#fb-enabled').selectOption('false');await expect(page.locator('#fb-status')).toHaveAttribute('data-status','idle');await run(page);
  const off=await page.locator('[data-mean]').evaluateAll(nodes=>nodes.map(n=>Number((n as HTMLElement).dataset.mean)));
  expect(Math.abs(off[0]-off[1])).toBeLessThan(1e-5);await expect(page.locator('#fb-proxy-off')).toBeVisible();
@@ -77,6 +77,8 @@ test('an unsettled 80-year history remains inspectable without claiming equilibr
  await expect(page.locator('#fb-status')).toContainText('not an equilibrium');
  await expect(page.locator('#fb-selected option')).toHaveCount(1);
  await expect(page.locator('#fb-cards')).toContainText('Last simulated year');
- await expect(page.locator('.feedback-curve')).toHaveCount(1);
+ await expect(page.locator('#fb-annual .feedback-curve')).toHaveCount(1);
+ // Annual response and history use the same SVG curve class; inspect each chart, not their combined count.
+ await expect(page.locator('#fb-history circle')).toHaveCount(1);
  await page.locator('#fb-cards').scrollIntoViewIfNeeded();await page.screenshot({path:info.outputPath('v14-feedback-unsettled.png')});
 });
