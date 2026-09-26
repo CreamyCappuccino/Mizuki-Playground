@@ -1,17 +1,20 @@
 # Earth geography browser slice — alpha 2 candidate
 
 Updated: 2026-09-26. Authority: CX-MSG0226, continuing the isolated
-[physics/data design](DESIGN-v1.3-earth-geography.md). This is a plan, not
-completed UI or scientific acceptance. Base core: `661f9ff`.
+[physics/data design](DESIGN-v1.3-earth-geography.md). The component lane and a separate production-built browser preview are now
+implemented on review branches; full 3D/profile integration is still pending.
+Base accepted core: `661f9ff`. The preview does not alter schema 3 or the
+accepted 3D Earth/Compare/Atlas semantics.
 
 ## Ownership and gates
 
-Codex Mizuki is the sole repository writer; Chat-side Mizuki independently
-checks the production-mask annual arrays and reviews browser images. Work is
-isolated on `codex/earth-geography-browser`. Main and the existing serving
-clone remain at the accepted display `a8c096f`. Integration/serving FF requires
-the subsequent explicit GO after core and image acceptance. No deployment,
-network change, new physical coefficients, feedback or finer UI grid.
+The reusable sampler/worker/client components were prepared on
+`codex/earth-geography-browser`; Chat-side review then assembled the separate
+`mizuki/earth-geography-live-preview` production-built preview after independent
+core acceptance. Main and the existing serving clone remain at the accepted
+display `a8c096f` until final review/fast-forward. No deployment, network
+change, new physical coefficients, feedback or finer UI grid is authorized by
+this slice.
 
 ## Fixed contracts
 
@@ -98,17 +101,18 @@ designer-reported independent acceptance, not a locally rerun Python audit.
 Same-head CI56/run36249767365 passed verify and macOS WebKit. TSK1919 is closed.
 This validates the discrete educational equations, not real climate accuracy.
 
-`geographySampling.ts` now defines the common containing-cell/time sampler;
+`geographySampling.ts` defines the common containing-cell/time sampler;
 `geographyMask.ts` verifies actual little-endian numerical payload bytes with
-Web Crypto and returns private mask snapshots. Browser UI is still unconnected.
+Web Crypto and returns private mask snapshots. These components are connected
+to the isolated preview but not yet to the accepted 3D Earth profile.
 Polar readouts identify a selected longitude sector in a coarse polar cap, not
 a unique longitude at the geometric pole. Cancel will be distinct from error.
 Globe colour must not create interpolated scientific values across cells:
 prefer a discrete cell texture/nearest sampling; any visual interpolation must
 be labelled as display-only while all readouts/curves/Atlas use the same index.
 
-The dedicated stateless worker and shared serial client are implemented but
-not connected to the UI yet. The client validates scientific keys/provenance,
+The dedicated stateless worker and shared serial client are implemented and
+connected to the isolated preview, but not yet to the accepted 3D Earth/Compare/Atlas UI. The client validates scientific keys/provenance,
 terminates obsolete synchronous jobs, ignores late callbacks, distinguishes
 cancel/error, supports explicit retry and caches at most three accepted fields
 under 6 MiB of owned typed arrays. Fake-worker lifecycle tests exercise
@@ -128,3 +132,25 @@ emit error, terminate the bad worker and continue other queued owners. These
 are internal message-defence failures, not observed external attacks. A canceled
 slot resumes only with a deliberate fresh request using current conditions;
 `retry` is for retained error intent, not an automatic cancel undo.
+
+
+## Actual browser preview evidence
+
+The isolated `geography-lab.html` preview is built as a second Vite HTML entry.
+It uses the production `geography.worker.ts`, `GeographyClient`, validated mask
+and common `geographySampling.ts` functions; no precomputed browser fixture is
+substituted. Scientific edits replace/cancel obsolete worker intent, while day
+and location changes only resample accepted annual fields. The optional
+reference is 23.44° at the same orbit and geography.
+
+Chromium and macOS Playwright WebKit exercise the real worker, verify the
+Taipei coarse cell (25°N/125°E, q64 land fraction 7.47%), change longitude
+without a new annual solve, cancel/retry a changed-tilt solve, and check
+Japanese Large at 390×844 without horizontal overflow. Browser screenshots
+cover the real land-fraction field and the mobile temperature/reference view.
+This evidence remains distinct from branded physical-iPhone Safari acceptance.
+
+Portable settings on this preview use their own pinned `earth-geography-preview`
+version-1 envelope and mask/solver identity. They do **not** upgrade or reinterpret
+the main application's schema 3. A future integrated profile still requires an
+explicit schema-4 migration contract.
