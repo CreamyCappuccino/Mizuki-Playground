@@ -1,6 +1,6 @@
-import { orbitKey, maximumSolarFactor } from './orbit';
+import { orbitKey, maximumSolarFactor, normalizeOrbit } from './orbit';
 import { dailyMeanInsolation, dayLengthHours, SOLAR_CONSTANT } from './solar';
-import { isThermalReady, temperatureFromSource, type TemperatureSource } from './temperatureModel';
+import { isThermalReady, isGeographySource, temperatureFromSource, type ScientificTemperatureSource } from './temperatureModel';
 import { geographyCounterpart } from './climateGeography';
 
 export type AtlasMetric = 'temperature' | 'insolation' | 'daylight';
@@ -8,8 +8,9 @@ export type AtlasView = 'absolute' | 'difference';
 export interface AtlasConfig {
   metric: AtlasMetric;
   view: AtlasView;
-  source: TemperatureSource;
-  reference: TemperatureSource;
+  source: ScientificTemperatureSource;
+  reference: ScientificTemperatureSource;
+  longitude?: number;
   referenceKind?: 'tilt' | 'geography';
 }
 export interface AtlasReading { current: number; reference: number | null; value: number }
@@ -26,6 +27,7 @@ export const ATLAS_DAYS = 365;
 export const ATLAS_UNITS = { temperature: '°C', insolation: 'W/m²', daylight: 'h' } as const;
 
 export function atlasReady(config: AtlasConfig): boolean {
+  if(isGeographySource(config.source)&&!Number.isFinite(config.longitude))throw new RangeError('Earth atlas requires longitude.');
   if (config.metric !== 'temperature') return true;
   if (!isThermalReady(config.source)) return false;
   if (config.view === 'absolute') return true;
@@ -47,25 +49,26 @@ export function atlasReading(config: AtlasConfig, latitude: number, day: number)
     throw new RangeError('Atlas coordinates and tilt must be finite and inside the model domain.');
   }
   if (!atlasReady(config)) return null;
-  const sample = (source: TemperatureSource): number => config.metric === 'temperature'
-    ? temperatureFromSource(source, latitude, day)!
+  const sample = (source: ScientificTemperatureSource): number => config.metric === 'temperature'
+    ? temperatureFromSource(source, latitude, day, config.longitude)!
     : config.metric === 'insolation' ? dailyMeanInsolation(latitude, day, source.tilt, source.orbit)
       : dayLengthHours(latitude, day, source.tilt, source.orbit);
   const current = sample(config.source);
   // Astronomy always uses exactly 23.44 degrees even while the thermal worker is unavailable.
   const referenceSource = config.referenceKind === 'geography'
-    ? { ...config.reference, tilt: config.source.tilt, orbit: config.source.orbit }
-    : { ...config.reference, tilt: 23.44, orbit: config.source.orbit };
+    ? { ...config.reference, tilt: config.source.tilt, orbit: normalizeOrbit(config.source.orbit) }
+    : { ...config.reference, tilt: 23.44, orbit: normalizeOrbit(config.source.orbit) };
   const reference = config.view === 'difference' ? sample(referenceSource) : null;
   return { current, reference, value: reference === null ? current : current - reference };
 }
 
 export function buildAtlasField(config: AtlasConfig): AtlasField | null {
   if (!atlasReady(config)) return null;
-  const values = new Float64Array(ATLAS_ROWS * ATLAS_DAYS);
+  const rows = isGeographySource(config.source) ? 18 : ATLAS_ROWS;
+  const values = new Float64Array(rows * ATLAS_DAYS);
   let minimum = Infinity, maximum = -Infinity;
-  for (let row = 0; row < ATLAS_ROWS; row += 1) {
-    const latitude = 90 - row * 2;
+  for (let row = 0; row < rows; row += 1) {
+    const latitude = rows === 18 ? 85 - row * 10 : 90 - row * 2;
     for (let column = 0; column < ATLAS_DAYS; column += 1) {
       const value = atlasReading(config, latitude, column + 1)!.value;
       if (!Number.isFinite(value)) throw new Error('Non-finite atlas value.');
@@ -73,7 +76,7 @@ export function buildAtlasField(config: AtlasConfig): AtlasField | null {
       minimum = Math.min(minimum, value); maximum = Math.max(maximum, value);
     }
   }
-  return { values, rows: ATLAS_ROWS, columns: ATLAS_DAYS, minimum, maximum };
+  return { values, rows, columns: ATLAS_DAYS, minimum, maximum };
 }
 
 export interface AtlasScale { minimum: number; maximum: number; diverging: boolean }

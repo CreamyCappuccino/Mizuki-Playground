@@ -12,6 +12,10 @@ function world(overrides: Partial<ExperimentState>): Readonly<ExperimentState> {
 }
 const taipei=LOCATIONS.find(place=>place.id==='taipei')!;
 export const EXPERIMENT_PRESETS: readonly ExperimentPreset[] = [
+  { id:'earth-geography-pair', title:['Real geography: same latitude, different longitude','実海陸：同緯度・別経度'],
+    question:['How do real land fractions reshape the annual cycle?','実際の陸率で年間の温度変化はどう変わる？'],
+    watch:['Switch location between North Asia 45°N 105°E and North Pacific 45°N 135°W. Both are 10° cell averages, not city climates. A/B still compares the same selected location.','地点を北アジア45°N/105°Eと北太平洋45°N/135°Wで切り替えます。10°セル平均で都市気候ではありません。A/Bは同じ選択地点の比較です。'],
+    state:world({climateProfile:'earth-geography',latitude:45,longitude:105,surfaceMode:'temperature',chartMetric:'temperature'}) },
   { id:'land-ocean-response',title:['Same latitude: land or ocean?','同じ緯度：陸と海では？'],
     question:['How do heat capacity and lag reshape the same season?','同じ季節でも、熱容量と遅れでどう変わる？'],
     watch:['Idealized land and ocean receive the same sunlight. Start with land, then switch to ocean and compare the dashed annual curve. This is not a real geographic map.','理想化した陸と海は同じ日射を受けます。陸から始め、海へ切り替えて年間グラフの破線と比較します。実際の地理分布ではありません。'],

@@ -1,9 +1,9 @@
-import { isIdealizedGeography, type ClimateProfile } from '../physics/climateGeography';
+import { isIdealizedGeography, type AppClimateProfile } from '../physics/climateGeography';
 import { t } from './i18n';
 
 /** Distinguish the retained Classic control from the material actually being solved. */
-export function updateHeatStorageControl(thermal: boolean, profile: ClimateProfile): void {
-  const idealized = isIdealizedGeography(profile);
+export function updateHeatStorageControl(thermal: boolean, profile: AppClimateProfile): void {
+  const idealized = isIdealizedGeography(profile) || profile === 'earth-geography';
   const select = document.querySelector<HTMLSelectElement>('#heat-storage')!;
   const note = document.querySelector<HTMLElement>('#heat-retained-note')!;
   select.disabled = !thermal || idealized;

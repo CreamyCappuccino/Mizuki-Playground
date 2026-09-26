@@ -1,10 +1,16 @@
-# Experiment state format — schema 3, with schema 1/2 migration
+# Experiment state format — schema 4, preserving schemas 1–3
+
+Updated: 2026-09-27. Schema 4 adds `earth-geography` (Thermal EBM only).
+Schema 3 URL/JSON explicitly rejects this new profile; existing Classic and
+idealized profiles remain valid. Schemas 1/2 retain their Classic migrations.
+Fixed grid, mask and solver identity come from the pinned application data,
+not imported user-supplied arrays or a graphics-quality control.
 
 A reproducible scientific experiment is distinct from display preferences, a cached solution and civil time.
 
 ## URL
 
-A complete link contains an app origin/path and a `#lab=3&…` fragment. The serializer removes arbitrary query parameters and credentials. Sharing is user-initiated; playback does not continuously replace browser history. Existing non-experiment fragments are ignored.
+A complete link contains an app origin/path and a `#lab=4&…` fragment. The serializer removes arbitrary query parameters and credentials. Sharing is user-initiated; playback does not continuously replace browser history. Existing non-experiment fragments are ignored.
 
 Fields: `a`, `b` (tilts 0–90°); `day` (1 ≤ day < 366, fractional allowed); `spin` (0–360°, 360 normalizes to 0); `lat`, `lon` (paired selected coordinates); `dual`, `ref`, `guides` (0/1); `layer` (normal/instant/insolation/daylight/temperature); `model` (energy-balance/illustrative); `heat` (2.5/10/50); `geo` (`classic`/`idealized-land`/`idealized-ocean`); `view` (earth/orbit); `period` (year/day); `chart` (temperature/insolation/daylight); `speed` (1/4/12).
 
@@ -12,7 +18,7 @@ Missing known fields use `DEFAULT_EXPERIMENT`, not current UI state. Unknown key
 
 ## File
 
-UTF-8 JSON envelope: `application: "earth-axial-tilt"`, `version: 3`, `state: ExperimentState`. Input size is checked before reading; the same validator applies. Exported files contain no image, user account, location access request or thermal array.
+UTF-8 JSON envelope: `application: "earth-axial-tilt"`, `version: 4`, `state: ExperimentState`. Input size is checked before reading; the same version-aware validator applies. Exported files contain no image, user account, location access request or thermal array. `geo=earth-geography` is additional to the schema-3 profile values listed below; its retained heat-depth setting is metadata, not the capacity actually used by each cell.
 
 ## State application
 

@@ -50,7 +50,7 @@ export class GeographyLayer {
   }
   update(source: GeographyTemperatureSource | null, day: number, visible: boolean): void {
     this.mesh.visible = visible && source !== null && isThermalReady(source);
-    if (!this.mesh.visible || !source) return;
+    if (!this.mesh.visible || !source) { this.source = null; this.day = NaN; return; }
     if (this.source?.geography === source.geography && this.day === day) return;
     const pixels = geographyColorPixels(source, day)!;
     (this.texture.image.data as Uint8Array).set(pixels);

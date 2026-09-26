@@ -1,13 +1,16 @@
 import { dailyMeanInsolation, dayLengthHours } from './solar';
-import { temperatureFromSource, type TemperatureSource } from './temperatureModel';
+import { isGeographySource, temperatureFromSource, type ScientificTemperatureSource } from './temperatureModel';
 export interface ComparisonRow { key: 'daylight' | 'solar' | 'temperature'; a: number | null; b: number | null; difference: number | null }
-export function compareMeasurements(a: TemperatureSource, b: TemperatureSource, latitude: number, day: number): ComparisonRow[] {
+export function compareMeasurements(a: ScientificTemperatureSource, b: ScientificTemperatureSource, latitude: number, day: number, longitude?: number): ComparisonRow[] {
   if (a.model !== b.model || a.depth !== b.depth) throw new RangeError('Comparison requires the same model and heat storage.');
+  if (isGeographySource(a) !== isGeographySource(b)) throw new RangeError('Comparison requires the same geography profile.');
+  if (isGeographySource(a) && isGeographySource(b) && a.geography && b.geography &&
+      a.geography.provenance.id !== b.geography.provenance.id) throw new RangeError('Comparison requires the same mask.');
   const row = (key: ComparisonRow['key'], x: number | null, y: number | null): ComparisonRow => ({ key, a: x, b: y,
     difference: x === null || y === null ? null : x - y });
   return [row('daylight', dayLengthHours(latitude,day,a.tilt,a.orbit),dayLengthHours(latitude,day,b.tilt,b.orbit)),
     row('solar', dailyMeanInsolation(latitude,day,a.tilt,a.orbit),dailyMeanInsolation(latitude,day,b.tilt,b.orbit)),
-    row('temperature',temperatureFromSource(a,latitude,day),temperatureFromSource(b,latitude,day))];
+    row('temperature',temperatureFromSource(a,latitude,day,longitude),temperatureFromSource(b,latitude,day,longitude))];
 }
 export interface ComparisonViewport { x: number; y: number; width: number; height: number; side: 'A' | 'B' }
 /** Top-origin CSS pixel rectangles. Scissor converts Y only at the WebGL boundary. */

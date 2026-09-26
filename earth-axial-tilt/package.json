@@ -1,7 +1,7 @@
 {
   "name": "earth-axial-tilt",
   "private": true,
-  "version": "1.3.0-alpha.1",
+  "version": "1.3.0-alpha.2",
   "type": "module",
   "scripts": {
     "data:geography": "node scripts/buildGeographyMask.mjs",

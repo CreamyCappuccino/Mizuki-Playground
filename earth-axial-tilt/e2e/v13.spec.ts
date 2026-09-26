@@ -68,7 +68,9 @@ test('desktop dual and single orbit retain the full presentation', async ({ page
 });
 
 test('schema 3 keeps geography while schema 2 migrates to Classic', async ({ page }) => {
-  await open(page, { ...DEFAULT_EXPERIMENT, climateProfile: 'idealized-land' });
+  await page.goto('/' + encodeExperiment({ ...DEFAULT_EXPERIMENT, climateProfile: 'idealized-land' }).replace('lab=4','lab=3'));
+  await expect(page.locator('#experiment-notice')).toHaveAttribute('data-status','ready');
+  await expect(page.locator('#climate-status')).toHaveAttribute('data-status','ready');
   const hash = await page.evaluate(() => location.hash);
   expect(decodeExperiment(hash)).toEqual({ status: 'ok', state: { ...DEFAULT_EXPERIMENT, climateProfile: 'idealized-land' } });
   await page.goto('/#lab=2&e=.1&model=energy-balance');

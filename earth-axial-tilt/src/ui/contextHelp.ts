@@ -76,10 +76,10 @@ export const HELP: Readonly<Record<string, Help>> = {
     },
     geography: {
         title: ['Climate geography', '気候の地理'],
-        meaning: ['Earth Classic applies one chosen heat capacity globally. Idealized land and ocean compare two material responses under the same sunlight.', '従来モデルは選んだ熱容量を地球全体に適用します。理想化した陸と海は、同じ日射のもとで二つの熱応答を比べます。'],
+        meaning: ['Classic uses uniform heat capacity; idealized profiles use one material. Earth geography uses Natural Earth 4.1.0 land fractions in fixed 18×36 cells with a two-dimensional educational EBM.', 'Classicは一様な熱容量、理想化プロファイルは一つの材質。実海陸地理はNatural Earth 4.1.0の陸率と固定18×36セルの2次元教材EBMを使います。'],
         experiment: ['Keep one latitude and choose Idealized land, then Idealized ocean. Compare the solid and dashed annual curves.', '一つの緯度で「理想化した陸」から「理想化した海」へ切り替え、年間グラフの実線と破線を比べます。'],
         observe: ['Land has the larger seasonal range and earlier peak; ocean stores more heat and responds later.', '陸は季節振幅が大きく山が早め。海はより多く熱をため、遅れて応答します。'],
-        limit: ['Each profile covers the whole model world. There is no real coastline, longitude-resolved climate, altitude, ocean circulation or 2D GCM.', '各プロファイルはモデル世界全体を一つの材質で覆います。実際の海岸線、経度方向の気候、標高、海流、2次元GCMはありません。'],
+        limit: ['Earth geography is a 10° cell average, not point land classification or city climate. Small islands, lakes and ice are not separately resolved. Isotropic diffusion is an educational assumption, not measured winds/currents; this is not a GCM.', '実海陸地理は10°セル平均で、地点の海陸分類や都市気候ではありません。小島・湖・氷を個別には解像しません。等方拡散は教材上の仮定で実際の風・海流ではなく、GCMでもありません。'],
     },
     temperature: {
         title: ['Temperature model', '気温の計算方式'],
@@ -100,7 +100,7 @@ export const HELP: Readonly<Record<string, Help>> = {
         meaning: ['A full year runs left to right; latitude runs north to south from top to bottom.', '横は左から右へ一年、縦は上が北で下が南です。'],
         experiment: ['Choose Daylight and compare 0°, Earth and 90°. Then try Difference from 23.44°.', '「昼の長さ」で0°・現在の地球・90°を比較。その後「23.44°との差」も試します。'],
         observe: ['Find polar day/night zones; click a patch to select its day and latitude on Earth.', '白夜・極夜の領域を探します。気になる場所をクリックすると、地球の日付と緯度も変わります。'],
-        limit: ['The dashed line is the subsolar latitude, not the hottest location. Read the changing temperature colour scale.', '破線は太陽直下点の緯度で、最も暑い場所ではありません。気温の色域は設定に応じて変わるので凡例も見てください。'],
+        limit: ['The dashed line is subsolar latitude, not the hottest location. Earth geography shows the selected-longitude section, not a zonal mean; its reference is 23.44° with A’s orbit and mask, not B. Polar caps keep the selected longitude sector.', '破線は太陽直下点の緯度で、最暑地点ではありません。実海陸地理は選択経度の断面で緯度帯平均ではなく、基準はAと同じ軌道・マスクの23.44°でBではありません。極域は選択経度の区画を使います。'],
     },
     compare: {
         title: ['Compare Earth', '現在の地球との比較'],

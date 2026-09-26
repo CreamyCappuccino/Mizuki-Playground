@@ -1,4 +1,25 @@
-# What the numbers mean — current through v1.3 alpha 1
+# What the numbers mean — v1.3 alpha 2 review candidate
+
+## Earth geography browser profile (2026-09-27)
+
+The new profile uses the independently reviewed Natural Earth 4.1.0 q64
+land-fraction data and unchanged geography EBM core; see
+[the numerical/data design](DESIGN-v1.3-earth-geography.md). Its 18×36 / 10°
+resolution is a scientific condition, not display quality. Spatial samples
+are containing-cell constants; only the periodic daily time series is linearly
+interpolated. The nearest-filtered globe layer creates no intermediate coastal
+temperatures. Point, annual curve, Compare and Atlas use the same cell sampler.
+The Atlas is a selected-longitude latitude×year section, with 23.44° at A's
+orbit and the same mask as reference, not B. Exact poles use the selected cap
+sector for readouts; a geometric pole has no unique longitude.
+
+Capacity is `4e6*(2.5*f_land+50*(1-f_land))`; Classic's retained depth does
+not enter it. Fixed albedo, linear radiation and isotropic diffusion remain
+educational assumptions, not measured winds/currents or a calibrated climate
+forecast. Small islands/coastlines are coarse-cell fractions; lakes and ice
+are not separately represented. The high-resolution globe texture is only a
+visual guide, not the mask. The following alpha-1 sections describe the
+unchanged Classic/idealized models and their historical boundaries.
 
 ## Temperature is not the daytime maximum
 

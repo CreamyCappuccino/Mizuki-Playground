@@ -1,8 +1,9 @@
 # Earth geography browser slice — alpha 2 candidate
 
-Updated: 2026-09-26. Authority: CX-MSG0226, continuing the isolated
+Updated: 2026-09-27. Authority: CX-MSG0226/CX-MSG0239/CX-MSG0245, continuing the isolated
 [physics/data design](DESIGN-v1.3-earth-geography.md). The component lane and a separate production-built browser preview are now
-implemented on review branches; full 3D/profile integration is still pending.
+implemented on review branches; the canonical branch now connects the main
+3D/profile/point/year/Compare/Atlas/schema4 slice, with final acceptance pending.
 Base accepted core: `661f9ff`. The preview does not alter schema 3 or the
 accepted 3D Earth/Compare/Atlas semantics.
 
@@ -90,8 +91,9 @@ Record actual file sizes and focused regression evidence at each checkpoint.
 
 Intermediate source SHA is shared once; final SHA, same-head CI, PNGs and open
 gates go back in CX-MSG0226's thread. Physical iPhone acceptance remains human
-and separate. Core full-year FFT acceptance is pending and cannot be inferred
-from component reviews or CI. Update README/START_HERE/SCIENCE/state/version
+and separate. Core full-year FFT acceptance passed in CX-MSG0227; final browser
+acceptance remains separate and cannot be inferred from that numerical audit.
+Update README/START_HERE/SCIENCE/state/version
 docs only with implemented facts, not this planned completion.
 
 ## Independent core acceptance and browser preparation
@@ -165,3 +167,45 @@ Portable settings on this preview use their own pinned `earth-geography-preview`
 version-1 envelope and mask/solver identity. They do **not** upgrade or reinterpret
 the main application's schema 3. A future integrated profile still requires an
 explicit schema-4 migration contract.
+
+## Main-page integration candidate — 2026-09-27
+
+The canonical `codex/earth-geography-browser` track now connects the reviewed
+shared controller and scientific source to the existing main UI. Geography is
+an additional application profile, never a value sent to the zonal worker.
+The fragment-position globe layer selects nearest 36×18 colors in local
+coordinates (+Y north, +X Greenwich, −Z east); no spatial mesh-color interpolation
+creates new scientific temperatures. A/B rendering and picking restore A's
+geography source after each pass. Hidden/pending layers release old field
+references. Compare presentation avoids resizing for newly allocated adapters
+over an unchanged accepted field.
+
+Point/year/Compare share explicit longitude. Atlas temperature uses 18 native
+latitude centers and 365 daily samples, with nearest raster drawing and the
+23.44° same-A-orbit/mask reference. Schema 4 adds the profile, while schema 3
+rejects it in both URL and JSON. The real-land/ocean question selects 45°N/105°E
+and allows switching to 45°N/135°W; A/B always remains the same picked place.
+JA/EN notes explicitly distinguish 10° surrounding-cell fraction from point
+coastline classification, and retained Classic depth from effective capacity.
+
+Local `npm run verify` passed 222 tests in 25 files, typecheck/docs/build.
+`geography-main.spec.ts` has four real-HTTP cases per engine: main globe/point/
+year/Compare/Atlas; same-latitude longitude switch, A=B shared single solve,
+cancel→explicit retry and JA Large/mobile/Focus; injected malformed reply→
+error/retry and atomic schema3 rejection; and 90°/e=.3/peri90 polar Orbit.
+The 28-case combined geography-main + prior v13 Chromium/WebKit run passed;
+final source changes and same-HEAD CI must still be verified, not inferred
+from these local checkpoints. No font-sensitive golden was rewritten.
+
+The browser test records worker postMessage→ready time and returned typed-array
+bytes (`worker-latency-and-payload-not-peak-heap.json`). One local Chromium
+checkpoint measured 4.882 s (A23.44°) / 4.514 s (B90°), 1,898,200 array bytes
+per field and maximum one active geography worker. These are environment-
+specific observations, not mobile performance guarantees. The 6MiB limit is
+client-cache ownership only; A/B/reference slots can retain evicted fields,
+and worker/solver/renderer arrays add memory. **Peak heap/process memory was
+not measured** and is an explicit open measurement, not this payload size.
+
+Main and MagicDNS serving clone remain `a8c096f`. Independent final image
+review, same-HEAD CI, later main/live FF authorization and physical iPhone
+acceptance remain separate gates. No v1.4 code is included.

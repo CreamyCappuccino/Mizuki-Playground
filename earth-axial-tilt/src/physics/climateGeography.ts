@@ -1,4 +1,5 @@
 export type ClimateProfile = 'classic' | 'idealized-land' | 'idealized-ocean';
+export type AppClimateProfile = ClimateProfile | 'earth-geography';
 
 export const CLIMATE_PROFILES = Object.freeze({
   classic: { effectiveDepth: null, counterpart: null },
@@ -9,16 +10,18 @@ export const CLIMATE_PROFILES = Object.freeze({
   counterpart: ClimateProfile | null;
 }>);
 
-export function effectiveHeatDepth(profile: ClimateProfile, classicDepth: number): number {
+export function effectiveHeatDepth(profile: AppClimateProfile, classicDepth: number): number {
+  if (profile === 'earth-geography') throw new RangeError('Earth geography has cell-dependent heat storage.');
   return CLIMATE_PROFILES[profile].effectiveDepth ?? classicDepth;
 }
 
-export function geographyCounterpart(profile: ClimateProfile): ClimateProfile | null {
+export function geographyCounterpart(profile: AppClimateProfile): ClimateProfile | null {
+  if (profile === 'earth-geography') return null;
   return CLIMATE_PROFILES[profile].counterpart;
 }
 
-export function isIdealizedGeography(profile: ClimateProfile): boolean {
-  return profile !== 'classic';
+export function isIdealizedGeography(profile: AppClimateProfile): boolean {
+  return profile === 'idealized-land' || profile === 'idealized-ocean';
 }
 
 export function climateProfileKey(profile: ClimateProfile, classicDepth: number): string {

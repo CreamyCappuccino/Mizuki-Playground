@@ -1,6 +1,6 @@
 # Earth Axial Tilt Lab
 
-**1.3.0-alpha.1 — Idealized land/ocean seasonal response**
+**1.3.0-alpha.2 review candidate — Real Earth coarse-cell geography**
 
 An interactive, bilingual science toy: tilt Earth, follow a day or year, and compare two hypothetical worlds. Static Vite + TypeScript + Three.js; no backend or runtime remote imagery required.
 
@@ -10,11 +10,11 @@ An interactive, bilingual science toy: tilt Earth, follow a day or year, and com
 
 Open **Climate geography** to compare two deliberately idealized materials at the same latitude and under the same orbit: **Idealized land** reuses the existing Fast 2.5 m-equivalent heat capacity, while **Idealized ocean** reuses Slow 50 m-equivalent storage. With A/B Compare closed, the solid annual curve is the selected material and the dashed curve is its counterpart; while comparing, the dashed annual curve is world B. The Season atlas difference layer always uses the land/ocean pairing, so seasonal amplitude and lag can be inspected without changing sunlight.
 
-This is a completed first slice, not a geographic Earth model. Each profile covers the whole model world; there are no coastlines, longitude-dependent climate cells, altitude, ocean circulation, latent heat or nonlinear feedbacks. The existing **Classic latitude bands** and global Fast/Mixed/Slow control remain unchanged and separate. See [v1.3](docs/V1.3.md).
+The idealized profiles still cover the whole model world with one material. The new **Earth geography** profile is separate: fixed 18×36 / 10° Natural Earth cells and the reviewed educational two-dimensional EBM. Classic and idealized numerical results remain unchanged. See [v1.3](docs/V1.3.md).
 
 ### Experimental real-geography preview
 
-A separate [real Earth geography preview](geography-lab.html) exercises the reviewed 18×36 / 10° longitude-aware climate engine with pinned Natural Earth 1:110m land fractions. It runs in a dedicated worker, uses the same fixed educational EBM coefficients, and exposes the selected coarse cell, annual response and a selected-longitude latitude×year section. The 23.44° dashed/difference reference keeps the same orbit and geography. This preview does **not** yet replace the accepted 3D Earth profile, Compare Lab, main Season Atlas or schema-3 state; those remain a later integration step. A coarse land fraction describes the surrounding 10° cell, not whether the exact selected point is land or ocean.
+The main page now connects **Earth geography** to the nearest-cell 3D temperature layer, selected place, annual curve, A/B Compare and selected-longitude Season atlas. One serialized worker lane serves A/B/reference; stale/error/canceled fields expose no temperatures, and explicit retry restarts canceled work. The Atlas reference is 23.44° at A's orbit and the same mask, never B or uniform ocean. Schema 4 owns this profile; old schemas 1–3 retain their earlier meanings. The [separate preview](geography-lab.html) remains a component reference. A coarse land fraction describes the surrounding 10° cell, not whether the exact selected point is land or ocean. This is a **review branch**, not approval to change main or the existing MagicDNS serving clone.
 
 The geography model still omits topography, winds, ocean currents, latent heat, clouds, ice feedback and weather. Its 10° resolution is a scientific model condition, not a graphics-quality setting. Source/data/solver boundaries and independent numerical checks are documented in [the geography design](docs/DESIGN-v1.3-earth-geography.md) and [browser slice design](docs/DESIGN-v1.3-earth-geography-browser.md).
 
@@ -38,7 +38,7 @@ A `localhost` URL points to the receiving device, not to your Mac. Use a setting
 - **Three clocks:** frozen-date Play day; fixed-spin Play year; coupled spin + orbit using one mean-model clock.
 - **Compare Lab:** independent A/B tilts and orbits with shared elapsed model time, rotation, location, camera, model, heat storage and colour scale. Signed A−B daylight, daily solar and temperature values. Side-by-side on desktop, stacked on narrow screens. Both close-up and Sun-centred orbit views work in comparison.
 - **Five layers:** Earth, instantaneous Sun now, daily-mean solar, daylight and experimental temperature.
-- **Thermal EBM:** adjustable global heat storage plus fixed idealized land/ocean response profiles; original illustrative model retained. No city calibration, real geography or hourly weather model.
+- **Thermal EBM:** Classic uniform heat storage, idealized response profiles, or real geography at fixed 10° resolution; original illustrative model retained. No city calibration or hourly weather model.
 - **Year / Day graphs:** pointer and keyboard selection; A/B annual reference in comparison. Day graph describes A only.
 - **Season atlas:** all latitudes across a year. Classic compares A with 23.44° at A's orbit/storage; an idealized geography profile compares land with ocean at A's tilt/orbit. Neither reference silently becomes B.
 - **Accessible exploration:** Japanese/English, contextual ? guides, persistent large text, optional Basic/All tools and dismissible introduction.

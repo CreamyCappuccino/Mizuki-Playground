@@ -2,7 +2,7 @@
 
 ## 現在地
 
-**1.3.0-alpha.1を土台に、実海陸分布のalpha-2候補をreview中。** Classic緯度帯とIdealized Land/Oceanは不変。別ページ `geography-lab.html` では、Natural Earth由来の固定18×36海陸fractionと独立2D EBMを実Workerで操作できる。これはまだ3D Earth/Compare/既存Atlas/schema 3へ統合したprofileではない。復帰は `docs/V1.3.md` → `docs/DESIGN-v1.3-earth-geography.md` → `docs/DESIGN-v1.3-earth-geography-browser.md` → `docs/SCIENCE.md`。実機Safari gateと公開承認は別に未完了。
+**1.3.0-alpha.2の本画面統合候補をreview中（main/実配信の更新承認は別）。** Classic緯度帯とIdealized Land/Oceanは不変。Earth geographyはNatural Earth 4.1.0の固定18×36海陸fractionと独立2D EBMを、3Dのnearestセル色・地点値・年間曲線・Compare・選択経度Atlasへ接続。schema4のみ新profileを受け入れ、旧1–3の意味を保持する。別ページ `geography-lab.html` は部品参照として残す。復帰は `docs/V1.3.md` → `docs/DESIGN-v1.3-earth-geography.md` → `docs/DESIGN-v1.3-earth-geography-browser.md` → `docs/SCIENCE.md`。実機Safari gateと公開承認は未完了。
 
 
 `CreamyCappuccino/Mizuki-Playground/earth-axial-tilt/`。独立した静的フロントエンド。**v0.9の比較・同時再生とv1.0の仕上げを実装。v1.0.0-rc.1はChromium／macOS WebKitの自動検証が成功。** 正式版の実機iPhone確認は未完了。公開はしていない。

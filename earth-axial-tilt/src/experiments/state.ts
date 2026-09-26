@@ -1,6 +1,6 @@
 import type { OrbitParameters } from '../physics/orbit';
 import { DEFAULT_LOCATION, LOCATIONS, type LocationPreset } from '../data/locations';
-import type { ClimateProfile } from '../physics/climateGeography';
+import type { AppClimateProfile } from '../physics/climateGeography';
 
 /** Public experiment data only. No playback, language, camera pose or user identity. */
 export interface ExperimentState {
@@ -15,7 +15,7 @@ export interface ExperimentState {
   dual: boolean;
   surfaceMode: 'normal' | 'instant' | 'insolation' | 'daylight' | 'temperature';
   temperatureModel: 'energy-balance' | 'illustrative';
-  climateProfile: ClimateProfile;
+  climateProfile: AppClimateProfile;
   heatDepth: 2.5 | 10 | 50;
   sceneView: 'earth' | 'orbit';
   period: 'year' | 'day';
@@ -24,7 +24,7 @@ export interface ExperimentState {
   guides: boolean;
   speed: 1 | 4 | 12;
 }
-export const EXPERIMENT_VERSION = 3;
+export const EXPERIMENT_VERSION = 4;
 export const MAX_EXPERIMENT_LENGTH = 4096;
 export const DEFAULT_EXPERIMENT: Readonly<ExperimentState> = Object.freeze({
   eccentricity:0,perihelion:0,axisAzimuth:0,eccentricityB:0,perihelionB:0,axisAzimuthB:0,
@@ -55,7 +55,7 @@ function numberIn(value: unknown, low: number, high: number, exclusiveHigh = fal
   return typeof value === 'number' && Number.isFinite(value) && value >= low && (exclusiveHigh ? value < high : value <= high);
 }
 /** Build only known fields. Reject invalid owned fields atomically; never Object.assign untrusted data. */
-export function validateExperiment(value: unknown): ExperimentState | null {
+export function validateExperiment(value: unknown, version = EXPERIMENT_VERSION): ExperimentState | null {
   if (!record(value)) return null;
   const field = <K extends keyof ExperimentState>(key: K): unknown =>
     Object.prototype.hasOwnProperty.call(value, key) ? value[key] : DEFAULT_EXPERIMENT[key];
@@ -73,7 +73,7 @@ export function validateExperiment(value: unknown): ExperimentState | null {
       typeof dual!=='boolean' || typeof reference!=='boolean' || typeof guides!=='boolean' ||
       !['normal','instant','insolation','daylight','temperature'].includes(surfaceMode as string) ||
       !['energy-balance','illustrative'].includes(temperatureModel as string) ||
-      !['classic','idealized-land','idealized-ocean'].includes(climateProfile as string) ||
+      !['classic','idealized-land','idealized-ocean', ...(version === 4 ? ['earth-geography'] : [])].includes(climateProfile as string) ||
       (temperatureModel==='illustrative' && climateProfile!=='classic') || !['earth','orbit'].includes(sceneView as string) ||
       !['year','day'].includes(period as string) || !['temperature','insolation','daylight'].includes(chartMetric as string)) return null;
   // A partial coordinate pair is not a meaningful replacement for the selected place.
@@ -100,12 +100,12 @@ export function decodeExperiment(hash: string): ExperimentParse {
   const params=new URLSearchParams(hash.startsWith('#')?hash.slice(1):hash);
   if (!params.has('lab')) return {status:'none'};
   for (const key of OWNED_KEYS) if (params.getAll(key).length>1) return {status:'error',reason:'invalid'};
-  if (!['1','2',String(EXPERIMENT_VERSION)].includes(params.get('lab')!)) return {status:'error',reason:'version'};
+  if (!['1','2','3',String(EXPERIMENT_VERSION)].includes(params.get('lab')!)) return {status:'error',reason:'version'};
   const version=params.get('lab')!;
   const data: Record<string,unknown>={};
   for (const key of Object.keys(KEYS) as (keyof ExperimentState)[]) {
     if(version==='1'&&ORBIT_FIELDS.has(key))continue;
-    if(version!=='3'&&GEOGRAPHY_FIELDS.has(key))continue;
+    if(Number(version)<3&&GEOGRAPHY_FIELDS.has(key))continue;
     const input=params.get(KEYS[key]); if(input===null)continue;
     const fallback=DEFAULT_EXPERIMENT[key];
     if (typeof fallback==='boolean') {
@@ -116,7 +116,7 @@ export function decodeExperiment(hash: string): ExperimentParse {
       data[key]=Number(input);
     } else data[key]=input;
   }
-  const state=validateExperiment(data);
+  const state=validateExperiment(data, Number(version));
   return state ? {status:'ok',state} : {status:'error',reason:'invalid'};
 }
 
@@ -142,11 +142,11 @@ export function decodeExperimentFile(text: string): ExperimentParse {
   try {
     const value:unknown=JSON.parse(text);
     if(!record(value)||value.application!=='earth-axial-tilt')return {status:'error',reason:'invalid'};
-    if(value.version!==1&&value.version!==2&&value.version!==EXPERIMENT_VERSION)return {status:'error',reason:'version'};
+    if(value.version!==1&&value.version!==2&&value.version!==3&&value.version!==EXPERIMENT_VERSION)return {status:'error',reason:'version'};
     let data=value.state;
     if(value.version<3&&record(data))data=Object.fromEntries(Object.entries(data).filter(([key])=>
       !(value.version===1&&ORBIT_FIELDS.has(key as keyof ExperimentState))&&!GEOGRAPHY_FIELDS.has(key as keyof ExperimentState)));
-    const state=validateExperiment(data);
+    const state=validateExperiment(data, value.version as number);
     return state ? {status:'ok',state} : {status:'error',reason:'invalid'};
   } catch { return {status:'error',reason:'invalid'}; }
 }

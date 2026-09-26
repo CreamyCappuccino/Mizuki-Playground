@@ -150,7 +150,7 @@ describe('independent portable-state audit',()=>{
       assert.equal(validateExperiment({...DEFAULT_EXPERIMENT,[field]:value}),null);
     for(const field of ['perihelion','perihelionB','axisAzimuth','axisAzimuthB'])for(const value of [-1,360.0001,Infinity,NaN,'90',null])
       assert.equal(validateExperiment({...DEFAULT_EXPERIMENT,[field]:value}),null);
-    for(const hash of ['#lab=4','#lab=2&e=1','#lab=2&e=.1&e=.2','#lab=2&axis=NaN','#lab=2&lat=25','#lab=2&baxis=361'])
+    for(const hash of ['#lab=5','#lab=2&e=1','#lab=2&e=.1&e=.2','#lab=2&axis=NaN','#lab=2&lat=25','#lab=2&baxis=361'])
       assert.equal(decodeExperiment(hash).status,'error');
     assert.equal(decodeExperimentFile('{').status,'error');
     assert.equal(decodeExperimentFile(' '.repeat(4097)).status,'error');

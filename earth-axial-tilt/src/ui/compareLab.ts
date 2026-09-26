@@ -1,6 +1,7 @@
 import { CLASSIC_ORBIT, orbitKey, type OrbitParameters } from '../physics/orbit';
 import { compareMeasurements } from '../physics/comparison';
-import { isThermalReady, type TemperatureSource } from '../physics/temperatureModel';
+import { isThermalReady, isGeographySource, type ScientificTemperatureSource } from '../physics/temperatureModel';
+import { geographyTemperatureSource, type GeographyTemperatureSource } from '../physics/geographyTemperatureSource';
 import type { ThermalSolution } from '../physics/energyBalance';
 import type { SceneState } from '../scene/EarthScene';
 import { ThermalClient } from './thermalClient';
@@ -12,7 +13,7 @@ import { climateProfileKey, effectiveHeatDepth } from '../physics/climateGeograp
 
 export interface CompareSnapshot {
   orbitB: OrbitParameters;
-  source: TemperatureSource; latitude: number; longitude: number; locationName: string;
+  source: ScientificTemperatureSource; latitude: number; longitude: number; locationName: string;
   day: number; rotation: number; mode: SceneState['mode']; playback: Playback;
 }
 interface CompareActions {
@@ -21,7 +22,10 @@ interface CompareActions {
   day: (day: number) => void;
   mode: (mode: SceneState['mode']) => void;
   playback: (mode: Exclude<Playback,'paused'>) => void;
-  scene: (state: {tilt:number;thermal:ThermalSolution|null;orbit?:OrbitParameters}|null) => void;
+  scene: (state: {tilt:number;thermal:ThermalSolution|null;orbit?:OrbitParameters;geography?:GeographyTemperatureSource|null}|null) => void;
+  geographySource?: () => GeographyTemperatureSource | null;
+  geographyError?: () => string;
+  geographyRetry?: () => void;
 }
 /** A/B may differ in tilt and orbital parameters. One shared clock/location/model/depth/camera is intentional. */
 export class CompareLab {
@@ -67,16 +71,18 @@ export class CompareLab {
     on('compare-day','input',()=>this.actions.day(Number(this.el<HTMLInputElement>('compare-day').value)));
     on('compare-layer','change',()=>this.actions.mode(this.el<HTMLSelectElement>('compare-layer').value as SceneState['mode']));
     for(const mode of ['year','day','coupled'] as const) on(`compare-play-${mode}`,'click',()=>this.actions.playback(mode));
-    on('compare-retry','click',()=>{this.key='';this.actions.change();});
+    on('compare-retry','click',()=>{if(this.snapshot&&isGeographySource(this.snapshot.source))this.actions.geographyRetry?.();else this.key='';this.actions.change();});
     this.observer=new ResizeObserver(()=>this.placeLabels());
     this.observer.observe(this.el('earth-canvas')); this.observer.observe(this.el('compare-controls'));
     this.observer.observe(document.querySelector('.topbar')!);
     this.unsubscribe=onLanguageChange(()=>{if(this.snapshot)this.update(this.snapshot);});
   }
-  get failed(): boolean { return !!this.error && !isThermalReady(this.sourceB); }
-  get sourceB(): TemperatureSource {
+  get failed(): boolean { return !!(this.error || this.actions.geographyError?.()) && !isThermalReady(this.sourceB); }
+  get sourceB(): ScientificTemperatureSource {
     const a=this.snapshot!.source;
     const orbit=this.snapshot!.orbitB ?? CLASSIC_ORBIT;
+    if (isGeographySource(a)) return this.actions.geographySource?.()
+      ?? geographyTemperatureSource({tilt:this.tiltB,orbit,retainedDepth:a.depth as 2.5|10|50},null);
     return {...a,tilt:this.tiltB,orbit,solution:this.tiltB===a.tilt&&orbitKey(orbit)===orbitKey(a.orbit)?a.solution:this.solution};
   }
   /** Import validated settings without invoking synthetic clicks or moving keyboard focus. */
@@ -101,15 +107,15 @@ export class CompareLab {
     if(!this.enabled)return;
     const same=this.tiltB===snapshot.source.tilt&&orbitKey(snapshot.source.orbit)===orbitKey(snapshot.orbitB);
     const profile=snapshot.source.climateProfile??'classic';
-    const key=snapshot.source.model==='energy-balance' && !same
+    const key=snapshot.source.model==='energy-balance' && !same && profile!=='earth-geography'
       ? `${this.tiltB}:${climateProfileKey(profile,snapshot.source.depth)}:${orbitKey(snapshot.orbitB)}` : 'none';
     if(key!==this.key){
       this.key=key;this.solution=null;this.error='';this.revision++;
       this.worker.cancel();
-      if(key!=='none')this.worker.request(this.tiltB,snapshot.source.depth,false,snapshot.orbitB,profile);
+      if(key!=='none'&&profile!=='earth-geography')this.worker.request(this.tiltB,snapshot.source.depth,false,snapshot.orbitB,profile);
     }
     const b=this.sourceB;
-    this.actions.scene({tilt:b.tilt,thermal:b.solution,orbit:b.orbit});
+    this.actions.scene({tilt:b.tilt,thermal:b.solution,orbit:b.orbit,geography:isGeographySource(b)?b:null});
     const aInput=this.el<HTMLInputElement>('compare-tilt-a'),bInput=this.el<HTMLInputElement>('compare-tilt-b');
     if(document.activeElement!==aInput)aInput.value=String(snapshot.source.tilt);
     if(document.activeElement!==bInput)bInput.value=String(this.tiltB);
@@ -131,9 +137,9 @@ export class CompareLab {
       :msg`Same date, location, rotation, model and heat storage. Only tilt differs. ${t(snapshot.locationName)} · ${snapshot.latitude.toFixed(2)}° / ${snapshot.longitude.toFixed(2)}°`;
     this.el('compare-orbits').hidden=!advancedOrbit;
     this.el('compare-orbits').textContent=msg`A orbit e=${snapshot.source.orbit?.eccentricity??0}, peri=${snapshot.source.orbit?.perihelion??0}°, axis=${snapshot.source.orbit?.axis??0}° · B orbit e=${snapshot.orbitB.eccentricity}, peri=${snapshot.orbitB.perihelion}°, axis=${snapshot.orbitB.axis}°`;
-    this.el('compare-model').textContent=snapshot.source.model==='energy-balance'
+    this.el('compare-model').textContent=profile==='earth-geography'?t('Earth geography · 10° cell averages · same mask'):snapshot.source.model==='energy-balance'
       ?msg`Thermal EBM · ${effectiveHeatDepth(profile,snapshot.source.depth)} m effective heat storage`:t('Illustrative model');
-    for(const row of compareMeasurements(snapshot.source,b,snapshot.latitude,snapshot.day)){
+    for(const row of compareMeasurements(snapshot.source,b,snapshot.latitude,snapshot.day,snapshot.longitude)){
       const unit=row.key==='daylight'?t('h'):row.key==='solar'?'W/m²':'°C';
       const cells=this.el(`compare-${row.key}`);
       for(const [column,value] of [['a',row.a],['b',row.b],['diff',row.difference]] as const){
@@ -144,11 +150,11 @@ export class CompareLab {
       }
     }
     const status=this.el('compare-status');
-    const failed=!!this.error && !isThermalReady(b);
+    const failed=this.failed;
     status.dataset.status=failed?'error':isThermalReady(snapshot.source)&&isThermalReady(b)?'ready':'loading';
     status.textContent=t(failed?'Earth B temperature unavailable. Solar and daylight still work.':status.dataset.status==='ready'?'A/B results ready. Difference = A minus B.':'Calculating A/B temperatures… no previous result is substituted.');
     this.el('compare-retry').hidden=!failed;
-    const extrapolated=[snapshot.source,b].some(source=>source.model==='energy-balance' && isThermalReady(source) && source.solution!==null && (source.solution.minimum < -60 || source.solution.maximum > 60));
+    const extrapolated=[snapshot.source,b].some(source=>{const field=isGeographySource(source)?source.geography:source.solution;return source.model==='energy-balance' && isThermalReady(source) && field!==null && (field.minimum < -60 || field.maximum > 60);});
     const warning=this.el('compare-warning');warning.hidden=!extrapolated;
     warning.textContent=extrapolated?t('Large model extrapolation: linear radiation and fixed reflectivity omit ice, evaporation and climate feedbacks. Extreme temperatures are not predictions.'):'';
     this.placeLabels();

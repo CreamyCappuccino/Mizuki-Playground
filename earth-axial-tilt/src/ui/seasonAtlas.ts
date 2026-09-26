@@ -1,6 +1,6 @@
 import { t as tr, msg, getLanguage } from './i18n';
 import { ATLAS_UNITS, atlasReady, atlasReading, atlasScale, atlasSelection, buildAtlasField, type AtlasConfig, type AtlasField, type AtlasMetric, type AtlasView } from '../physics/atlas';
-import type { TemperatureSource } from '../physics/temperatureModel';
+import { isGeographySource, type ScientificTemperatureSource } from '../physics/temperatureModel';
 import { orbitKey, isClassicOrbit } from '../physics/orbit';
 import { solarDeclinationDeg } from '../physics/solar';
 import { atlasColor } from './atlasColors';
@@ -9,8 +9,8 @@ import { formatModelDate } from './chart';
 import { parseTiltInput } from './tiltInput';
 import { effectiveHeatDepth, isIdealizedGeography } from '../physics/climateGeography';
 export interface AtlasSnapshot {
-    source: TemperatureSource;
-    reference: TemperatureSource;
+    source: ScientificTemperatureSource;
+    reference: ScientificTemperatureSource;
     referenceKind: 'tilt' | 'geography';
     revision: number;
     day: number;
@@ -158,7 +158,8 @@ export class SeasonAtlas {
         if (!this.dialog.open)
             return;
         const config: AtlasConfig = { metric: this.metric.value as AtlasMetric, view: this.view.value as AtlasView,
-            source: snapshot.source, reference: snapshot.reference, referenceKind:snapshot.referenceKind };
+            source: snapshot.source, reference: snapshot.reference, referenceKind:snapshot.referenceKind, longitude:snapshot.longitude };
+        const earth=isGeographySource(snapshot.source);
         const geography=isIdealizedGeography(snapshot.source.climateProfile??'classic');
         this.el('atlas-reference-note').textContent=tr(geography
             ? 'Atlas reference: the other idealized surface at the same tilt and orbit. It is not Earth B.'
@@ -173,13 +174,13 @@ export class SeasonAtlas {
         if (document.activeElement !== tiltInput)
             tiltInput.value = String(snapshot.source.tilt);
         this.el<HTMLSelectElement>('atlas-heat').value = String(snapshot.source.depth);
-        this.el<HTMLSelectElement>('atlas-heat').disabled = snapshot.source.model !== 'energy-balance' || geography;
+        this.el<HTMLSelectElement>('atlas-heat').disabled = snapshot.source.model !== 'energy-balance' || geography || earth;
         this.dialog.querySelectorAll<HTMLButtonElement>('[data-atlas-tilt]').forEach(button => {
             const active = Number(button.dataset.atlasTilt) === snapshot.source.tilt;
             button.classList.toggle('active', active);
             button.setAttribute('aria-pressed', String(active));
         });
-        this.el('atlas-context').textContent = msg `${snapshot.source.tilt}° tilt · ${snapshot.source.model === 'energy-balance'
+        this.el('atlas-context').textContent = earth ? msg `Earth geography · selected longitude ${snapshot.longitude.toFixed(2)}° · 18×36 / 10° cells · reference 23.44°, same A orbit and mask (not B)` : msg `${snapshot.source.tilt}° tilt · ${snapshot.source.model === 'energy-balance'
             ? msg `Thermal EBM · ${effectiveHeatDepth(snapshot.source.climateProfile??'classic',snapshot.source.depth)} m effective heat storage` : tr('Illustrative temperature model')} · same repeating year as the globe`;
         if(!isClassicOrbit(snapshot.source.orbit)&&snapshot.referenceKind==='tilt')this.el('atlas-context').textContent += ' · '+tr('Same orbit as Earth A; the reference changes tilt only. Dates are elapsed from the model equinox.');
         const ready = atlasReady(config);
@@ -187,7 +188,7 @@ export class SeasonAtlas {
         const status = this.el('atlas-status');
         status.hidden = ready;
         status.textContent = snapshot.error ? tr('Temperature unavailable. Solar and Daylight remain usable. Close to retry the thermal model.') : tr('Calculating the matching thermal year…');
-        const key = `${getLanguage()}:${config.metric}:${config.view}:${snapshot.referenceKind}:${snapshot.source.climateProfile}:${snapshot.reference.climateProfile}:${snapshot.source.tilt}:${orbitKey(snapshot.source.orbit)}:${config.metric === 'temperature'
+        const key = `${earth ? snapshot.longitude : ''}:${getLanguage()}:${config.metric}:${config.view}:${snapshot.referenceKind}:${snapshot.source.climateProfile}:${snapshot.reference.climateProfile}:${snapshot.source.tilt}:${orbitKey(snapshot.source.orbit)}:${config.metric === 'temperature'
             ? `${snapshot.source.model}:${snapshot.source.depth}:${snapshot.revision}:${ready}` : 'astronomy'}`;
         const box = this.plot.getBoundingClientRect();
         const font = parseFloat(getComputedStyle(this.plot).fontSize) || 14;
@@ -207,8 +208,9 @@ export class SeasonAtlas {
             ? `${config.view === 'difference' ? signed(reading.value) : reading.value.toFixed(1)} ${unit}${config.view === 'difference'
                 ? msg ` difference (selected ${reading.current.toFixed(1)}; reference ${reading.reference!.toFixed(1)})` : ''}` : tr('temperature not available yet')}`;
         this.el('atlas-location-note').textContent = msg `Selected: ${tr(snapshot.locationName)} · longitude ${Math.abs(snapshot.longitude).toFixed(2)}° ${snapshot.longitude < 0 ? 'W' : 'E'} retained. Rotation is unchanged.`;
+        if (earth) this.el('atlas-location-note').textContent += ' · ' + tr('Selected-longitude section, not a zonal mean. Polar caps use the selected longitude sector; a pole has no unique longitude. Classic heat control is retained, unused; capacity follows the cell land fraction.');
         const extreme = config.metric === 'temperature' && snapshot.source.model === 'energy-balance' && ready &&
-            [snapshot.source.solution, ...(config.view === 'difference' ? [snapshot.reference.solution] : [])].some(s => s && (s.minimum < -60 || s.maximum > 60));
+            [snapshot.source, ...(config.view === 'difference' ? [snapshot.reference] : [])].some(source => {const s=isGeographySource(source)?source.geography:source.solution;return s && (s.minimum < -60 || s.maximum > 60);});
         this.el('atlas-warning').hidden = !extreme;
         this.moveCursor(snapshot.day, snapshot.latitude);
     }
@@ -236,7 +238,7 @@ export class SeasonAtlas {
                 pixels.data.set([...color, 255], i * 4);
             }
             rasterContext.putImageData(pixels, 0, 0);
-            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingEnabled = !isGeographySource(config.source);
             ctx.drawImage(raster, l.left, l.top, l.right - l.left, l.bottom - l.top);
             const stops = Array.from({ length: 9 }, (_, i) => `rgb(${atlasColor(scale.minimum + i / 8 * (scale.maximum - scale.minimum), config.metric, scale).join(',')}) ${i / 8 * 100}%`);
             this.el('atlas-ramp').style.background = `linear-gradient(90deg, ${stops.join(',')})`;

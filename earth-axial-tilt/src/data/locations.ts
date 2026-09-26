@@ -14,6 +14,8 @@ export const LOCATIONS: LocationPreset[] = [
   { id: 'reykjavik', name: 'Reykjavík', latitude: 64.1466, longitude: -21.9426 },
   { id: 'tromso', name: 'Tromsø', latitude: 69.6492, longitude: 18.9553 },
   { id: 'north-pole', name: 'North Pole', latitude: 90, longitude: 0 },
+  { id: 'geography-land', name: 'North Asia · 45°N 105°E cell', latitude: 45, longitude: 105 },
+  { id: 'geography-ocean', name: 'North Pacific · 45°N 135°W cell', latitude: 45, longitude: -135 },
 ];
 
 export const DEFAULT_LOCATION = LOCATIONS[0];

@@ -7,7 +7,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { dailyMeanInsolation, dayLengthHours, solarIrradiance, SOLAR_CONSTANT } from '../physics/solar';
 import { isThermalReady, temperatureFromSource, temperatureScale, type TemperatureModel } from '../physics/temperatureModel';
-import type { ClimateProfile } from '../physics/climateGeography';
+import type { AppClimateProfile } from '../physics/climateGeography';
 import type { ThermalSolution } from '../physics/energyBalance';
 import type { LocationPreset } from '../data/locations';
 import { geographicToCartesian, cartesianToGeographic, sunDirection } from '../physics/geometry';
@@ -30,7 +30,7 @@ export interface SceneState {
   guides: boolean;
   rotation: number;
   temperatureModel: TemperatureModel;
-  climateProfile: ClimateProfile;
+  climateProfile: AppClimateProfile;
   heatDepth: number;
   thermal: ThermalSolution | null;
   geography?: GeographyTemperatureSource | null;
@@ -249,7 +249,10 @@ export class EarthScene {
   }
 
   setComparison(value: { tilt: number; thermal: ThermalSolution | null; orbit?: OrbitParameters; geography?: GeographyTemperatureSource | null } | null): void {
-    if (value?.tilt === this.comparison?.tilt && value?.thermal === this.comparison?.thermal && value?.geography === this.comparison?.geography && orbitKey(value?.orbit) === orbitKey(this.comparison?.orbit)) return;
+    const sameGeography = !!value?.geography === !!this.comparison?.geography &&
+      value?.geography?.geography === this.comparison?.geography?.geography &&
+      value?.geography?.depth === this.comparison?.geography?.depth;
+    if (value?.tilt === this.comparison?.tilt && value?.thermal === this.comparison?.thermal && sameGeography && orbitKey(value?.orbit) === orbitKey(this.comparison?.orbit)) return;
     this.comparison = value;
     this.canvas.dataset.comparison = String(value !== null);
     this.resize();
@@ -638,8 +641,12 @@ export class EarthScene {
       this.canvas.dataset.temperatureLayer = this.geographyLayer.mesh.visible ? 'earth-geography' : 'pending';
       return;
     }
+    // An Earth profile without its controller source is pending, never zonal.
+    if (this.state.climateProfile === 'earth-geography' && this.state.mode === 'temperature') {
+      this.dataMesh.visible = false; this.canvas.dataset.temperatureLayer = 'pending'; return;
+    }
     this.dataMesh.visible = this.state.mode !== 'normal' && this.state.mode !== 'instant' &&
-      (this.state.mode !== 'temperature' || isThermalReady({ model: this.state.temperatureModel, climateProfile:this.state.climateProfile,
+      (this.state.mode !== 'temperature' || isThermalReady({ model: this.state.temperatureModel, climateProfile:this.state.climateProfile === 'earth-geography' ? 'classic' : this.state.climateProfile,
         tilt: this.state.tilt, depth: this.state.heatDepth, orbit: this.state.orbit, solution: this.state.thermal }));
     this.canvas.dataset.temperatureLayer = this.state.mode === 'temperature' ? (this.dataMesh.visible ? this.state.temperatureModel : 'pending') : 'off';
     if (!this.dataMesh.visible) return;
@@ -673,7 +680,7 @@ export class EarthScene {
         t = dayLengthHours(latitude, this.state.day, this.state.tilt, this.state.orbit) / 24;
         color.setHSL(0.68 - t * 0.53, 0.82, 0.2 + t * 0.48, THREE.SRGBColorSpace);
       } else {
-        const temperature = temperatureFromSource({ model: this.state.temperatureModel, climateProfile:this.state.climateProfile,
+        const temperature = temperatureFromSource({ model: this.state.temperatureModel, climateProfile:this.state.climateProfile === 'earth-geography' ? 'classic' : this.state.climateProfile,
           tilt: this.state.tilt, depth: this.state.heatDepth, orbit: this.state.orbit, solution: this.state.thermal }, latitude, this.state.day)!;
         const scale = temperatureScale(this.state.temperatureModel);
         t = THREE.MathUtils.clamp((temperature - scale.min) / (scale.max - scale.min), 0, 1);
