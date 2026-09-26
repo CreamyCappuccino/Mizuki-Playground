@@ -85,3 +85,8 @@ now asserts one annual curve under `#fb-annual` and one history checkpoint under
 `#fb-history`, rather than counting unrelated chart paths together. No model
 results, tolerances, time limits or production code were changed for this fix.
 The corrected same-head run remains the promotion gate.
+
+Solar-multiplier tick formatting is independent of temperature formatting.
+Adaptive decimal precision retains1.15 and the distinct ticks around a single
+0.92 point; browser assertions pin those labels. This is display-only and does
+not round the multiplier used by the solver or saved history.
