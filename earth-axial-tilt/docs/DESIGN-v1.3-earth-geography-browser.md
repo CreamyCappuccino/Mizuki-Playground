@@ -46,6 +46,12 @@ this slice.
   reports an explicit error and advances the queue; only explicit retry restarts
   that intent. Finish/cancel/supersede/dispose release the timer. A queued owner
   receives its own deadline when its worker starts, not while waiting its turn.
+- `ScientificTemperatureSource` is the shared zonal/geography sampling boundary.
+  Geography sources check tilt/orbit/retained-depth/grid/mask/solver ownership
+  before exposing accepted client fields, and require explicit finite longitude
+  for both point and annual sampling. The compatibility `TemperatureSource` name
+  remains zonal-only until each existing UI owner is migrated with its wiring;
+  adding the adapter alone does not enable a main-page geography profile.
 - Bound retained field caches by bytes, initially at most three daily fields
   (~5.68 MB temperatures plus grid/fractions/metadata) across A/B/reference
   client ownership; separately account worker copies and temporary solve
