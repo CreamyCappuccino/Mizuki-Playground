@@ -54,3 +54,16 @@ Choose Idealized Land or Idealized Ocean under **Climate geography**. Both use t
 This is not a real Earth map. The chosen material covers the whole model world. The solver has no coastline, longitude-dependent climate cells, altitude, circulation, evaporation or melting ice, and it never classifies the globe texture by colour. Returning to Classic re-enables the unchanged global Fast/Mixed/Slow control. Illustrative mode accepts Classic only.
 
 Schema-3 links/files preserve the profile. Schema 1/2 inputs migrate to Classic, and invalid model/profile combinations reject atomically rather than partly changing the experiment.
+
+
+## v1.4: warm/cold starts and climate history
+
+Open **Earth Feedbacks Lab** from the main Climate controls. Select Warm vs cold
+start and Run experiment to compare the two initial states under identical forcing.
+Switch ice–albedo feedback Off for the fixed-reflectivity control. A climate with a
+memory carries each stage's actual final state into the next solar multiplier;
+choose a checkpoint to inspect its annual response. Restoring a URL or JSON does
+not start a calculation. Latitude and day only resample accepted results.
+This first workspace uses 90 latitude bands and uniform storage, not the main
+Earth's real-geography grid or 3D feedback colours. The −10°C threshold is a
+snow/ice proxy, not seawater's freezing point or melting mass. See [V1.4](V1.4.md).
