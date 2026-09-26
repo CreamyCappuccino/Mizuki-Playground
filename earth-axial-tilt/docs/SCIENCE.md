@@ -229,3 +229,14 @@ The Earth-like button (e=0.0167, ϖs=282.94°, ψ=0) is a rounded example consis
 All daily, instantaneous, annual, comparison, illustrative and EBM paths use the same orbit. Every orbital change invalidates full-year thermal forcing and the solution provenance. Worker request/solution/cache keys include eccentricity, perihelion and axis azimuth; requests are copied rather than retaining a mutable UI object. A and B reuse a solution only with identical tilt and orbit. In Classic, the Atlas reference changes tilt to 23.44° but retains A's orbit and heat storage. In an idealized profile, it retains A's tilt and orbit and changes only to the counterpart material.
 
 The dry fixed-albedo linear EBM is not reliable at very large excursions (an extreme e=0.3, ε=90°, H=2.5 m experiment can exceed 300°C). Numerical values are not clipped; visible extrapolation warnings explain missing ice, evaporation and nonlinear radiation. This is not a prediction of water states, habitability or real climate. Coupled playback retains 366 uniform inertial rotations per fixed model year; apparent solar time need not progress uniformly, including at ε=0 on an ellipse.
+
+
+## v1.4 feedback workspace
+
+The separate production-built feedback workspace uses the 90-band grid with
+old-temperature threshold albedo, implicit radiation/diffusion, explicit
+warm/cold initial states and continued day-1-phase histories. It does not
+replace the 18×36 real-geography solver. See [V1.4](V1.4.md) for the complete
+coefficient, phase, nonconvergence, proxy-ice, source and validation contract.
+The proxy threshold −10°C is not seawater's freezing point; no latent heat or
+ice mass is modeled. Main Earth profiles and share schemas retain v1.3 semantics.
