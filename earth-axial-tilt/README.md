@@ -10,7 +10,13 @@ An interactive, bilingual science toy: tilt Earth, follow a day or year, and com
 
 Open **Climate geography** to compare two deliberately idealized materials at the same latitude and under the same orbit: **Idealized land** reuses the existing Fast 2.5 m-equivalent heat capacity, while **Idealized ocean** reuses Slow 50 m-equivalent storage. With A/B Compare closed, the solid annual curve is the selected material and the dashed curve is its counterpart; while comparing, the dashed annual curve is world B. The Season atlas difference layer always uses the land/ocean pairing, so seasonal amplitude and lag can be inspected without changing sunlight.
 
-This is a completed first slice, not a geographic Earth model. Each profile covers the whole model world; there are no coastlines, longitude-dependent climate cells, altitude, ocean circulation, latent heat or nonlinear feedbacks. The existing **Classic latitude bands** and global Fast/Mixed/Slow control remain unchanged and separate. A real land mask is deferred until the latitude-band solver has an honest spatial design. See [v1.3](docs/V1.3.md).
+This is a completed first slice, not a geographic Earth model. Each profile covers the whole model world; there are no coastlines, longitude-dependent climate cells, altitude, ocean circulation, latent heat or nonlinear feedbacks. The existing **Classic latitude bands** and global Fast/Mixed/Slow control remain unchanged and separate. See [v1.3](docs/V1.3.md).
+
+### Experimental real-geography preview
+
+A separate [real Earth geography preview](geography-lab.html) exercises the reviewed 18×36 / 10° longitude-aware climate engine with pinned Natural Earth 1:110m land fractions. It runs in a dedicated worker, uses the same fixed educational EBM coefficients, and exposes the selected coarse cell, annual response and a selected-longitude latitude×year section. The 23.44° dashed/difference reference keeps the same orbit and geography. This preview does **not** yet replace the accepted 3D Earth profile, Compare Lab, main Season Atlas or schema-3 state; those remain a later integration step. A coarse land fraction describes the surrounding 10° cell, not whether the exact selected point is land or ocean.
+
+The geography model still omits topography, winds, ocean currents, latent heat, clouds, ice feedback and weather. Its 10° resolution is a scientific model condition, not a graphics-quality setting. Source/data/solver boundaries and independent numerical checks are documented in [the geography design](docs/DESIGN-v1.3-earth-geography.md) and [browser slice design](docs/DESIGN-v1.3-earth-geography-browser.md).
 
 ## Orbit mechanics from the 1.2 candidate
 
