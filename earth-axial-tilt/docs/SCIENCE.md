@@ -1,10 +1,10 @@
-# What the numbers mean — current through v1.0 RC
+# What the numbers mean — current through v1.2 RC
 
 ## Temperature is not the daytime maximum
 
-Neither temperature mode is an hourly weather calculation. **Thermal EBM**, the v0.5 default, solves a repeating seasonal energy balance. **Illustrative** preserves the v0.1–v0.4 heuristic exactly. A new configuration is a new equilibrated experiment, not an instantaneous physical jump in Earth's real climate.
+Neither temperature mode is an hourly weather calculation. **Thermal EBM**, the v0.5 default, solves a repeating seasonal energy balance. **Illustrative** preserves the v0.1–v0.4 heuristic exactly on Earth Classic; v1.2 supplies orbit-aware solar forcing without changing its coefficients. A new configuration is a new equilibrated experiment, not an instantaneous physical jump in Earth's real climate.
 
-## Illustrative mode (unchanged legacy model)
+## Illustrative mode (legacy coefficients, orbit-aware solar forcing)
 
 The plotted temperature is an illustrative **daily-mean-style estimate** for a latitude band, representing day and night together. It is not an observed station value, a daily maximum/minimum, a feels-like temperature, or a forecast. The annual summary averages the 365 plotted daily values; the displayed curve range is a range of **daily means**, not intraday extremes.
 
@@ -75,23 +75,23 @@ These historical normals are not current weather observations and do not validat
 
 ## Astronomy and the Earth-centred scene
 
-- The model uses a 365-day circular orbit, with the March-equinox phase anchored at model day 80. Exact model quarter-cycle positions are 80, 171.25, 262.5 and 353.75. Calendar labels are approximate, not an ephemeris.
-- Solar declination is `asin(sin(tilt) * sin(orbital longitude))`.
+- Earth Classic uses a 365-day circular orbit, with the March-equinox phase anchored at model day 80. The v1.2 elliptical generalization is defined below. Exact model quarter-cycle positions are 80, 171.25, 262.5 and 353.75. Calendar labels are approximate, not an ephemeris.
+- Solar declination is `asin(sin(tilt) * sin(seasonal longitude))`, with seasonal longitude = inertial apparent Sun longitude minus axis azimuth.
 - Daily mean incoming solar energy is top-of-atmosphere (TOA), not surface irradiance. The solar constant is 1361 W/m2. The globe-wide area-weighted daily mean is 1361/4 W/m2 for this circular-orbit model.
 - Daylight uses an ideal point Sun without atmospheric refraction. The sunset calculation uses `cos(zenith) = a + b*cos(hour angle)` rather than singular tangents. When the Sun is exactly on the horizon all day, 12 h is an explicit reporting convention; effective incoming energy is zero. This occurs at the equator at an exact 90-degree-obliquity solstice, and at a pole at an exact equinox.
 - The golden subsolar marker is aligned with the light direction. The terminator is a great circle perpendicular to that direction. The axis, angle arc and N/S labels expose the geometry.
-- The close-up keeps Earth at the origin and moves the Sun direction for inspection. Orbit overview instead puts the Sun at the origin and Earth at -14 times the unit Sun direction. Sizes and distances are not to scale; this is not a claim that the Sun orbits Earth.
+- The close-up keeps Earth at the origin and moves the Sun direction for inspection. Orbit overview instead puts the Sun at the origin and Earth at -14 times distance in au times the unit Sun direction. Sizes and distances are not to scale; this is not a claim that the Sun orbits Earth.
 - Rotation is a freely controlled phase around the tilted local axis. Geographic longitude, the rotating surface, the selected marker and the subsolar meridian are consistent. The phase is not tied to UTC or a historical ephemeris.
 - Geographic markers now follow the equirectangular texture convention of Three.js SphereGeometry: +Y is north, +X is longitude 0 and -Z is longitude 90 E.
 
 ## Diurnal experiment (v0.3)
 
-The scene uses `Rx(-obliquity) * Ry(rotation)`; its polar axis therefore does not precess or swing around the orbit-plane normal as the surface spins. A geographic surface normal `n` and the rotating-frame unit Sun vector `s` give:
+At axis azimuth zero the scene uses `Rx(-obliquity) * Ry(rotation)`; v1.2 adds a leftmost `Ry(axis azimuth)`; its polar axis therefore does not precess or swing around the orbit-plane normal as the surface spins. A geographic surface normal `n` and the rotating-frame unit Sun vector `s` give:
 
 ```
 mu = dot(n, s)
 elevation = asin(clamp(mu, -1, 1))
-instantaneous horizontal TOA flux = 1361 * max(0, mu) W/m2
+instantaneous horizontal TOA flux = 1361 / distanceAU^2 * max(0, mu) W/m2
 ```
 
 The independent hour-angle expression used for the Day graph is
@@ -115,14 +115,14 @@ Background references (definitions / implementation conventions, not a claim to 
 
 The optional dashed annual curve runs the **same** model at Earth's 23.44 degrees. It is not a measured-climate curve. Both curves use the same chart scale.
 
-Surface legends use the same numerical ranges as the geometry: daily and instantaneous solar 0–1361 W/m2, daylight 0–24 h, and temperature -65–55 C in Illustrative mode or -100–180 C in Thermal EBM mode (colour limits, not temperature clipping). The solar scale therefore does not saturate prematurely near 90-degree obliquity.
+Surface legends use the same numerical ranges as the geometry: daily and instantaneous solar 0–1361/(1-e)^2 W/m2 (1361 for the circle, maximum of A/B in comparison), daylight 0–24 h, and temperature -65–55 C in Illustrative mode or -100–180 C in Thermal EBM mode (colour limits, not temperature clipping). The solar scale therefore does not saturate prematurely near 90-degree obliquity.
 
 ## Visual resources and remaining limits
 
-The decorative Earth texture still loads from the existing threejs.org URL at runtime; failure leaves the scientific modes usable. This release removes the remote font request and uses local/system font fallbacks. Cloud physics, real-time weather, station-calibrated climate, quality presets, dual-globe rendering and deployment are outside this release.
+Earth day/night images are bundled local 4K assets; attribution is in `src/assets/ATTRIBUTION.md`. System font fallbacks avoid remote font requests. Quality presets and dual rendering are implemented. Cloud physics, real-time weather, station-calibrated climate and public deployment are not supplied by this release.
 
 
-## v0.9: prograde inertial frame and coupled clock
+## Earth Classic: v0.9 prograde inertial frame and coupled clock
 
 The old separate animations had opposite spin/orbit handedness at zero obliquity. Coupling them requires a consistent frame. Since v0.9:
 
@@ -150,8 +150,45 @@ A visibility transition resets the animation timestamp, and frame increments are
 
 ## A/B comparison semantics
 
-A/B have the same day, longitude/latitude, rotational phase, model and heat depth. Only tilt differs. Differences are A−B for geometric daylight, TOA daily solar, and the same temperature model. Equal configurations give exact zero differences. Missing or configuration-mismatched thermal solutions give null differences, not substituted earlier temperatures.
+A/B have the same elapsed model day, longitude/latitude, rotational phase, model and heat depth. Tilt and orbit parameters can differ. Their individual spring references are anchored at day 80, not at a shared real epoch. Differences are A−B for geometric daylight, TOA daily solar, and the same temperature model. Equal configurations give exact zero differences. Missing or configuration-mismatched thermal solutions give null differences, not substituted earlier temperatures.
 
-The annual graph uses B as its reference while comparing. The daily graph remains A's instantaneous profile at the current date. Atlas remains A versus 23.44°. Those references are labelled separately. Sharing rotational phase is not the same as forcing equal apparent solar time at two obliquities, which is why instantaneous A−B solar metrics are not included without further controls.
+The annual graph uses B as its reference while comparing. The daily graph remains A's instantaneous profile at the current date. Atlas remains A versus 23.44° with the same A orbit and heat storage. Those references are labelled separately. Sharing rotational phase is not the same as forcing equal apparent solar time at two obliquities, which is why instantaneous A−B solar metrics are not included without further controls.
 
 Rendering reuses one scene/context with isolated scissor passes and restores primary state after B. Identical colours denote identical numerical scales. Display geometry and quality never enter the energy-balance solver. See [Three.js multiple scenes](https://threejs.org/manual/pages/multiple-scenes.html) for the shared-renderer pattern.
+
+
+## v1.2: Kepler mechanics, seasonal frame and forcing
+
+The model fixes semimajor axis a=1 au and period P=365 mean model days. UI eccentricity is bounded to 0≤e≤0.3 for educational experiments. Use radians internally. Let ψ be static axis azimuth, ϖs the inertial apparent Sun longitude at perihelion, E eccentric anomaly, ν true anomaly, and M mean anomaly. ϖs is the opposite direction from Earth's heliocentric longitude of perihelion (a 180° difference).
+
+```
+E(ν) = atan2(sqrt(1-e²) sin ν, e + cos ν)
+M(ν) = E(ν) - e sin E(ν)
+M0 = M(ψ - ϖs)
+M(day) = M0 + 2π(day - 80)/365
+solve E - e sin E = M                 (bounded Newton / bisection safeguard)
+r/a = 1 - e cos E
+ν = atan2(sqrt(1-e²) sin E, cos E - e)
+λ = ν + ϖs                           (apparent Sun inertial longitude)
+L = λ - ψ                             (seasonal longitude)
+δ = asin(sin ε sin L)
+s_world = [cos λ, 0, -sin λ]
+M_surface = Ry(ψ) Rx(-ε) Ry(θ)
+n_axis = [-sin ε sin ψ, cos ε, -sin ε cos ψ]
+r_Earth = -14 r s_world                (display-only scale)
+S = 1361 / r²                         (ray-normal TOA W/m²)
+v / v_circle = sqrt(2/r - 1)
+(dν/dt) / (2π/P) = sqrt(1-e²) / r²
+```
+
+Every world is re-anchored to L=0 at model day 80. Seasonal buttons invert true anomaly to mean anomaly, so they select exact geometric seasons, not fixed quarter-year times. Northern summer has L=90°. Equal elapsed times sweep equal areas, not equal angles. A/B compare elapsed time from their own spring reference; they do not represent simultaneous ephemerides. Static axis azimuth changes the orientation relative to perihelion but is not a physical precession trajectory.
+
+At e=0 the implementation directly uses the old circular phase, r=1, S=1361 and unit speed; perihelion is undefined and ignored in the cache key. Changing ψ rotates the inertial Sun and Earth frame together while preserving local seasonal results. At ε=0 axis azimuth is physically undefined; an existing phase anchor can still define model time, and season markers are nominal, not obliquity-driven seasons.
+
+Independent checks follow from Kepler's relations: perihelion/aphelion r=1−e and 1+e, flux ratio=((1+e)/(1−e))², r²dν/dt constant, and time-average S/1361=1/sqrt(1−e²). Integrating incoming energy uniformly in true anomaly would give the wrong time average. The instantaneous globe area mean is S/4. The reference derivation is [JPL Solar System Dynamics, Kepler equation and orbital-plane coordinates](https://ssd.jpl.nasa.gov/planets/approx_pos.html); JPL's example uses degrees in its solver, while this implementation uses radians throughout.
+
+The Earth-like button (e=0.0167, ϖs=282.94°, ψ=0) is a rounded example consistent with the order of the J2000 Earth/Moon-barycentre elements, not current geocentric ephemeris data. No remote ephemeris is fetched.
+
+All daily, instantaneous, annual, comparison, illustrative and EBM paths use the same orbit. Every orbital change invalidates full-year thermal forcing and the solution provenance. Worker request/solution/cache keys include eccentricity, perihelion and axis azimuth; requests are copied rather than retaining a mutable UI object. A and B reuse a solution only with identical tilt and orbit. The Atlas reference changes tilt to 23.44° but retains A's orbit and heat storage.
+
+The dry fixed-albedo linear EBM is not reliable at very large excursions (an extreme e=0.3, ε=90°, H=2.5 m experiment can exceed 300°C). Numerical values are not clipped; visible extrapolation warnings explain missing ice, evaporation and nonlinear radiation. This is not a prediction of water states, habitability or real climate. Coupled playback retains 366 uniform inertial rotations per fixed model year; apparent solar time need not progress uniformly, including at ε=0 on an ellipse.
