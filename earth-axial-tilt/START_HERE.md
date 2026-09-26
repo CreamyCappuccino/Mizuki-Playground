@@ -2,7 +2,7 @@
 
 ## 現在地
 
-**1.3.0-alpha.1：Climate Geographyの最初の検証可能な一区切り。従来のClassic緯度帯を保持し、同緯度・同じ日射で陸相当2.5 mと海相当50 mの季節応答を比較する。** `docs/V1.3.md` → `docs/SCIENCE.md` → `docs/EXPERIMENT_STATE.md`へ。実在Earth maskや2D気候モデルではない。v1.2の同一HEAD CIはmain `8364981`で成功済みだが、実機Safari gateと公開承認は別に未完了。
+**1.3.0-alpha.1を土台に、実海陸分布のalpha-2候補をreview中。** Classic緯度帯とIdealized Land/Oceanは不変。別ページ `geography-lab.html` では、Natural Earth由来の固定18×36海陸fractionと独立2D EBMを実Workerで操作できる。これはまだ3D Earth/Compare/既存Atlas/schema 3へ統合したprofileではない。復帰は `docs/V1.3.md` → `docs/DESIGN-v1.3-earth-geography.md` → `docs/DESIGN-v1.3-earth-geography-browser.md` → `docs/SCIENCE.md`。実機Safari gateと公開承認は別に未完了。
 
 
 `CreamyCappuccino/Mizuki-Playground/earth-axial-tilt/`。独立した静的フロントエンド。**v0.9の比較・同時再生とv1.0の仕上げを実装。v1.0.0-rc.1はChromium／macOS WebKitの自動検証が成功。** 正式版の実機iPhone確認は未完了。公開はしていない。
@@ -30,6 +30,7 @@ v0.8の日英・?・公転俯瞰・大文字・Atlas・EBMを保持。A/B別傾�
 | 日英辞書・? | `src/ui/i18n.ts`、`messages.ts`、`contextHelp.ts` |
 | 表示設定・導入 | `src/ui/releaseControls.ts`、`viewControls.ts`、`src/style.css` |
 | 気候地理・天文の仕様 | `docs/V1.3.md`、`docs/SCIENCE.md`、`src/physics/climateGeography.ts` と `src/physics/` |
+| 実海陸2D候補 | `geography-lab.html`、`src/geographyLab/`、`src/physics/geography*.ts`、`data/land-fractions.json` |
 | 自動検証 | `tests/`、`e2e/`、`scripts/check-docs.mjs`、ルート `.github/workflows/earth-axial-tilt.yml` |
 
 ## 特に壊したくない条件
