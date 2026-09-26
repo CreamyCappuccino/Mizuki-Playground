@@ -1,8 +1,8 @@
-# What the numbers mean — current through v1.2 RC
+# What the numbers mean — current through v1.3 alpha 1
 
 ## Temperature is not the daytime maximum
 
-Neither temperature mode is an hourly weather calculation. **Thermal EBM**, the v0.5 default, solves a repeating seasonal energy balance. **Illustrative** preserves the v0.1–v0.4 heuristic exactly on Earth Classic; v1.2 supplies orbit-aware solar forcing without changing its coefficients. A new configuration is a new equilibrated experiment, not an instantaneous physical jump in Earth's real climate.
+Neither temperature mode is an hourly weather calculation. **Thermal EBM**, the v0.5 default, solves a repeating seasonal energy balance. **Illustrative** preserves the v0.1–v0.4 heuristic exactly on Earth Classic; v1.2 supplies orbit-aware solar forcing without changing its coefficients. v1.3 alpha 1 adds fixed idealized land/ocean heat capacities to Thermal EBM only. A new configuration is a new equilibrated experiment, not an instantaneous physical jump in Earth's real climate.
 
 ## Illustrative mode (legacy coefficients, orbit-aware solar forcing)
 
@@ -56,7 +56,23 @@ No temperature value is clipped by this solver. The thermal map has a labelled f
 
 A module Web Worker solves the seasonal fields away from rendering. It caches at most six configurations and processes at most one active request plus the latest desired request. Superseded replies cannot overwrite the current model. Changing date, spin, camera or selected location reuses the solved year. While a changed thermal configuration is unresolved, temperature numbers/curves are withheld and the temperature-colour overlay is hidden; astronomical controls remain usable. Errors offer retry or an explicit switch to Illustrative, never a silent model substitution.
 
-The Earth-reference curve uses the same selected temperature model and heat capacity at 23.44 degrees. It is not observed climate, nor a different heat-storage control run.
+In Classic, the Earth-reference curve uses the same selected temperature model and heat capacity at 23.44 degrees. In an idealized geography profile, the reference instead uses the counterpart material at the same tilt and orbit. Neither is observed climate or Earth B.
+
+## v1.3 alpha 1: idealized land/ocean seasonal response
+
+The first geography slice deliberately stays inside the existing one-dimensional latitude-band EBM. It introduces three explicit profiles:
+
+- **Classic latitude bands:** unchanged; the Fast 2.5 m, Mixed 10 m and Slow 50 m global heat-storage control remains active.
+- **Idealized land:** a globally uniform 2.5 m-equivalent heat capacity, numerically identical to the existing Fast solution at the same forcing.
+- **Idealized ocean:** a globally uniform 50 m-equivalent heat capacity, numerically identical to the existing Slow solution at the same forcing.
+
+For all three profiles, heat capacity is `C = 4.0e6 × effectiveDepth` J m-2 K-1. Land and ocean comparisons keep tilt, orbit, latitude, albedo, linear outgoing radiation and meridional transport fixed. Only `C` changes. In this linear repeating equilibrium, that changes seasonal amplitude and phase lag while preserving the annual-mean energy balance to numerical tolerance. It does not assert that a real 2.5 m soil column or 50 m ocean mixed layer has all of the omitted physical processes.
+
+Each idealized profile covers the **entire model world**. There is no longitude dimension, coastline, altitude correction, ocean circulation, latent heat, phase change, soil-moisture model, cloud response or nonlinear feedback. The globe texture is presentation only and is never sampled to classify land or ocean. Temperatures remain latitude-band teaching-model output, not local weather or geography-aware predictions.
+
+Natural Earth 1:110m land/ocean vectors are a future mask candidate: Natural Earth states the data are public domain and supplies geographic WGS84 vectors. They are not bundled or used in alpha 1. A real mask requires a longitude-aware grid, area weighting, transport boundary design, solver validation and a truthful two-dimensional Atlas before it can affect temperature. Sources: [Natural Earth terms](https://www.naturalearthdata.com/about/terms-of-use/), [1:110m physical vectors](https://www.naturalearthdata.com/downloads/110m-physical-vectors/), [feature coordinate system](https://www.naturalearthdata.com/features/).
+
+The thermal request, worker cache, solution provenance and comparison reuse checks include the climate profile and effective depth. A pending or mismatched profile cannot display a previous material's temperatures. Schema 1 and 2 experiments migrate to Classic; schema 3 owns the profile. Illustrative mode accepts Classic only.
 
 ### Primary references
 
@@ -113,7 +129,7 @@ Background references (definitions / implementation conventions, not a claim to 
 
 ## Comparison and colour scales
 
-The optional dashed annual curve runs the **same** model at Earth's 23.44 degrees. It is not a measured-climate curve. Both curves use the same chart scale.
+In Classic, the optional dashed annual curve runs the **same** model at Earth's 23.44 degrees. In an idealized geography profile, it runs the counterpart material at the same tilt and orbit. It is not a measured-climate curve and does not become Earth B. Both curves use the same chart scale.
 
 Surface legends use the same numerical ranges as the geometry: daily and instantaneous solar 0–1361/(1-e)^2 W/m2 (1361 for the circle, maximum of A/B in comparison), daylight 0–24 h, and temperature -65–55 C in Illustrative mode or -100–180 C in Thermal EBM mode (colour limits, not temperature clipping). The solar scale therefore does not saturate prematurely near 90-degree obliquity.
 
@@ -152,7 +168,7 @@ A visibility transition resets the animation timestamp, and frame increments are
 
 A/B have the same elapsed model day, longitude/latitude, rotational phase, model and heat depth. Tilt and orbit parameters can differ. Their individual spring references are anchored at day 80, not at a shared real epoch. Differences are A−B for geometric daylight, TOA daily solar, and the same temperature model. Equal configurations give exact zero differences. Missing or configuration-mismatched thermal solutions give null differences, not substituted earlier temperatures.
 
-The annual graph uses B as its reference while comparing. The daily graph remains A's instantaneous profile at the current date. Atlas remains A versus 23.44° with the same A orbit and heat storage. Those references are labelled separately. Sharing rotational phase is not the same as forcing equal apparent solar time at two obliquities, which is why instantaneous A−B solar metrics are not included without further controls.
+The annual graph uses B as its reference while comparing. The daily graph remains A's instantaneous profile at the current date. In Classic, Atlas remains A versus 23.44° with the same A orbit and heat storage; in idealized geography it compares A's selected material with its counterpart at the same A tilt and orbit. Those references are labelled separately and neither silently becomes B. Sharing rotational phase is not the same as forcing equal apparent solar time at two obliquities, which is why instantaneous A−B solar metrics are not included without further controls.
 
 Rendering reuses one scene/context with isolated scissor passes and restores primary state after B. Identical colours denote identical numerical scales. Display geometry and quality never enter the energy-balance solver. See [Three.js multiple scenes](https://threejs.org/manual/pages/multiple-scenes.html) for the shared-renderer pattern.
 

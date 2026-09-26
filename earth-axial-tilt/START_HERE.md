@@ -2,12 +2,12 @@
 
 ## 現在地
 
-**1.2.0-rc.1：Earth Orbit Mechanics。離心率・近日点方向・静的な地軸方位、Kepler速度、距離による日射、A/B別軌道とschema 2を実装。** `docs/V1.2.md` → `docs/SCIENCE.md` → `docs/EXPERIMENT_STATE.md`へ。版完了は最新HEADのCIと画像で確認する。実機Safari gateと公開承認は未完了。
+**1.3.0-alpha.1：Climate Geographyの最初の検証可能な一区切り。従来のClassic緯度帯を保持し、同緯度・同じ日射で陸相当2.5 mと海相当50 mの季節応答を比較する。** `docs/V1.3.md` → `docs/SCIENCE.md` → `docs/EXPERIMENT_STATE.md`へ。実在Earth maskや2D気候モデルではない。v1.2の同一HEAD CIはmain `8364981`で成功済みだが、実機Safari gateと公開承認は別に未完了。
 
 
 `CreamyCappuccino/Mizuki-Playground/earth-axial-tilt/`。独立した静的フロントエンド。**v0.9の比較・同時再生とv1.0の仕上げを実装。v1.0.0-rc.1はChromium／macOS WebKitの自動検証が成功。** 正式版の実機iPhone確認は未完了。公開はしていない。
 
-最短の復帰は **この文書 → ROADMAP.md → docs/V1.2.md → 変更分野のコード**。確認済みのコード・CI・画像は [検証記録](docs/VERIFICATION-1.0-rc.1.md) を参照し、着手時はさらに最新HEADのCIを確認する。MCP索引は **Mizuki MM410**。メモリは道案内、最新コード・CI・文書が正本。
+最短の復帰は **この文書 → ROADMAP.md → docs/V1.3.md → 変更分野のコード**。確認済みのコード・CI・画像は版ごとの検証記録を参照し、着手時はさらに最新HEADのCIを確認する。MCP索引は **Mizuki MM410**。メモリは道案内、最新コード・CI・文書が正本。
 
 ## 今できること
 
@@ -29,7 +29,7 @@ v0.8の日英・?・公転俯瞰・大文字・Atlas・EBMを保持。A/B別傾�
 | Atlasの後読み込み | `src/ui/lazyAtlas.ts`、`seasonAtlas.ts` |
 | 日英辞書・? | `src/ui/i18n.ts`、`messages.ts`、`contextHelp.ts` |
 | 表示設定・導入 | `src/ui/releaseControls.ts`、`viewControls.ts`、`src/style.css` |
-| 気候・天文の仕様 | `docs/SCIENCE.md` と `src/physics/` |
+| 気候地理・天文の仕様 | `docs/V1.3.md`、`docs/SCIENCE.md`、`src/physics/climateGeography.ts` と `src/physics/` |
 | 自動検証 | `tests/`、`e2e/`、`scripts/check-docs.mjs`、ルート `.github/workflows/earth-axial-tilt.yml` |
 
 ## 特に壊したくない条件
@@ -42,6 +42,8 @@ v0.8の日英・?・公転俯瞰・大文字・Atlas・EBMを保持。A/B別傾�
 - 傾き・表示方向の修正に合わせ初期カメラも反対側へ移し、夏至付近の初期画面を昼側から見る。緯度別の日射・昼時間・気候方程式は変えていない。
 - 一つのWebGLRenderer／sceneを二つのscissor viewportへ描画。Bパスの後は必ずA状態を復元。別々の太陽系を比べる画面であって、同じ軌道に惑星を二つ置いた物理モデルではない。
 - Bの熱計算は独立したrequest管理。傾きとorbitKeyが一致するA=BならAの解を再利用。全軌道パラメータをcache key・worker request/solutionに含め、一年全体のforcingを更新する。待機・失敗時に古い温度を新条件の値にしない。
+- ClassicのFast/Mixed/Slowは世界全体のglobal knob。Idealized Land/Oceanは固定2.5 m/50 mの対照profileで、両者を混同しない。profileもrequest/cache/solution provenanceに含める。Illustrative modeはClassicだけ。
+- Idealized profileは全球一様で、実在の海岸線・経度差・標高・海流を表さない。Natural Earthは将来候補だが、現在のzonal solverへ見た目だけのmaskを貼らない。
 - 言語・画質・Basic/All・Focusは表示だけ。小さい画面で文字を縮めず、並び替えやスクロールを使う。比較時に旧Singleのmargin-top/translateXが復活しないよう確認。
 - 解除可能な任意モジュールの読込失敗は、数値機能を壊さず、明示したページ再読み込みで回復する。
 - bfcacheに入るpagehideはdisposeしない。通常終了ではRAF・Observer・listener・worker・GL資源を片づける。
@@ -60,12 +62,12 @@ CIの同じhead_shaを確認。Chromiumの画像基準を変更するときはac
 
 README＝今できること、START_HERE＝復帰入口、ROADMAP＝未来、SCIENCE＝数式、V0.x/V1.x＝変更履歴。関連する文書をコードと同時更新する。Mizuki MM410は短い索引として更新し、版ごとの長文を無限に追記しない。
 
-## 保存と移行の注意（v1.2）
+## 保存と移行の注意（v1.3）
 
-リンクは科学条件を保存し、描画画像・キャッシュ済み温度・言語・画質・再生状態を保存しない。URLとJSONは同じvalidatorを通し、原子的に適用する。未知のschema versionや不正値は既存状態を維持。optional Compareの読み込みが遅い時は新しい操作が優先する。Heat storageのFast/Slowプリセットは順番に比較する二実験で、A/Bの熱容量を別々にした機能ではない。
+schema 3のリンクは科学条件とclimate profileを保存し、描画画像・キャッシュ済み温度・言語・画質・再生状態を保存しない。schema 1/2はClassicへ移行する。URLとJSONは同じvalidatorを通し、原子的に適用する。未知のschema versionや不正値は既存状態を維持。optional Compareの読み込みが遅い時は新しい操作が優先する。Heat storageのFast/Slowプリセットは順番に比較する二実験で、A/Bの熱容量を別々にした機能ではない。
 
 検証チェックポイントは `docs/VERIFICATION-1.1-rc.1.md`。v1.1は単体114/Chromium64/macOS WebKit41本を確認（実機Safariではない）。最終HEADの合否はCIで確認する。
 
 ## v1.2の検証入口
 
-`tests/orbit-independent.test.ts`は別方式のKepler二分法、等面積、年平均flux、e=0互換、日射積分、schema移行、workerの古い返信、Atlas基準を検査。`e2e/v12.spec.ts`は実ブラウザで操作・蓄熱再計算・日本語Large・保存・Focusを確認する。130 unit通過はbrowser通過の代用ではない。完了状態は [版記録](docs/V1.2.md) と同じHEADのCIで確認。次の実装はv1.3 Earth Climate Geography、v1.2を閉じる前には着手しない。
+`tests/orbit-independent.test.ts`は別方式のKepler二分法、等面積、年平均flux、e=0互換、日射積分、schema移行、workerの古い返信、Atlas基準を検査。`tests/v13.test.ts`はClassicの数値不変、既存2.5 m/50 mとの一致、振幅・lag、profile provenance、schema 3移行を検査。`e2e/v13.spec.ts`は実ブラウザでprofile、年間曲線、Atlas差分、日本語Large・Compare・Orbit・Focusを確認する。unit通過はbrowser通過の代用ではなく、v1.2のCI通過もv1.3の証拠にはしない。

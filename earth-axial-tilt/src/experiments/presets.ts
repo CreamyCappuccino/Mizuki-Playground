@@ -12,6 +12,10 @@ function world(overrides: Partial<ExperimentState>): Readonly<ExperimentState> {
 }
 const taipei=LOCATIONS.find(place=>place.id==='taipei')!;
 export const EXPERIMENT_PRESETS: readonly ExperimentPreset[] = [
+  { id:'land-ocean-response',title:['Same latitude: land or ocean?','同じ緯度：陸と海では？'],
+    question:['How do heat capacity and lag reshape the same season?','同じ季節でも、熱容量と遅れでどう変わる？'],
+    watch:['Idealized land and ocean receive the same sunlight. Start with land, then switch to ocean and compare the dashed annual curve. This is not a real geographic map.','理想化した陸と海は同じ日射を受けます。陸から始め、海へ切り替えて年間グラフの破線と比較します。実際の地理分布ではありません。'],
+    state:world({climateProfile:'idealized-land',surfaceMode:'temperature',chartMetric:'temperature'}) },
   { id:'orbit-contrast',title:['Same tilt, different orbit','同じ傾き、違う軌道'],
     question:['Can distance change a season without changing the tilt?','傾きを変えず、距離で季節は変わる？'],
     watch:['A is circular; B has e=0.2 and perihelion in northern summer. Compare at the same elapsed day from each equinox; seasonal longitudes need not match.','Aは円、Bは離心率0.2で北半球の夏に近日点へ。各世界の春分から同じ経過日数で比べるので、季節の角度は一致しない場合があります。'],

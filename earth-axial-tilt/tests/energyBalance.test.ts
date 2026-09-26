@@ -122,7 +122,8 @@ class FakeWorker implements ClimateWorker {
   terminated = false;
   postMessage(request: ThermalRequest) { this.sent.push(request); }
   terminate() { this.terminated = true; }
-  finish(index: number) { this.onmessage?.({ data: { id: this.sent[index].id, current: mixed, reference: null } } as MessageEvent<ThermalReply>); }
+  finish(index: number) { this.onmessage?.({ data: { id: this.sent[index].id, current: mixed, reference: null,
+    geographyReference: null } } as MessageEvent<ThermalReply>); }
 }
 describe('thermal worker request ownership', () => {
   it('coalesces intermediate slider requests and discards stale replies', () => {

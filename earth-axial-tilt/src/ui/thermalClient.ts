@@ -1,7 +1,21 @@
 import type { OrbitParameters } from '../physics/orbit';
 import type { ThermalSolution } from '../physics/energyBalance';
-export interface ThermalRequest { orbit?: OrbitParameters; id: number; tilt: number; depth: number; compare: boolean }
-export type ThermalReply = { id: number; current: ThermalSolution; reference: ThermalSolution | null }
+import type { ClimateProfile } from '../physics/climateGeography';
+export interface ThermalRequest {
+  orbit?: OrbitParameters;
+  id: number;
+  tilt: number;
+  depth: number;
+  compare: boolean;
+  climateProfile: ClimateProfile;
+  geographyContrast: boolean;
+}
+export type ThermalReply = {
+  id: number;
+  current: ThermalSolution;
+  reference: ThermalSolution | null;
+  geographyReference: ThermalSolution | null;
+}
   | { id: number; error: string };
 export interface ClimateWorker {
   postMessage(request: ThermalRequest): void;
@@ -20,8 +34,10 @@ export class ThermalClient {
   constructor(private readonly createWorker: () => ClimateWorker,
     private readonly onReply: (reply: ThermalReply) => void) {}
 
-  request(tilt: number, depth: number, compare: boolean, orbit?: OrbitParameters): void {
-    this.wanted = { id: ++this.serial, tilt, depth, compare, ...(orbit ? {orbit:{...orbit}} : {}) };
+  request(tilt: number, depth: number, compare: boolean, orbit?: OrbitParameters,
+    climateProfile: ClimateProfile = 'classic', geographyContrast = false): void {
+    this.wanted = { id: ++this.serial, tilt, depth, compare, climateProfile, geographyContrast,
+      ...(orbit ? {orbit:{...orbit}} : {}) };
     this.pump();
   }
   cancel(): void { this.wanted = null; this.serial += 1; }

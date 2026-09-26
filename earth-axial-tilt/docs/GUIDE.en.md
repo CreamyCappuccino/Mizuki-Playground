@@ -24,7 +24,7 @@ The table is A, B, A−B. Identical tilts and orbital parameters give zero. Pend
 
 Fast/Mixed/Slow changes global effective heat storage. Compare the height and timing of the annual temperature peak. It is not a local land/ocean classifier. Temperatures are daily-mean-style latitude-band estimates, not local highs, feels-like values or forecasts.
 
-The atlas shows latitude across a model year. Its difference layer always compares the displayed world A with 23.44° at the same A orbit and heat storage, **not B**, even when Compare Lab is active. Click/tap to choose date and latitude; vertical swipes scroll. The dashed curve is the subsolar latitude, not the warmest point.
+The atlas shows latitude across a model year. In Classic, its difference layer compares world A with 23.44° at the same A orbit and heat storage. In Idealized Land/Ocean it compares the selected material with its counterpart at the same A tilt and orbit. Neither reference is B. Click/tap to choose date and latitude; vertical swipes scroll. The dashed curve is the subsolar latitude, not the warmest point.
 
 ## Help and recovery
 
@@ -46,3 +46,11 @@ The normal-incidence TOA solar diagnostic is neither ground sunlight nor daily m
 Perihelion angle uses the apparent Sun's inertial longitude, 180° from Earth's heliocentric position. Northern summer is Sun longitude minus axis azimuth = 90°. Each world starts from its own spring reference at model day 80. Axis azimuth is a static orientation experiment, not a simulation of precession across geological time. With e=0 there is no special perihelion. With zero tilt the season markers are nominal phase references; distance forcing can still produce a seasonal sunlight cycle.
 
 Changing orbit recalculates the whole repeating thermal year. While it is pending, old temperatures are not substituted. Very large values in the fixed-albedo, linear-radiation EBM are labelled extrapolations, not climate or habitability predictions. The previous seven presets and schema-1 files remain classic circular experiments.
+
+## Climate geography contrast (v1.3 alpha 1)
+
+Choose Idealized Land or Idealized Ocean under **Climate geography**. Both use the same latitude, tilt, orbit and sunlight; only effective heat capacity changes. Land is numerically the existing Fast 2.5 m-equivalent case, while Ocean is the existing Slow 50 m-equivalent case. The solid annual curve is the selected material and the dashed curve is its counterpart. The atlas difference layer uses the same pair, exposing seasonal amplitude and lag without changing the forcing.
+
+This is not a real Earth map. The chosen material covers the whole model world. The solver has no coastline, longitude-dependent climate cells, altitude, circulation, evaporation or melting ice, and it never classifies the globe texture by colour. Returning to Classic re-enables the unchanged global Fast/Mixed/Slow control. Illustrative mode accepts Classic only.
+
+Schema-3 links/files preserve the profile. Schema 1/2 inputs migrate to Classic, and invalid model/profile combinations reject atomically rather than partly changing the experiment.

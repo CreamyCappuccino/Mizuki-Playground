@@ -15,9 +15,9 @@ import './style.css';
 import { DEFAULT_LOCATION, LOCATIONS, type LocationPreset } from './data/locations';
 import { EarthScene, type SurfaceMode } from './scene/EarthScene';
 import { annualProfile, type AnnualPoint } from './physics/climate';
-import { type ThermalSolution } from './physics/energyBalance';
 import { isThermalReady, profileFromSource, temperatureFromSource, temperatureScale, type TemperatureModel, type TemperatureSource } from './physics/temperatureModel';
-import { ThermalClient } from './ui/thermalClient';
+import { ClimateController, type ClimateConfiguration } from './ui/climateController';
+import { effectiveHeatDepth, geographyCounterpart, isIdealizedGeography, type ClimateProfile } from './physics/climateGeography';
 import { dailyMeanInsolation, dayLengthHours, seasonLabel, solarDeclinationDeg, SOLAR_CONSTANT } from './physics/solar';
 import { renderAnnualChart, updateChartDay, formatModelDate, type ChartMetric } from './ui/chart';
 import { parseTiltInput } from './ui/tiltInput';
@@ -40,13 +40,14 @@ interface AppState {
     guides: boolean;
     compare: boolean;
     temperatureModel: TemperatureModel;
+    climateProfile: ClimateProfile;
     heatDepth: number;
 }
 const state: AppState = {
     orbitA:{...CLASSIC_ORBIT},orbitB:{...CLASSIC_ORBIT},
     tilt: 23.44, day: 172, speed: 1, playback: 'paused', rotation: 0, period: 'year',
     surfaceMode: 'normal', chartMetric: 'temperature', location: DEFAULT_LOCATION,
-    guides: true, compare: false, temperatureModel: 'energy-balance', heatDepth: 10,
+    guides: true, compare: false, temperatureModel: 'energy-balance', climateProfile: 'classic', heatDepth: 10,
 };
 const $ = <T extends Element>(selector: string): T => {
     const element = document.querySelector<T>(selector);
@@ -111,40 +112,17 @@ locationSelect.value = state.location.id;
 let profileKey = '';
 let profile: AnnualPoint[] = [];
 let referenceKey = '';
-let thermalKey = '';
-let thermalRevision = 0;
-let thermalSolution: ThermalSolution | null = null;
-let thermalReference: ThermalSolution | null = null;
-let thermalError = '';
-const thermalClient = new ThermalClient(() => new Worker(new URL('./physics/climate.worker.ts', import.meta.url), { type: 'module' }), reply => {
-    if ('error' in reply)
-        thermalError = reply.error;
-    else {
-        thermalSolution = reply.current;
-        thermalReference = reply.reference;
-        thermalError = '';
-    }
-    thermalRevision += 1;
-    update();
-});
-function temperatureSource(reference = false): TemperatureSource {
-    return { orbit:state.orbitA, model: state.temperatureModel, tilt: reference ? 23.44 : state.tilt, depth: state.heatDepth,
-        solution: reference ? thermalReference : thermalSolution };
+const climate = new ClimateController(() => update());
+function climateConfiguration(): ClimateConfiguration {
+    return { orbit: state.orbitA, model: state.temperatureModel, tilt: state.tilt, classicDepth: state.heatDepth,
+        climateProfile: state.climateProfile, needsTiltReference: state.compare || atlas.needsReference };
 }
+function temperatureSource(reference = false): TemperatureSource {
+    return climate.source(climateConfiguration(), reference ? 'tilt-reference' : 'current');
+}
+function geographyReferenceSource(): TemperatureSource { return climate.source(climateConfiguration(), 'geography-reference'); }
 function syncThermalModel(): void {
-    const compare = state.compare || atlas.needsReference;
-    const key = `${state.temperatureModel}:${state.tilt}:${state.heatDepth}:${compare}:${orbitKey(state.orbitA)}`;
-    if (key === thermalKey)
-        return;
-    thermalKey = key;
-    thermalError = '';
-    thermalRevision += 1;
-    thermalSolution = null;
-    thermalReference = null;
-    if (state.temperatureModel === 'energy-balance')
-        thermalClient.request(state.tilt, state.heatDepth, compare, state.orbitA);
-    else
-        thermalClient.cancel();
+    climate.sync(climateConfiguration());
 }
 function temperatureAt(latitude: number, day: number): number | null {
     return temperatureFromSource(temperatureSource(), latitude, day);
@@ -153,16 +131,23 @@ function updateThermalStatus(): void {
     const thermal = state.temperatureModel === 'energy-balance';
     const ready = isThermalReady(temperatureSource());
     const status = $('#climate-status');
-    status.setAttribute('data-status', thermalError ? 'error' : ready ? 'ready' : 'loading');
-    status.textContent = !thermal ? tr('Illustrative model · original fixed 28-day lag.') : thermalError ? tr('Thermal worker unavailable. Retry or choose the illustrative model.')
-        : ready ? msg `Thermal EBM · ${state.heatDepth} m equivalent heat storage · periodic year solved.` : tr('Calculating a repeating thermal year… Solar controls remain live.');
-    $<HTMLButtonElement>('#retry-climate').hidden = !thermalError;
-    $<HTMLSelectElement>('#heat-storage').disabled = !thermal;
+    const effectiveDepth=effectiveHeatDepth(state.climateProfile,state.heatDepth);
+    status.setAttribute('data-status', climate.error ? 'error' : ready ? 'ready' : 'loading');
+    status.textContent = !thermal ? tr('Illustrative model · original fixed 28-day lag.') : climate.error ? tr('Thermal worker unavailable. Retry or choose the illustrative model.')
+        : ready ? msg `Thermal EBM · ${effectiveDepth} m effective heat storage · periodic year solved.` : tr('Calculating a repeating thermal year… Solar controls remain live.');
+    $<HTMLButtonElement>('#retry-climate').hidden = !climate.error;
+    $<HTMLSelectElement>('#heat-storage').disabled = !thermal || isIdealizedGeography(state.climateProfile);
+    const geographySelect=$<HTMLSelectElement>('#climate-geography');
+    geographySelect.value=state.climateProfile;
+    geographySelect.disabled = !thermal;
     const warning = $<HTMLElement>('#climate-warning');
-    warning.hidden = !thermal || !ready || !(thermalSolution!.minimum < -60 || thermalSolution!.maximum > 60);
+    warning.hidden = !thermal || !ready || !(climate.current!.minimum < -60 || climate.current!.maximum > 60);
     warning.textContent = tr('Large model extrapolation: linear radiation and fixed reflectivity omit ice, evaporation and climate feedbacks. Extreme temperatures are not predictions.');
     $('#temperature-model-note').textContent = thermal
-        ? tr('Thermal EBM: experimental latitude-band temperature driven by daily-mean sunlight. Heat storage is uniform across the planet, not a local land/ocean map. Not calibrated to local weather.') : tr('Mean temperature estimate, not the daytime high. Original illustrative latitude-band model; not fitted to local weather.');
+        ? tr(isIdealizedGeography(state.climateProfile)
+            ? 'Idealized land/ocean contrast: one material covers the model world. Same sunlight and latitude transport; only effective heat capacity differs. This is not a real Earth map.'
+            : 'Thermal EBM: experimental latitude-band temperature driven by daily-mean sunlight. Heat storage is uniform across the planet, not a local land/ocean map. Not calibrated to local weather.')
+        : tr('Mean temperature estimate, not the daytime high. Original illustrative latitude-band model; not fitted to local weather.');
 }
 let reference: AnnualPoint[] = [];
 let chartKey = '';
@@ -191,8 +176,11 @@ function compareSnapshot() {
     return { orbitB: state.orbitB, source: temperatureSource(), latitude: state.location.latitude, longitude: state.location.longitude,
         locationName: state.location.name, day: state.day, rotation: state.rotation, mode: state.surfaceMode, playback: state.playback };
 }
-function chartReferenceSource(): TemperatureSource { return compareLab?.enabled ? compareLab.sourceB : temperatureSource(true); }
-function chartComparison(): boolean { return state.compare || !!compareLab?.enabled; }
+function chartReferenceSource(): TemperatureSource {
+    return compareLab?.enabled ? compareLab.sourceB
+        : geographyCounterpart(state.climateProfile) ? geographyReferenceSource() : temperatureSource(true);
+}
+function chartComparison(): boolean { return state.compare || !!compareLab?.enabled || isIdealizedGeography(state.climateProfile); }
 function update(): void {
     syncThermalModel();
     updateThermalStatus();
@@ -218,7 +206,7 @@ function update(): void {
     $('#chart-buttons').toggleAttribute('hidden', state.period === 'day');
     document.querySelector<HTMLElement>('.compare-control')!.hidden = state.period === 'day' || !!compareLab?.enabled;
     $('#profile-period').textContent = state.period === 'year' ? tr('ANNUAL PROFILE') : tr('ONE SOLAR DAY');
-    scene.setState({ orbit:state.orbitA, radiationMax:radiationMaximum(), tilt: state.tilt, day: state.day, mode: state.surfaceMode, location: state.location, guides: state.guides, rotation: state.rotation, temperatureModel: state.temperatureModel, heatDepth: state.heatDepth, thermal: thermalSolution });
+    scene.setState({ orbit:state.orbitA, radiationMax:radiationMaximum(), tilt: state.tilt, day: state.day, mode: state.surfaceMode, location: state.location, guides: state.guides, rotation: state.rotation, temperatureModel: state.temperatureModel, climateProfile:state.climateProfile, heatDepth: state.heatDepth, thermal: climate.current });
     updateSurfaceLegend();
     updateReadouts();
 }
@@ -230,11 +218,16 @@ function updateReadouts(): void {
     refreshExperimentLabel();
     workbench?.refresh();
     orbitWorkbench?.refresh();
-    $<HTMLElement>('#atlas-comparison-note').hidden = !compareLab?.enabled;
+    const atlasComparisonNote=$<HTMLElement>('#atlas-comparison-note');
+    atlasComparisonNote.hidden = !compareLab?.enabled;
+    atlasComparisonNote.textContent=tr(isIdealizedGeography(state.climateProfile)
+        ? 'Compare Lab: this atlas shows Earth A. Its difference map compares the idealized surfaces, not Earth B.'
+        : 'Compare Lab: this atlas shows Earth A. Its difference map always compares A with 23.44°, not with Earth B.');
     compareLab?.update(compareSnapshot());
-    atlas.update({ source: temperatureSource(), reference: temperatureSource(true), revision: thermalRevision,
+    atlas.update({ source: temperatureSource(), reference: isIdealizedGeography(state.climateProfile) ? geographyReferenceSource() : temperatureSource(true),
+        referenceKind:isIdealizedGeography(state.climateProfile)?'geography':'tilt', revision: climate.revision,
         day: state.day, latitude: state.location.latitude, longitude: state.location.longitude,
-        locationName: state.location.name, error: thermalError });
+        locationName: state.location.name, error: climate.error });
     rotationInput.value = String(state.rotation);
     $('#rotation-readout').textContent = `${state.rotation.toFixed(1)}°`;
     dayInput.value = String(Math.floor(state.day));
@@ -249,7 +242,7 @@ function updateReadouts(): void {
     $('#metric-daylight').setAttribute('title', daylight === 24 ? tr('Polar day') : daylight === 0 ? tr('Polar night') : tr('Geometric day length'));
     $('#metric-solar').textContent = `${Math.round(dailyMeanInsolation(latitude, state.day, state.tilt, state.orbitA))} W/m²`;
     const temperature = temperatureAt(latitude, state.day);
-    $('#metric-temp').textContent = temperature === null ? (thermalError ? tr('Unavailable') : tr('Calculating…')) : `${temperature.toFixed(1)} °C`;
+    $('#metric-temp').textContent = temperature === null ? (climate.error ? tr('Unavailable') : tr('Calculating…')) : `${temperature.toFixed(1)} °C`;
     $('#metric-temp').setAttribute('data-model', state.temperatureModel);
     const declination = solarDeclinationDeg(state.day, state.tilt, state.orbitA);
     $('#metric-declination').textContent = `${declination >= 0 ? '+' : ''}${declination.toFixed(1)}°`;
@@ -277,8 +270,8 @@ function updateReadouts(): void {
             chartContainer.replaceChildren();
             chartKey = 'pending';
         }
-        $('#chart-title').textContent = tr(thermalError || (compareLab?.enabled && compareLab.failed) ? 'Temperature unavailable' : 'Thermal temperature · calculating');
-        $('#profile-summary').textContent = thermalError || (compareLab?.enabled && compareLab.failed) ? tr('Thermal model unavailable; no substitute temperatures are shown.') : tr('Solving heat storage, radiation and heat exchange between latitude bands…');
+        $('#chart-title').textContent = tr(climate.error || (compareLab?.enabled && compareLab.failed) ? 'Temperature unavailable' : 'Thermal temperature · calculating');
+        $('#profile-summary').textContent = climate.error || (compareLab?.enabled && compareLab.failed) ? tr('Thermal model unavailable; no substitute temperatures are shown.') : tr('Solving heat storage, radiation and heat exchange between latitude bands…');
         updateChartSelection();
         return;
     }
@@ -299,12 +292,12 @@ function updateReadouts(): void {
         return;
     }
     const thermalChart = state.chartMetric === 'temperature' && state.temperatureModel === 'energy-balance';
-    const nextKey = `${latitude}:${state.tilt}:${orbitKey(state.orbitA)}:${thermalChart ? `${state.heatDepth}:${thermalRevision}` : 'original'}`;
+    const nextKey = `${latitude}:${state.tilt}:${orbitKey(state.orbitA)}:${thermalChart ? `${state.climateProfile}:${state.heatDepth}:${climate.revision}` : 'original'}`;
     if (nextKey !== profileKey) {
         profile = thermalChart ? profileFromSource(temperatureSource(), latitude)! : annualProfile(latitude, state.tilt, state.orbitA);
         profileKey = nextKey;
     }
-    const nextReferenceKey = `${latitude}:${chartReferenceSource().tilt}:${orbitKey(chartReferenceSource().orbit)}:${compareLab?.revision}:${thermalChart ? `${state.heatDepth}:${thermalRevision}` : 'original'}`;
+    const nextReferenceKey = `${latitude}:${chartReferenceSource().tilt}:${orbitKey(chartReferenceSource().orbit)}:${chartReferenceSource().climateProfile}:${compareLab?.revision}:${thermalChart ? `${state.heatDepth}:${climate.revision}` : 'original'}`;
     if (chartComparison() && referenceKey !== nextReferenceKey) {
         reference = thermalChart ? profileFromSource(chartReferenceSource(), latitude)! : annualProfile(latitude, chartReferenceSource().tilt, chartReferenceSource().orbit);
         referenceKey = nextReferenceKey;
@@ -319,7 +312,7 @@ function updateReadouts(): void {
         const values = profile.map((point) => point[state.chartMetric]);
         const unit = { temperature: '°C', insolation: 'W/m²', daylight: 'h' }[state.chartMetric];
         const mean = values.reduce((sum, value) => sum + value, 0) / values.length;
-        $('#profile-summary').textContent = msg `Annual mean ${mean.toFixed(1)} ${unit} · Daily-curve range ${Math.min(...values).toFixed(1)}–${Math.max(...values).toFixed(1)} ${unit}${chartComparison() ? tr(compareLab?.enabled ? ' · Dashed: Earth B' : ' · Dashed: Earth reference') : ''}${thermalChart ? msg ` · Thermal EBM / ${state.heatDepth} m` : ''}`;
+        $('#profile-summary').textContent = msg `Annual mean ${mean.toFixed(1)} ${unit} · Daily-curve range ${Math.min(...values).toFixed(1)}–${Math.max(...values).toFixed(1)} ${unit}${chartComparison() ? tr(compareLab?.enabled ? ' · Dashed: Earth B' : isIdealizedGeography(state.climateProfile) ? ' · Dashed: other idealized surface' : ' · Dashed: Earth reference') : ''}${thermalChart ? msg ` · Thermal EBM / ${effectiveHeatDepth(state.climateProfile,state.heatDepth)} m effective` : ''}`;
         if (thermalChart) {
             const warmest = Math.max(...values);
             if (warmest - Math.min(...values) > 0.05)
@@ -530,6 +523,7 @@ $('#focus-location').addEventListener('click', () => { scene.focusLocation(); ca
 $('#reset-view').addEventListener('click', () => scene.resetView(), { signal: applicationEvents.signal });
 $('#temperature-model').addEventListener('change', event => {
     state.temperatureModel = (event.target as HTMLSelectElement).value as TemperatureModel;
+    if(state.temperatureModel==='illustrative')state.climateProfile='classic';
     state.playback = 'paused';
     update();
 }, { signal: applicationEvents.signal });
@@ -538,8 +532,12 @@ $('#heat-storage').addEventListener('change', event => {
     state.playback = 'paused';
     update();
 }, { signal: applicationEvents.signal });
+$('#climate-geography').addEventListener('change', event => {
+    state.climateProfile=(event.target as HTMLSelectElement).value as ClimateProfile;
+    state.playback='paused';profileKey='';referenceKey='';chartKey='';update();
+}, { signal: applicationEvents.signal });
 $('#play-coupled').addEventListener('click', () => { state.playback = togglePlayback(state.playback, 'coupled'); update(); }, { signal: applicationEvents.signal });
-$('#retry-climate').addEventListener('click', () => { thermalKey = ''; update(); }, { signal: applicationEvents.signal });
+$('#retry-climate').addEventListener('click', () => { climate.retry(); update(); }, { signal: applicationEvents.signal });
 window.addEventListener('pagehide', event => {
     if (event.persisted)
         return; // A bfcache page must remain resumable.
@@ -553,7 +551,7 @@ window.addEventListener('pagehide', event => {
     disposeRelease();
     disposeLanguage();
     disposeLanguageControl();
-    thermalClient.dispose();
+    climate.dispose();
     compareLab?.dispose();
     atlas.dispose();
     workbench?.dispose();
@@ -624,7 +622,7 @@ function captureExperiment(): ExperimentState {
         eccentricityB:state.orbitB.eccentricity,perihelionB:state.orbitB.perihelion,axisAzimuthB:state.orbitB.axis,
         tilt:state.tilt,tiltB:compareLab?.tiltB??dormantTiltB,day:state.day,rotation:state.rotation,
         latitude:state.location.latitude,longitude:state.location.longitude,dual:!!compareLab?.enabled,
-        surfaceMode:state.surfaceMode,temperatureModel:state.temperatureModel,heatDepth:state.heatDepth as ExperimentState['heatDepth'],
+        surfaceMode:state.surfaceMode,temperatureModel:state.temperatureModel,climateProfile:state.climateProfile,heatDepth:state.heatDepth as ExperimentState['heatDepth'],
         sceneView:canvas.dataset.sceneView==='orbit'?'orbit':'earth',period:state.period,chartMetric:state.chartMetric,
         reference:state.compare,guides:state.guides,speed:state.speed as ExperimentState['speed']};
 }
@@ -636,11 +634,12 @@ async function applyExperiment(next:ExperimentState):Promise<boolean> {
     state.orbitA=experimentOrbit(next);state.orbitB=experimentOrbit(next,'B');
     state.tilt=next.tilt; state.day=next.day; state.rotation=next.rotation;state.speed=next.speed;
     state.playback='paused';state.location=experimentLocation(next);state.surfaceMode=next.surfaceMode;
-    state.temperatureModel=next.temperatureModel;state.heatDepth=next.heatDepth;
+    state.temperatureModel=next.temperatureModel;state.climateProfile=next.climateProfile;state.heatDepth=next.heatDepth;
     state.period=next.period;state.chartMetric=next.chartMetric;state.compare=next.reference;state.guides=next.guides;
     dormantTiltB=next.tiltB;compareLab?.configure(next.dual,next.tiltB);
     locationSelect.value=state.location.id;
     $<HTMLSelectElement>('#temperature-model').value=state.temperatureModel;
+    $<HTMLSelectElement>('#climate-geography').value=state.climateProfile;
     $<HTMLSelectElement>('#heat-storage').value=String(state.heatDepth);
     $<HTMLInputElement>('#show-guides').checked=state.guides;
     $<HTMLInputElement>('#compare-earth').checked=state.compare;

@@ -74,6 +74,13 @@ export const HELP: Readonly<Record<string, Help>> = {
         observe: ['Compare the height and timing of the warm-season peak while sunlight stays unchanged.', '日射は同じまま、暖かい季節の山の高さや時期がどう変わるかを見ます。'],
         limit: ['Equivalent water depth is a heat-capacity measure, not the actual local ocean depth. It applies globally.', '水深相当は熱容量の単位で、地点の実際の海の深さではありません。地球全体に適用します。'],
     },
+    geography: {
+        title: ['Climate geography', '気候の地理'],
+        meaning: ['Earth Classic applies one chosen heat capacity globally. Idealized land and ocean compare two material responses under the same sunlight.', '従来モデルは選んだ熱容量を地球全体に適用します。理想化した陸と海は、同じ日射のもとで二つの熱応答を比べます。'],
+        experiment: ['Keep one latitude and choose Idealized land, then Idealized ocean. Compare the solid and dashed annual curves.', '一つの緯度で「理想化した陸」から「理想化した海」へ切り替え、年間グラフの実線と破線を比べます。'],
+        observe: ['Land has the larger seasonal range and earlier peak; ocean stores more heat and responds later.', '陸は季節振幅が大きく山が早め。海はより多く熱をため、遅れて応答します。'],
+        limit: ['Each profile covers the whole model world. There is no real coastline, longitude-resolved climate, altitude, ocean circulation or 2D GCM.', '各プロファイルはモデル世界全体を一つの材質で覆います。実際の海岸線、経度方向の気候、標高、海流、2次元GCMはありません。'],
+    },
     temperature: {
         title: ['Temperature model', '気温の計算方式'],
         meaning: ['Thermal EBM balances sunlight, radiation, heat storage and exchange between latitude bands.', '熱収支モデルは日射・放射・蓄熱・緯度帯間の熱交換を計算します。'],

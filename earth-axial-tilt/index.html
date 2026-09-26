@@ -12,7 +12,7 @@
 <canvas aria-label="Interactive 3D Earth" data-i18n-aria-label="Interactive 3D Earth" id="earth-canvas"></canvas>
 <header class="topbar glass">
 <div>
-<p class="eyebrow"><span data-i18n="MIZUKI PLAYGROUND / PLANET LAB · v1.2 RC">MIZUKI PLAYGROUND / PLANET LAB · v1.2 RC</span></p>
+<p class="eyebrow"><span data-i18n="MIZUKI PLAYGROUND / PLANET LAB · v1.3 ALPHA">MIZUKI PLAYGROUND / PLANET LAB · v1.3 ALPHA</span></p>
 <h1><span data-i18n="Earth Axial Tilt">Earth Axial Tilt</span></h1>
 </div>
 <div aria-live="polite" class="topbar__readout">
@@ -155,6 +155,13 @@
 <option data-i18n="Thermal EBM · experimental" selected="" value="energy-balance">Thermal EBM · experimental</option>
 <option data-i18n="Illustrative · v0.1–v0.4" value="illustrative">Illustrative · v0.1–v0.4</option>
 </select>
+<div class="help-heading"><label data-help="geography" for="climate-geography"><span data-i18n="Climate geography">Climate geography</span></label></div>
+<select aria-describedby="geography-help" id="climate-geography">
+<option data-i18n="Earth Classic · uniform" selected="" value="classic">Earth Classic · uniform</option>
+<option data-i18n="Idealized land · fast" value="idealized-land">Idealized land · fast</option>
+<option data-i18n="Idealized ocean · slow" value="idealized-ocean">Idealized ocean · slow</option>
+</select>
+<p class="input-help" id="geography-help"><span data-i18n="Idealized land/ocean covers the whole model world with one material so the same latitude can be compared. It is not a real Earth map.">Idealized land/ocean covers the whole model world with one material so the same latitude can be compared. It is not a real Earth map.</span></p>
 <div class="help-heading"><label data-help="heat" for="heat-storage"><span data-i18n="Heat storage">Heat storage</span></label></div>
 <select aria-describedby="heat-help" id="heat-storage">
 <option data-i18n="Fast · 2.5 m equivalent" value="2.5">Fast · 2.5 m equivalent</option>
@@ -270,12 +277,12 @@
 <div><p class="eyebrow"><span data-i18n="PLANET LAB / A YEAR AT EVERY LATITUDE">PLANET LAB / A YEAR AT EVERY LATITUDE</span></p><div class="help-heading"><h2 data-help="atlas" id="atlas-title"><span data-i18n="Season atlas">Season atlas</span></h2></div></div>
 <button aria-label="Close season atlas" autofocus="" data-i18n-aria-label="Close season atlas" id="atlas-close" type="button"><span data-i18n="Back to globe ×">Back to globe ×</span></button>
 </header>
-<p class="atlas-note" data-i18n="Atlas reference: 23.44° with Earth A’s orbit and heat storage. It is not Earth B.">Atlas reference: 23.44° with Earth A’s orbit and heat storage. It is not Earth B.</p><p id="atlas-intro"><span data-i18n="North at the top. South at the bottom. One repeating model year from left to right.">North at the top. South at the bottom. One repeating model year from left to right.</span></p>
+<p class="atlas-note" id="atlas-reference-note" data-i18n="Atlas reference: 23.44° with Earth A’s orbit and heat storage. It is not Earth B.">Atlas reference: 23.44° with Earth A’s orbit and heat storage. It is not Earth B.</p><p id="atlas-intro"><span data-i18n="North at the top. South at the bottom. One repeating model year from left to right.">North at the top. South at the bottom. One repeating model year from left to right.</span></p>
 <p id="atlas-comparison-note" class="atlas-note" hidden data-i18n="Compare Lab: this atlas shows Earth A. Its difference map always compares A with 23.44°, not with Earth B.">Compare Lab: this atlas shows Earth A. Its difference map always compares A with 23.44°, not with Earth B.</p>
 <p class="atlas-context" id="atlas-context"></p>
 <div class="atlas-settings">
 <label><span data-i18n="Layer">Layer</span><select id="atlas-metric"><option data-i18n="Daily solar" value="insolation">Daily solar</option><option data-i18n="Daylight" value="daylight">Daylight</option><option data-i18n="Temperature" value="temperature">Temperature</option></select></label>
-<label><span data-i18n="View">View</span><select id="atlas-view"><option data-i18n="Model values" value="absolute">Model values</option><option data-i18n="Difference from 23.44°" value="difference">Difference from 23.44°</option></select></label>
+<label><span data-i18n="View">View</span><select id="atlas-view"><option data-i18n="Model values" value="absolute">Model values</option><option data-i18n="Difference from 23.44°" id="atlas-difference-option" value="difference">Difference from 23.44°</option></select></label>
 <label><span data-i18n="Heat storage">Heat storage</span><select id="atlas-heat"><option data-i18n="Fast" value="2.5">Fast</option><option data-i18n="Mixed" selected="" value="10">Mixed</option><option data-i18n="Slow" value="50">Slow</option></select></label>
 </div>
 <div class="atlas-angle-row">

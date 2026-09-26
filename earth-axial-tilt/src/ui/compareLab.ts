@@ -8,6 +8,7 @@ import { parseTiltInput } from './tiltInput';
 import { t, msg, onLanguageChange } from './i18n';
 import { formatModelDate } from './chart';
 import type { Playback } from './playback';
+import { climateProfileKey, effectiveHeatDepth } from '../physics/climateGeography';
 
 export interface CompareSnapshot {
   orbitB: OrbitParameters;
@@ -99,11 +100,13 @@ export class CompareLab {
     this.el('compare-toggle').setAttribute('aria-pressed',String(this.enabled));
     if(!this.enabled)return;
     const same=this.tiltB===snapshot.source.tilt&&orbitKey(snapshot.source.orbit)===orbitKey(snapshot.orbitB);
-    const key=snapshot.source.model==='energy-balance' && !same ? `${this.tiltB}:${snapshot.source.depth}:${orbitKey(snapshot.orbitB)}` : 'none';
+    const profile=snapshot.source.climateProfile??'classic';
+    const key=snapshot.source.model==='energy-balance' && !same
+      ? `${this.tiltB}:${climateProfileKey(profile,snapshot.source.depth)}:${orbitKey(snapshot.orbitB)}` : 'none';
     if(key!==this.key){
       this.key=key;this.solution=null;this.error='';this.revision++;
       this.worker.cancel();
-      if(key!=='none')this.worker.request(this.tiltB,snapshot.source.depth,false,snapshot.orbitB);
+      if(key!=='none')this.worker.request(this.tiltB,snapshot.source.depth,false,snapshot.orbitB,profile);
     }
     const b=this.sourceB;
     this.actions.scene({tilt:b.tilt,thermal:b.solution,orbit:b.orbit});
@@ -129,7 +132,7 @@ export class CompareLab {
     this.el('compare-orbits').hidden=!advancedOrbit;
     this.el('compare-orbits').textContent=msg`A orbit e=${snapshot.source.orbit?.eccentricity??0}, peri=${snapshot.source.orbit?.perihelion??0}°, axis=${snapshot.source.orbit?.axis??0}° · B orbit e=${snapshot.orbitB.eccentricity}, peri=${snapshot.orbitB.perihelion}°, axis=${snapshot.orbitB.axis}°`;
     this.el('compare-model').textContent=snapshot.source.model==='energy-balance'
-      ?msg`Thermal EBM · ${snapshot.source.depth} m heat storage`:t('Illustrative model');
+      ?msg`Thermal EBM · ${effectiveHeatDepth(profile,snapshot.source.depth)} m effective heat storage`:t('Illustrative model');
     for(const row of compareMeasurements(snapshot.source,b,snapshot.latitude,snapshot.day)){
       const unit=row.key==='daylight'?t('h'):row.key==='solar'?'W/m²':'°C';
       const cells=this.el(`compare-${row.key}`);

@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { dailyMeanInsolation, dayLengthHours, solarIrradiance, SOLAR_CONSTANT } from '../physics/solar';
 import { isThermalReady, temperatureFromSource, temperatureScale, type TemperatureModel } from '../physics/temperatureModel';
+import type { ClimateProfile } from '../physics/climateGeography';
 import type { ThermalSolution } from '../physics/energyBalance';
 import type { LocationPreset } from '../data/locations';
 import { geographicToCartesian, cartesianToGeographic, sunDirection } from '../physics/geometry';
@@ -26,6 +27,7 @@ export interface SceneState {
   guides: boolean;
   rotation: number;
   temperatureModel: TemperatureModel;
+  climateProfile: ClimateProfile;
   heatDepth: number;
   thermal: ThermalSolution | null;
 }
@@ -105,7 +107,7 @@ export class EarthScene {
     mode: 'normal',
     guides: true,
     rotation: 0,
-    temperatureModel: 'illustrative', heatDepth: 10, thermal: null,
+    temperatureModel: 'illustrative', climateProfile:'classic', heatDepth: 10, thermal: null,
     location: { id: 'taipei', name: 'Taipei', latitude: 25.033, longitude: 121.5654 },
   };
 
@@ -616,11 +618,12 @@ export class EarthScene {
 
   private updateDataLayer(): void {
     this.dataMesh.visible = this.state.mode !== 'normal' && this.state.mode !== 'instant' &&
-      (this.state.mode !== 'temperature' || isThermalReady({ model: this.state.temperatureModel, tilt: this.state.tilt, depth: this.state.heatDepth, orbit: this.state.orbit, solution: this.state.thermal }));
+      (this.state.mode !== 'temperature' || isThermalReady({ model: this.state.temperatureModel, climateProfile:this.state.climateProfile,
+        tilt: this.state.tilt, depth: this.state.heatDepth, orbit: this.state.orbit, solution: this.state.thermal }));
     this.canvas.dataset.temperatureLayer = this.state.mode === 'temperature' ? (this.dataMesh.visible ? this.state.temperatureModel : 'pending') : 'off';
     if (!this.dataMesh.visible) return;
 
-    const cacheKey = `${this.state.mode}:${this.state.tilt}:${this.state.day}:${this.state.temperatureModel}:${this.state.heatDepth}:${orbitKey(this.state.orbit)}:${this.state.radiationMax}`;
+    const cacheKey = `${this.state.mode}:${this.state.tilt}:${this.state.day}:${this.state.temperatureModel}:${this.state.climateProfile}:${this.state.heatDepth}:${orbitKey(this.state.orbit)}:${this.state.radiationMax}`;
     const cachedLayer = this.colorCache.find(c => c.key === cacheKey && c.thermal === this.state.thermal);
     if (cachedLayer) {
       (this.dataMesh.geometry.attributes.color.array as Float32Array).set(cachedLayer.values);
@@ -649,7 +652,8 @@ export class EarthScene {
         t = dayLengthHours(latitude, this.state.day, this.state.tilt, this.state.orbit) / 24;
         color.setHSL(0.68 - t * 0.53, 0.82, 0.2 + t * 0.48, THREE.SRGBColorSpace);
       } else {
-        const temperature = temperatureFromSource({ model: this.state.temperatureModel, tilt: this.state.tilt, depth: this.state.heatDepth, orbit: this.state.orbit, solution: this.state.thermal }, latitude, this.state.day)!;
+        const temperature = temperatureFromSource({ model: this.state.temperatureModel, climateProfile:this.state.climateProfile,
+          tilt: this.state.tilt, depth: this.state.heatDepth, orbit: this.state.orbit, solution: this.state.thermal }, latitude, this.state.day)!;
         const scale = temperatureScale(this.state.temperatureModel);
         t = THREE.MathUtils.clamp((temperature - scale.min) / (scale.max - scale.min), 0, 1);
         color.setHSL(0.65 - t * 0.65, 0.88, 0.24 + Math.sin(t * Math.PI) * 0.22, THREE.SRGBColorSpace);

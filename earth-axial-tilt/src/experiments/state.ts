@@ -1,5 +1,6 @@
 import type { OrbitParameters } from '../physics/orbit';
 import { DEFAULT_LOCATION, LOCATIONS, type LocationPreset } from '../data/locations';
+import type { ClimateProfile } from '../physics/climateGeography';
 
 /** Public experiment data only. No playback, language, camera pose or user identity. */
 export interface ExperimentState {
@@ -14,6 +15,7 @@ export interface ExperimentState {
   dual: boolean;
   surfaceMode: 'normal' | 'instant' | 'insolation' | 'daylight' | 'temperature';
   temperatureModel: 'energy-balance' | 'illustrative';
+  climateProfile: ClimateProfile;
   heatDepth: 2.5 | 10 | 50;
   sceneView: 'earth' | 'orbit';
   period: 'year' | 'day';
@@ -22,23 +24,24 @@ export interface ExperimentState {
   guides: boolean;
   speed: 1 | 4 | 12;
 }
-export const EXPERIMENT_VERSION = 2;
+export const EXPERIMENT_VERSION = 3;
 export const MAX_EXPERIMENT_LENGTH = 4096;
 export const DEFAULT_EXPERIMENT: Readonly<ExperimentState> = Object.freeze({
   eccentricity:0,perihelion:0,axisAzimuth:0,eccentricityB:0,perihelionB:0,axisAzimuthB:0,
   tilt: 23.44, tiltB: 90, day: 172, rotation: 0,
   latitude: DEFAULT_LOCATION.latitude, longitude: DEFAULT_LOCATION.longitude,
-  dual: false, surfaceMode: 'normal', temperatureModel: 'energy-balance', heatDepth: 10,
+  dual: false, surfaceMode: 'normal', temperatureModel: 'energy-balance', climateProfile: 'classic', heatDepth: 10,
   sceneView: 'earth', period: 'year', chartMetric: 'temperature', reference: false,
   guides: true, speed: 1,
 });
 const KEYS: Record<keyof ExperimentState, string> = {
   eccentricity:'e',perihelion:'peri',axisAzimuth:'axis',eccentricityB:'be',perihelionB:'bperi',axisAzimuthB:'baxis',
   tilt: 'a', tiltB: 'b', day: 'day', rotation: 'spin', latitude: 'lat', longitude: 'lon',
-  dual: 'dual', surfaceMode: 'layer', temperatureModel: 'model', heatDepth: 'heat',
+  dual: 'dual', surfaceMode: 'layer', temperatureModel: 'model', climateProfile: 'geo', heatDepth: 'heat',
   sceneView: 'view', period: 'period', chartMetric: 'chart', reference: 'ref', guides: 'guides', speed: 'speed',
 };
 const ORBIT_FIELDS = new Set<keyof ExperimentState>(['eccentricity','perihelion','axisAzimuth','eccentricityB','perihelionB','axisAzimuthB']);
+const GEOGRAPHY_FIELDS = new Set<keyof ExperimentState>(['climateProfile']);
 const OWNED_KEYS = new Set(['lab', ...Object.values(KEYS)]);
 export type ExperimentParse =
   | { status: 'none' }
@@ -62,20 +65,23 @@ export function validateExperiment(value: unknown): ExperimentState | null {
   const tilt=field('tilt'), tiltB=field('tiltB'), day=field('day'), rotation=field('rotation');
   const latitude=field('latitude'), longitude=field('longitude'), heatDepth=field('heatDepth'), speed=field('speed');
   const dual=field('dual'), reference=field('reference'), guides=field('guides');
-  const surfaceMode=field('surfaceMode'), temperatureModel=field('temperatureModel'), sceneView=field('sceneView');
+  const surfaceMode=field('surfaceMode'), temperatureModel=field('temperatureModel'), climateProfile=field('climateProfile'), sceneView=field('sceneView');
   const period=field('period'), chartMetric=field('chartMetric');
   if (!numberIn(tilt,0,90) || !numberIn(tiltB,0,90) || !numberIn(day,1,366,true) || !numberIn(rotation,0,360) ||
       !numberIn(latitude,-90,90) || !numberIn(longitude,-180,180) ||
       ![2.5,10,50].includes(heatDepth as number) || ![1,4,12].includes(speed as number) ||
       typeof dual!=='boolean' || typeof reference!=='boolean' || typeof guides!=='boolean' ||
       !['normal','instant','insolation','daylight','temperature'].includes(surfaceMode as string) ||
-      !['energy-balance','illustrative'].includes(temperatureModel as string) || !['earth','orbit'].includes(sceneView as string) ||
+      !['energy-balance','illustrative'].includes(temperatureModel as string) ||
+      !['classic','idealized-land','idealized-ocean'].includes(climateProfile as string) ||
+      (temperatureModel==='illustrative' && climateProfile!=='classic') || !['earth','orbit'].includes(sceneView as string) ||
       !['year','day'].includes(period as string) || !['temperature','insolation','daylight'].includes(chartMetric as string)) return null;
   // A partial coordinate pair is not a meaningful replacement for the selected place.
   if (Object.hasOwn(value,'latitude') !== Object.hasOwn(value,'longitude')) return null;
   return { eccentricity,eccentricityB,perihelion:perihelion%360,perihelionB:perihelionB%360,axisAzimuth:axisAzimuth%360,axisAzimuthB:axisAzimuthB%360, tilt, tiltB, day, rotation: rotation===360?0:rotation, latitude, longitude,
     heatDepth:heatDepth as ExperimentState['heatDepth'], speed:speed as ExperimentState['speed'], dual, reference, guides,
     surfaceMode:surfaceMode as ExperimentState['surfaceMode'], temperatureModel:temperatureModel as ExperimentState['temperatureModel'],
+    climateProfile:climateProfile as ExperimentState['climateProfile'],
     sceneView:sceneView as ExperimentState['sceneView'], period:period as ExperimentState['period'], chartMetric:chartMetric as ExperimentState['chartMetric'] };
 }
 
@@ -94,10 +100,12 @@ export function decodeExperiment(hash: string): ExperimentParse {
   const params=new URLSearchParams(hash.startsWith('#')?hash.slice(1):hash);
   if (!params.has('lab')) return {status:'none'};
   for (const key of OWNED_KEYS) if (params.getAll(key).length>1) return {status:'error',reason:'invalid'};
-  if (!['1',String(EXPERIMENT_VERSION)].includes(params.get('lab')!)) return {status:'error',reason:'version'};
+  if (!['1','2',String(EXPERIMENT_VERSION)].includes(params.get('lab')!)) return {status:'error',reason:'version'};
+  const version=params.get('lab')!;
   const data: Record<string,unknown>={};
   for (const key of Object.keys(KEYS) as (keyof ExperimentState)[]) {
-    if(params.get('lab')==='1'&&ORBIT_FIELDS.has(key))continue;
+    if(version==='1'&&ORBIT_FIELDS.has(key))continue;
+    if(version!=='3'&&GEOGRAPHY_FIELDS.has(key))continue;
     const input=params.get(KEYS[key]); if(input===null)continue;
     const fallback=DEFAULT_EXPERIMENT[key];
     if (typeof fallback==='boolean') {
@@ -134,9 +142,10 @@ export function decodeExperimentFile(text: string): ExperimentParse {
   try {
     const value:unknown=JSON.parse(text);
     if(!record(value)||value.application!=='earth-axial-tilt')return {status:'error',reason:'invalid'};
-    if(value.version!==1&&value.version!==EXPERIMENT_VERSION)return {status:'error',reason:'version'};
+    if(value.version!==1&&value.version!==2&&value.version!==EXPERIMENT_VERSION)return {status:'error',reason:'version'};
     let data=value.state;
-    if(value.version===1&&record(data))data=Object.fromEntries(Object.entries(data).filter(([key])=>!ORBIT_FIELDS.has(key as keyof ExperimentState)));
+    if(value.version<3&&record(data))data=Object.fromEntries(Object.entries(data).filter(([key])=>
+      !(value.version===1&&ORBIT_FIELDS.has(key as keyof ExperimentState))&&!GEOGRAPHY_FIELDS.has(key as keyof ExperimentState)));
     const state=validateExperiment(data);
     return state ? {status:'ok',state} : {status:'error',reason:'invalid'};
   } catch { return {status:'error',reason:'invalid'}; }

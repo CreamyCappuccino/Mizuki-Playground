@@ -1,5 +1,6 @@
 import { normalizeOrbit, type OrbitParameters } from './orbit';
 import { clamp, dailyMeanInsolation } from './solar';
+import { effectiveHeatDepth, type ClimateProfile } from './climateGeography';
 
 /** A dry, zonally averaged seasonal EBM. Parameters are illustrative, not a city fit. */
 export const EBM = Object.freeze({
@@ -21,8 +22,12 @@ export interface ClimateGrid {
 }
 export interface ThermalSolution {
   orbit?: OrbitParameters;
+  climateProfile: ClimateProfile;
   tilt: number;
+  /** Earth Classic control retained in portable state and request provenance. */
   depth: number;
+  /** Heat capacity actually used by this solution. */
+  effectiveDepth: number;
   x: Float64Array;
   /** Day-major: day 1 through 365, at each latitude-band centre. */
   temperatures: Float64Array;
@@ -33,7 +38,7 @@ export interface ThermalSolution {
   minimum: number;
   maximum: number;
 }
-export interface SolverOptions { bands?: number; stepsPerDay?: number; orbit?: OrbitParameters }
+export interface SolverOptions { bands?: number; stepsPerDay?: number; orbit?: OrbitParameters; climateProfile?: ClimateProfile }
 
 function finiteRange(value: number, min: number, max: number, name: string): void {
   if (!Number.isFinite(value) || value < min || value > max) {
@@ -98,14 +103,16 @@ function factor(grid: ClimateGrid, timeFactor: number, identity: number) {
  */
 export function solveSeasonalClimate(tilt: number, depth: number, options: SolverOptions = {}): ThermalSolution {
   const orbit = normalizeOrbit(options.orbit);
+  const climateProfile = options.climateProfile ?? 'classic';
   finiteRange(tilt, 0, 90, 'Obliquity');
   finiteRange(depth, 2.5, 50, 'Equivalent water depth');
+  const effectiveDepth = effectiveHeatDepth(climateProfile, depth);
   const grid = buildClimateGrid(options.bands ?? EBM.bands);
   const steps = options.stepsPerDay ?? EBM.stepsPerDay;
   finiteRange(steps, 1, 8, 'Steps per day');
   if (!Number.isInteger(steps)) throw new RangeError('Steps per day must be an integer.');
   const n = grid.x.length, count = 365 * steps;
-  const h = EBM.secondsPerDay / steps / (EBM.waterHeatCapacity * depth);
+  const h = EBM.secondsPerDay / steps / (EBM.waterHeatCapacity * effectiveDepth);
   const forcing = new Float64Array(count * n), mean = new Float64Array(n);
   for (let s = 0; s < count; s += 1) {
     const day = 1 + (s + 1) / steps;
@@ -145,7 +152,7 @@ export function solveSeasonalClimate(tilt: number, depth: number, options: Solve
     if (!Number.isFinite(t)) throw new Error('Thermal model produced a non-finite temperature.');
     minimum = Math.min(minimum, t); maximum = Math.max(maximum, t);
   }
-  return { tilt, depth, orbit, x: grid.x, temperatures, years, periodicError, energyResidual, minimum, maximum };
+  return { tilt, depth, effectiveDepth, climateProfile, orbit, x: grid.x, temperatures, years, periodicError, energyResidual, minimum, maximum };
 }
 
 /** Interpolate the periodic daily field, linearly in equal-area coordinate x. */

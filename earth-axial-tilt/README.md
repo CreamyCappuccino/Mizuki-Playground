@@ -1,12 +1,18 @@
 # Earth Axial Tilt Lab
 
-**1.2.0-rc.1 — Earth orbit mechanics and reproducible experiments**
+**1.3.0-alpha.1 — Idealized land/ocean seasonal response**
 
 An interactive, bilingual science toy: tilt Earth, follow a day or year, and compare two hypothetical worlds. Static Vite + TypeScript + Three.js; no backend or runtime remote imagery required.
 
 [Start developing](START_HERE.md) · [日本語ガイド](docs/GUIDE.ja.md) · [English guide](docs/GUIDE.en.md) · [Science](docs/SCIENCE.md) · [Roadmap](ROADMAP.md) · [Release gate](docs/RELEASE_CHECKLIST.md)
 
-## New in the 1.2 candidate
+## New in the 1.3 alpha
+
+Open **Climate geography** to compare two deliberately idealized materials at the same latitude and under the same orbit: **Idealized land** reuses the existing Fast 2.5 m-equivalent heat capacity, while **Idealized ocean** reuses Slow 50 m-equivalent storage. The solid annual curve is the selected material; the dashed curve is its counterpart. The Season atlas difference layer uses the same pairing, so seasonal amplitude and lag can be inspected without changing sunlight.
+
+This is a completed first slice, not a geographic Earth model. Each profile covers the whole model world; there are no coastlines, longitude-dependent climate cells, altitude, ocean circulation, latent heat or nonlinear feedbacks. The existing **Classic latitude bands** and global Fast/Mixed/Slow control remain unchanged and separate. A real land mask is deferred until the latitude-band solver has an honest spatial design. See [v1.3](docs/V1.3.md).
+
+## Orbit mechanics from the 1.2 candidate
 
 Open **Orbit laboratory** in the left controls. Change eccentricity (0–0.3), the apparent Sun direction at perihelion and the static axis azimuth independently for A/B. Follow the Kepler orbit: distance, speed, inverse-square incoming solar energy and unequal seasonal durations stay consistent across the scene, daily/year graphs, comparison and thermal model. Perihelion/aphelion shortcuts, four seasonal markers and English/Japanese contextual help make the geometry inspectable. **Classic circle** restores the original orbital conditions.
 
@@ -14,9 +20,9 @@ Three new questions compare different orbits at the same tilt, summer versus win
 
 ## Reproduce and share
 
-Open **Experiments & sharing** in the left controls. Ten question-based presets prepare polar sunlight, zero tilt, Taipei day/night, polar night, fast/slow heat storage and coupled motion. Preparation pauses playback, restores a useful view and reports the conditions. **Undo experiment** restores the previous scientific state.
+Open **Experiments & sharing** in the left controls. Eleven question-based presets prepare polar sunlight, zero tilt, Taipei day/night, polar night, fast/slow heat storage, idealized land/ocean response and coupled motion. Preparation pauses playback, restores a useful view and reports the conditions. **Undo experiment** restores the previous scientific state.
 
-**Copy experiment link** creates a versioned, bounded URL fragment. **Save / Load settings file** works across installations without requiring a public website. Schema-2 URLs/files restore A/B tilts and separate orbital parameters, time, coordinates, layers, model and global heat storage; language, typography, quality and playback are never imported. Values are recomputed, not copied from an old thermal solution. Schema-1 links/files migrate to the classic circle. Invalid or future-version data leaves the experiment unchanged. Links are snapshots, not live-synchronized sessions.
+**Copy experiment link** creates a versioned, bounded URL fragment. **Save / Load settings file** works across installations without requiring a public website. Schema-3 URLs/files restore A/B tilts and separate orbital parameters, time, coordinates, layers, model, global heat storage and the climate profile; language, typography, quality and playback are never imported. Values are recomputed, not copied from an old thermal solution. Schema-1 links migrate to the classic circle and schema-2 links retain their orbits; both migrate to Classic latitude bands. Invalid or future-version data leaves the experiment unchanged. Links are snapshots, not live-synchronized sessions.
 
 A `localhost` URL points to the receiving device, not to your Mac. Use a settings file in another installed copy, or a shared app host only after deployment is separately approved. No server, upload, user tracking or automatic publication is added. See [v1.1](docs/V1.1.md) and the [state format](docs/EXPERIMENT_STATE.md).
 
@@ -26,9 +32,9 @@ A `localhost` URL points to the receiving device, not to your Mac. Use a setting
 - **Three clocks:** frozen-date Play day; fixed-spin Play year; coupled spin + orbit using one mean-model clock.
 - **Compare Lab:** independent A/B tilts and orbits with shared elapsed model time, rotation, location, camera, model, heat storage and colour scale. Signed A−B daylight, daily solar and temperature values. Side-by-side on desktop, stacked on narrow screens. Both close-up and Sun-centred orbit views work in comparison.
 - **Five layers:** Earth, instantaneous Sun now, daily-mean solar, daylight and experimental temperature.
-- **Thermal EBM:** adjustable global heat storage; original illustrative model retained. No city calibration or hourly weather model.
+- **Thermal EBM:** adjustable global heat storage plus fixed idealized land/ocean response profiles; original illustrative model retained. No city calibration, real geography or hourly weather model.
 - **Year / Day graphs:** pointer and keyboard selection; A/B annual reference in comparison. Day graph describes A only.
-- **Season atlas:** all latitudes across a year; its reference remains 23.44° with A’s orbit and heat storage, explicitly labelled even when A/B comparison is open.
+- **Season atlas:** all latitudes across a year. Classic compares A with 23.44° at A's orbit/storage; an idealized geography profile compares land with ocean at A's tilt/orbit. Neither reference silently becomes B.
 - **Accessible exploration:** Japanese/English, contextual ? guides, persistent large text, optional Basic/All tools and dismissible introduction.
 - **Presentation:** shared-resource dual rendering, local 4K day/night imagery, optional fixed night lights, atmosphere, artistic Sun, quality choices and Focus for single or dual views.
 
@@ -79,7 +85,7 @@ CI installs from the lock, checks documentation links/translations/IDs, typechec
 
 Solar energy is at the top of the atmosphere. Temperature is a daily-mean-style latitude-band experiment, not a forecast or daytime maximum. Geometry uses a fixed 365-day model year: the classic circle or Kepler ellipses with semimajor axis 1 au. Day 80 is each world’s spring reference, not a shared real epoch. World sizes and distances are illustrative. A and B are two separate hypothetical worlds, not two Earths occupying one solar system.
 
-Since v0.9 the orbital frame and eastward spin use the same prograde handedness. A 365-mean-solar-day model year contains **366 inertial turns**, not 365. This corrects the earlier isolated-animation orientation while preserving the original circle’s seasonal results. In v1.2 all astronomical forcing follows the selected orbit; EBM coefficients are unchanged. See [coordinate and clock definitions](docs/SCIENCE.md).
+Since v0.9 the orbital frame and eastward spin use the same prograde handedness. A 365-mean-solar-day model year contains **366 inertial turns**, not 365. This corrects the earlier isolated-animation orientation while preserving the original circle’s seasonal results. All astronomical forcing follows the selected orbit. The v1.3 idealized comparison changes only effective heat capacity and keeps the original EBM radiation, transport and albedo coefficients. See [coordinate, clock and climate definitions](docs/SCIENCE.md).
 
 ## Documentation and assets
 

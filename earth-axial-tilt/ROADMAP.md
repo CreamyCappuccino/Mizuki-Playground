@@ -4,7 +4,8 @@
 
 ## 現在地
 
-- 1.2.0-rc.1：Earth Orbit Mechanicsを実装。操作・独立数値回帰・schema 2・日英ガイドを追加。版の検証状態は [V1.2](docs/V1.2.md) と同一HEADのCIを参照。正式な実機gateは未確認のまま維持。
+- 1.3.0-alpha.1：Climate Geographyの最初の一区切りとして、Classicを保持したidealized Land/Ocean同緯度対照を実装。実在maskと2D geographyは未実装で、v1.3全体完了とはしない。版の状態は [V1.3](docs/V1.3.md) を参照。
+- 1.2.0-rc.1：Earth Orbit Mechanicsはmain `8364981`の同一HEAD CIで成功。正式な実機gateは未確認のまま維持。
 
 - v0.9 Compare Lab は実装済み。
 - v1.0 は `1.0.0-rc.1`。自動検証は整っているが、**物理iPhoneのSafari確認はまだ正式版ゲートとして残す**。
@@ -162,7 +163,7 @@ A/Bで
 
 ---
 
-# v1.3 — Climate Geography Lab
+# v1.3 — Climate Geography Lab（alpha 1：idealized対照を実装）
 
 ## 目的
 
@@ -173,9 +174,10 @@ A/Bで
 
 ## 1. Land / ocean heat capacity
 
-- まずはEarth mapをland/ocean maskとして使用。
+- **alpha 1完了:** 同緯度・同じforcingで、全球一様なLand 2.5 m相当／Ocean 50 m相当を切り替え、年間曲線とAtlas差分で振幅・lagを見る。
+- **次段階:** Earth mapをland/ocean maskとして使う前に、longitudeを持つ格子・solver・Atlas表現を設計する。
 - latitude-band EBMを2D GCMへ一気に変えず、どの解像度で扱うか設計レビューを先に行う。
-- 最低限、land/oceanでeffective heat capacityを変える。
+- alpha 1では既存Fast/Slowの係数を再利用し、根拠のない新定数を追加しない。
 - 「Mixed 10m」というglobal knobと地理分布modeの意味を混同しない。
 
 ## 2. Optional altitude correction
@@ -185,7 +187,7 @@ A/Bで
 
 ## 3. Geography-aware Compare / Atlas
 
-- 同じ緯度でもland/oceanで温度振幅とlagが違うことをA/Bで比較。
+- 同じ緯度でもland/oceanで温度振幅とlagが違うことを年間曲線／Atlasで比較。A/Bは引き続き世界比較であり、profile差分へ暗黙に転用しない。
 - Season atlasは緯度だけの場から、地理依存をどの形で表現するかを再設計。
 - 既存の緯度帯モードはEarth Classicとして残す。
 

@@ -7,9 +7,11 @@ import { atlasColor } from './atlasColors';
 import { createChartLayout, type ChartLayout } from './chartLayout';
 import { formatModelDate } from './chart';
 import { parseTiltInput } from './tiltInput';
+import { effectiveHeatDepth, isIdealizedGeography } from '../physics/climateGeography';
 export interface AtlasSnapshot {
     source: TemperatureSource;
     reference: TemperatureSource;
+    referenceKind: 'tilt' | 'geography';
     revision: number;
     day: number;
     latitude: number;
@@ -156,7 +158,13 @@ export class SeasonAtlas {
         if (!this.dialog.open)
             return;
         const config: AtlasConfig = { metric: this.metric.value as AtlasMetric, view: this.view.value as AtlasView,
-            source: snapshot.source, reference: snapshot.reference };
+            source: snapshot.source, reference: snapshot.reference, referenceKind:snapshot.referenceKind };
+        const geography=isIdealizedGeography(snapshot.source.climateProfile??'classic');
+        this.el('atlas-reference-note').textContent=tr(geography
+            ? 'Atlas reference: the other idealized surface at the same tilt and orbit. It is not Earth B.'
+            : 'Atlas reference: 23.44° with Earth A’s orbit and heat storage. It is not Earth B.');
+        this.el<HTMLOptionElement>('atlas-difference-option').textContent=tr(geography
+            ? 'Difference between idealized surfaces':'Difference from 23.44°');
         this.el<HTMLInputElement>('atlas-day').value = String(Math.floor(snapshot.day));
         this.el<HTMLInputElement>('atlas-latitude').value = String(snapshot.latitude);
         this.el('atlas-day-output').textContent = `${formatModelDate(snapshot.day)} · ${Math.floor(snapshot.day)}`;
@@ -165,22 +173,22 @@ export class SeasonAtlas {
         if (document.activeElement !== tiltInput)
             tiltInput.value = String(snapshot.source.tilt);
         this.el<HTMLSelectElement>('atlas-heat').value = String(snapshot.source.depth);
-        this.el<HTMLSelectElement>('atlas-heat').disabled = snapshot.source.model !== 'energy-balance';
+        this.el<HTMLSelectElement>('atlas-heat').disabled = snapshot.source.model !== 'energy-balance' || geography;
         this.dialog.querySelectorAll<HTMLButtonElement>('[data-atlas-tilt]').forEach(button => {
             const active = Number(button.dataset.atlasTilt) === snapshot.source.tilt;
             button.classList.toggle('active', active);
             button.setAttribute('aria-pressed', String(active));
         });
         this.el('atlas-context').textContent = msg `${snapshot.source.tilt}° tilt · ${snapshot.source.model === 'energy-balance'
-            ? msg `Thermal EBM · ${snapshot.source.depth} m heat storage` : tr('Illustrative temperature model')} · same repeating year as the globe`;
-        if(!isClassicOrbit(snapshot.source.orbit))this.el('atlas-context').textContent += ' · '+tr('Same orbit as Earth A; the reference changes tilt only. Dates are elapsed from the model equinox.');
+            ? msg `Thermal EBM · ${effectiveHeatDepth(snapshot.source.climateProfile??'classic',snapshot.source.depth)} m effective heat storage` : tr('Illustrative temperature model')} · same repeating year as the globe`;
+        if(!isClassicOrbit(snapshot.source.orbit)&&snapshot.referenceKind==='tilt')this.el('atlas-context').textContent += ' · '+tr('Same orbit as Earth A; the reference changes tilt only. Dates are elapsed from the model equinox.');
         const ready = atlasReady(config);
         this.plot.setAttribute('aria-busy', String(!ready));
         const status = this.el('atlas-status');
         status.hidden = ready;
         status.textContent = snapshot.error ? tr('Temperature unavailable. Solar and Daylight remain usable. Close to retry the thermal model.') : tr('Calculating the matching thermal year…');
         const key = `${getLanguage()}:${config.metric}:${config.view}:${snapshot.source.tilt}:${orbitKey(snapshot.source.orbit)}:${config.metric === 'temperature'
-            ? `${snapshot.source.model}:${snapshot.source.depth}:${snapshot.revision}:${ready}` : 'astronomy'}`;
+            ? `${snapshot.source.model}:${snapshot.source.climateProfile}:${snapshot.reference.climateProfile}:${snapshot.source.depth}:${snapshot.revision}:${ready}` : 'astronomy'}`;
         const box = this.plot.getBoundingClientRect();
         const font = parseFloat(getComputedStyle(this.plot).fontSize) || 14;
         const layoutKey = `${box.width}:${box.height}:${font}:${window.devicePixelRatio}`;
@@ -197,7 +205,7 @@ export class SeasonAtlas {
         const unit = ATLAS_UNITS[config.metric];
         this.el('atlas-selection').textContent = `${formatModelDate(snapshot.day)} · ${latitudeLabel(snapshot.latitude)} · ${reading
             ? `${config.view === 'difference' ? signed(reading.value) : reading.value.toFixed(1)} ${unit}${config.view === 'difference'
-                ? msg ` difference (selected ${reading.current.toFixed(1)}; Earth ${reading.reference!.toFixed(1)})` : ''}` : tr('temperature not available yet')}`;
+                ? msg ` difference (selected ${reading.current.toFixed(1)}; reference ${reading.reference!.toFixed(1)})` : ''}` : tr('temperature not available yet')}`;
         this.el('atlas-location-note').textContent = msg `Selected: ${tr(snapshot.locationName)} · longitude ${Math.abs(snapshot.longitude).toFixed(2)}° ${snapshot.longitude < 0 ? 'W' : 'E'} retained. Rotation is unchanged.`;
         const extreme = config.metric === 'temperature' && snapshot.source.model === 'energy-balance' && ready &&
             [snapshot.source.solution, ...(config.view === 'difference' ? [snapshot.reference.solution] : [])].some(s => s && (s.minimum < -60 || s.maximum > 60));
@@ -237,7 +245,10 @@ export class SeasonAtlas {
                 label.textContent = `${value} ${ATLAS_UNITS[config.metric]}`;
                 return label;
             }));
-            this.el('atlas-scale-note').textContent = msg `${config.view === 'difference' ? tr('Selected tilt − Earth 23.44°, same model and heat storage. Blue: lower · pale: no change · warm: higher. Symmetric scale adapts.') : config.metric === 'temperature' ? tr('Temperature scale adapts to the full sampled field. Read the legend when changing settings.') : tr(config.metric === 'insolation' && !isClassicOrbit(config.source.orbit) ? 'Solar scale uses this orbit’s maximum normal-incidence flux. Read the legend when changing the orbit.' : 'Fixed scale for direct comparisons between tilts.')} Sampled range: ${field.minimum.toFixed(1)} to ${field.maximum.toFixed(1)} ${ATLAS_UNITS[config.metric]}.`;
+            const differenceNote=config.referenceKind==='geography'
+                ? 'Selected surface − other idealized surface. Blue: lower · pale: no change · warm: higher. Symmetric scale adapts.'
+                : 'Selected tilt − Earth 23.44°, same model and heat storage. Blue: lower · pale: no change · warm: higher. Symmetric scale adapts.';
+            this.el('atlas-scale-note').textContent = msg `${config.view === 'difference' ? tr(differenceNote) : config.metric === 'temperature' ? tr('Temperature scale adapts to the full sampled field. Read the legend when changing settings.') : tr(config.metric === 'insolation' && !isClassicOrbit(config.source.orbit) ? 'Solar scale uses this orbit’s maximum normal-incidence flux. Read the legend when changing the orbit.' : 'Fixed scale for direct comparisons between tilts.')} Sampled range: ${field.minimum.toFixed(1)} to ${field.maximum.toFixed(1)} ${ATLAS_UNITS[config.metric]}.`;
             this.el('atlas-legend').hidden = false;
         }
         else {
@@ -245,7 +256,7 @@ export class SeasonAtlas {
             this.el('atlas-scale-note').textContent = tr('No matching temperature field yet. The colour scale and sampled range appear only after the selected model is ready.');
         }
         this.canvas.dataset.fieldRevision = String(++this.paintCount);
-        this.canvas.setAttribute('aria-label', msg `${tr(TITLES[config.metric])} across the model year, north at top and south at bottom. ${config.view === 'difference' ? tr('Difference from Earth 23.44 degrees.') : ''} ${this.field ? tr('Use the day and latitude controls for exact readings.') : tr('No matching temperature data yet.')}`);
+        this.canvas.setAttribute('aria-label', msg `${tr(TITLES[config.metric])} across the model year, north at top and south at bottom. ${config.view === 'difference' ? tr(config.referenceKind==='geography'?'Difference between idealized surfaces.':'Difference from Earth 23.44 degrees.') : ''} ${this.field ? tr('Use the day and latitude controls for exact readings.') : tr('No matching temperature data yet.')}`);
         const lines = [90, 60, 30, 0, -30, -60, -90].map(lat => `<line class="atlas-grid" x1="${l.left}" x2="${l.right}" y1="${y(lat)}" y2="${y(lat)}"/><text x="${l.left - 10}" y="${y(lat) + l.fontSize * .34}" text-anchor="end" class="atlas-axis">${lat === 0 ? '0°' : `${Math.abs(lat)}°${lat > 0 ? 'N' : 'S'}`}</text>`).join('');
         const stride = [1, 2, 3, 4, 6, 12].find(s => (l.right - l.left) * s / 12 >= l.fontSize * 2.5) ?? 12;
         const months = MONTHS.map((name, i) => i % stride ? '' : `<text x="${x((STARTS[i] + STARTS[i + 1] - 1) / 2)}" y="${l.height - 10}" text-anchor="middle" class="atlas-axis">${tr(name)}</text>`).join('');

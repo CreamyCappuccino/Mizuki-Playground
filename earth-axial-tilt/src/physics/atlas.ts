@@ -1,6 +1,7 @@
 import { orbitKey, maximumSolarFactor } from './orbit';
 import { dailyMeanInsolation, dayLengthHours, SOLAR_CONSTANT } from './solar';
 import { isThermalReady, temperatureFromSource, type TemperatureSource } from './temperatureModel';
+import { geographyCounterpart } from './climateGeography';
 
 export type AtlasMetric = 'temperature' | 'insolation' | 'daylight';
 export type AtlasView = 'absolute' | 'difference';
@@ -9,6 +10,7 @@ export interface AtlasConfig {
   view: AtlasView;
   source: TemperatureSource;
   reference: TemperatureSource;
+  referenceKind?: 'tilt' | 'geography';
 }
 export interface AtlasReading { current: number; reference: number | null; value: number }
 export interface AtlasField {
@@ -26,10 +28,16 @@ export const ATLAS_UNITS = { temperature: '°C', insolation: 'W/m²', daylight: 
 export function atlasReady(config: AtlasConfig): boolean {
   if (config.metric !== 'temperature') return true;
   if (!isThermalReady(config.source)) return false;
-  return config.view === 'absolute' || (config.reference.tilt === 23.44 &&
-    config.reference.model === config.source.model && config.reference.depth === config.source.depth &&
-    orbitKey(config.reference.orbit) === orbitKey(config.source.orbit) &&
-    isThermalReady(config.reference));
+  if (config.view === 'absolute') return true;
+  const sameForcing = config.reference.model === config.source.model &&
+    config.reference.depth === config.source.depth && orbitKey(config.reference.orbit) === orbitKey(config.source.orbit);
+  if (!sameForcing || !isThermalReady(config.reference)) return false;
+  if (config.referenceKind === 'geography') {
+    return config.reference.tilt === config.source.tilt &&
+      geographyCounterpart(config.source.climateProfile ?? 'classic') === (config.reference.climateProfile ?? 'classic');
+  }
+  return config.reference.tilt === 23.44 &&
+    (config.reference.climateProfile ?? 'classic') === (config.source.climateProfile ?? 'classic');
 }
 
 /** Same functions and thermal field as the globe/readout. Never solve another climate here. */
@@ -45,7 +53,10 @@ export function atlasReading(config: AtlasConfig, latitude: number, day: number)
       : dayLengthHours(latitude, day, source.tilt, source.orbit);
   const current = sample(config.source);
   // Astronomy always uses exactly 23.44 degrees even while the thermal worker is unavailable.
-  const reference = config.view === 'difference' ? sample({ ...config.reference, tilt: 23.44, orbit:config.source.orbit }) : null;
+  const referenceSource = config.referenceKind === 'geography'
+    ? { ...config.reference, tilt: config.source.tilt, orbit: config.source.orbit }
+    : { ...config.reference, tilt: 23.44, orbit: config.source.orbit };
+  const reference = config.view === 'difference' ? sample(referenceSource) : null;
   return { current, reference, value: reference === null ? current : current - reference };
 }
 

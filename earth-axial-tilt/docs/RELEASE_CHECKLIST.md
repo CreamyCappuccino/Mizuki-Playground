@@ -18,6 +18,8 @@ Record device, iOS/Safari version, candidate commit, date and result when actual
 - [ ] Orbit overview in single and dual modes; all seasonal controls reachable.
 - [ ] Focus enters/exits for single and dual without losing settings.
 - [ ] Atlas opens/closes, touch selection works, vertical swipes scroll.
+- [ ] Climate geography selector works in portrait/landscape; Classic heat storage and fixed Land/Ocean profiles are distinguishable.
+- [ ] Land/Ocean annual solid/dashed curves and Atlas difference remain legible in Japanese/English and Large text.
 - [ ] ? explanation opens by tap and has a usable close/return path.
 - [ ] Reload retains language/text/tool preferences; no repeated crash/context loss in ordinary use.
 
