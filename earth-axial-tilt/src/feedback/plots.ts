@@ -13,7 +13,10 @@ function linePlot(host:HTMLElement,series:{x:number[];y:number[];name:string;das
  let body='';
  for(let k=0;k<=4;k++){const v=ymin+(ymax-ymin)*k/4;body+=`<line x1="${left}" x2="${right}" y1="${y(v)}" y2="${y(v)}" stroke="#294355"/><text x="${left-8}" y="${y(v)+5}" text-anchor="end">${format(v)}</text>`;}
  const xticks=xLabel==='day'?[1,91,182,274,365]:[xmin,(xmin+xmax)/2,xmax];
- for(const v of xticks)body+=`<text x="${x(v)}" y="${bottom+25}" text-anchor="middle">${format(v)}</text>`;
+ // Solar multipliers need precision independent of °C labels: 1.15 must not
+ // be presented as 1.1, nor collapse the three ticks of a one-point history.
+ const solarDecimals=Math.min(12,Math.max(2,1-Math.floor(Math.log10(Math.max(xmax-xmin,1e-12)/2))));
+ for(const v of xticks)body+=`<text x="${x(v)}" y="${bottom+25}" text-anchor="middle">${xLabel==='day'?format(v):Number(v.toFixed(solarDecimals))}</text>`;
  series.forEach((s,i)=>{
   body+=`<path class="feedback-curve" d="${s.x.map((v,k)=>`${k?'L':'M'}${x(v).toFixed(2)},${y(s.y[k]).toFixed(2)}`).join(' ')}" fill="none" stroke="${palette[i%2]}" stroke-width="2.5" ${s.dashed?'stroke-dasharray="7 5"':''}/>`;
   // Name is selected from the internal dictionary, never imported user text.
