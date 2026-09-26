@@ -146,3 +146,15 @@ describe('feedback numerical edge cases',()=>{
    expect(matchingFeedbackResult(null,request)).toBe(false);
  });
 });
+
+
+describe('production-bound unsettled history',()=>{
+ it('retains the 80th year as unsettled and stops instead of inventing the next equilibrium',()=>{
+   const value={...e(),depth:50 as const,mode:'path' as const,multipliers:[.92,1]};
+   const result=runFeedbackExperiment(value),request=feedbackRequest(1,value);
+   expect(result.items).toHaveLength(1);expect(result.stoppedEarly).toBe(true);
+   expect(result.items[0].years).toBe(80);expect(result.items[0].converged).toBe(false);
+   expect(result.items[0].maxStepEnergyResidual).toBeLessThan(1e-5);
+   expect(matchingFeedbackResult(result,request)).toBe(true);
+ });
+});
