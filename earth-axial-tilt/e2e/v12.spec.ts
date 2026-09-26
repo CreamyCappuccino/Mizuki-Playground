@@ -76,6 +76,7 @@ test('old links remain circular, while schema2 files restore independent A/B orb
 test('Japanese large phone controls wrap, have touch targets and include the orbit guide',async({page},info)=>{
   await page.setViewportSize({width:390,height:844});await page.addInitScript(()=>{localStorage.setItem('earth-lab:language','ja');localStorage.setItem('earth-lab:text-size','large');});
   await open(page,{eccentricity:.2,perihelion:90,sceneView:'orbit'});
+  await expect(page.locator('#earth-canvas')).toHaveAttribute('data-orbit-label-font','20');
   await expect(page.locator('#orbit-values')).toContainText('距離');await expect(page.locator('#orbit-values')).not.toContainText('Distance');
   const layout=await page.locator('#orbit-workbench').evaluate(el=>({overflow:el.scrollWidth>el.clientWidth+1,fonts:[...el.querySelectorAll('input,button')].map(e=>parseFloat(getComputedStyle(e).fontSize)),heights:[...el.querySelectorAll('.orbit-actions button')].map(e=>e.getBoundingClientRect().height)}));
   expect(layout.overflow).toBe(false);expect(Math.min(...layout.fonts)).toBeGreaterThanOrEqual(16);expect(Math.min(...layout.heights)).toBeGreaterThanOrEqual(44);
@@ -106,7 +107,8 @@ test('zero tilt still has distance forcing and extreme thermal extrapolation rem
   await page.locator('#orbit-far').click();expect(await page.locator('#metric-daylight').textContent()).toBe(light);expect(await flux(page)).toBeLessThan(near);
   await change(page,'#tilt-number','90');await change(page,'#orbit-e','.3');await page.locator('#heat-storage').selectOption('2.5');
   await expect(page.locator('#climate-status')).toHaveAttribute('data-status','ready');await expect(page.locator('#climate-warning')).toBeVisible();await expect(page.locator('#climate-warning')).toContainText('not predictions');
-  await page.screenshot({path:info.outputPath('v12-linear-ebm-warning.png'),fullPage:true});
+  await page.locator('#climate-warning').scrollIntoViewIfNeeded();
+  await page.locator('#climate-warning').screenshot({path:info.outputPath('v12-linear-ebm-warning.png')});
 });
 
 test('atlas explicitly uses A orbit at 23.44 degrees, not the comparison orbit',async({page},info)=>{
