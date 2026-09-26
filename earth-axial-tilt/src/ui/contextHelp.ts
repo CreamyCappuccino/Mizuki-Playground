@@ -11,6 +11,13 @@ interface Help {
     limit: Bilingual;
 }
 export const HELP: Readonly<Record<string, Help>> = {
+    kepler: {
+        title: ['Orbit laboratory', '軌道の実験室'],
+        meaning: ['Eccentricity changes the orbit shape. The planet moves faster near the Sun and receives more ray-normal sunlight there.', '離心率で軌道の形を変えます。太陽に近い場所ほど速く進み、光に垂直な面が受ける日射も強くなります。'],
+        experiment: ['Prepare Same tilt, different orbit. Compare the annual sunlight curves, then use the perihelion and aphelion buttons.', '「同じ傾き、違う軌道」を準備し、一年の日射を比べます。近日点・遠日点のボタンでも距離と日射を見てみましょう。'],
+        observe: ['Try perihelion in northern summer versus winter. A/B share elapsed time from their spring reference, not necessarily the same seasonal angle.', '近日点を北半球の夏と冬に変えてみます。A/Bは春の基準からの経過時間を共有し、季節の角度は必ずしも一致しません。'],
+        limit: ['Fixed 1 au semimajor axis and 365 model days. Axis azimuth is a static orientation, not a simulated precession history. A circle has no distinct perihelion; at zero tilt seasonal markers are nominal.', '長半径1 au、一年365日のモデルです。地軸方位は固定方向で、歳差の歴史を再現するものではありません。円には特別な近日点がなく、傾き0°では四季の印は便宜的な基準です。'],
+    },
     experiments: {
         title: ['Experiments and sharing', '実験の再現と共有'],
         meaning: ['Presets prepare a question; links and settings files record scientific conditions. They never start playback.', 'プリセットは問いを準備し、リンクと設定ファイルは実験条件を記録します。自動再生はしません。'],
@@ -20,14 +27,14 @@ export const HELP: Readonly<Record<string, Help>> = {
     },
     dual: {
         title: ['Compare Lab', '比較ラボ'],
-        meaning: ['A and B share the date, rotational phase, location, model and heat storage. Only obliquity differs.', 'A・B は日付、自転角、地点、モデル、蓄熱を共有し、傾きだけが違います。'],
+        meaning: ['A and B share elapsed model time, rotation, location, model and heat storage. Tilt and orbital parameters can differ.', 'A・Bはモデルの経過時間、自転角、地点、モデル、蓄熱を共有し、傾きと軌道条件を個別に変えられます。'],
         experiment: ['Choose 23.44° / 90°, then Daylight and June. Try the same experiment in Orbit overview.', '23.44° / 90° を選び、「昼の長さ」と6月にします。公転俯瞰でも同じ実験を見てみましょう。'],
         observe: ['Read A, B and A minus B. In annual graphs the dashed curve becomes B; both 3D views use identical colour scales.', 'A、B、A−Bを読みます。年間グラフの破線はBになり、二つの地球は同じ色スケールを使います。'],
         limit: ['These are separate hypothetical worlds, not planets sharing an orbit. Time/location synchronization is intentionally always on.', '二つは別々の仮想世界です。同じ軌道上の二惑星ではありません。比較の条件を揃えるため、時間と地点の同期は常に有効です。'],
     },
     coupled: {
         title: ['Coupled motion', '自転と公転の同時再生'],
-        meaning: ['Advance one shared model clock. A 365-mean-solar-day circular year contains 366 prograde rotations relative to space.', '一つのモデル時計で進めます。365平均太陽日の円軌道の一年には、宇宙空間に対する順行の自転が366回含まれます。'],
+        meaning: ['Advance one shared model clock. A 365-mean-solar-day model year contains 366 prograde rotations relative to space.', '一つのモデル時計で進めます。365平均太陽日のモデルの一年には、宇宙空間に対する順行の自転が366回含まれます。'],
         experiment: ['Choose Orbit overview, then Coupled motion. At x1 a model day takes ten seconds; use Play year for a faster tour of seasons.', '公転俯瞰で同時再生を選びます。×1でモデルの一日が10秒。季節を素早く一周するには「一年を再生」を使います。'],
         observe: ['The surface spins and the planet travels, but the axis does not chase the Sun. Speed changes preserve the spin/orbit ratio.', '地表が自転し、地球も移動しますが、軸は太陽を追いかけません。速度を変えても自転と公転の比率は保ちます。'],
         limit: ['This is mean model time, not a civil calendar. At nonzero tilt apparent solar time is nonuniform; polar meridians can be undefined. No hourly temperature model is added.', '平均的なモデル時刻で、標準時のカレンダーではありません。傾きがあると視太陽時の進みは一様でなく、極では未定義になることもあります。毎時の気温モデルは追加していません。'],
@@ -41,7 +48,7 @@ export const HELP: Readonly<Record<string, Help>> = {
     },
     year: {
         title: ['Day of year', '一年の中の日付'],
-        meaning: ['Move along a repeating 365-day circular orbit to inspect the seasons.', '365日の円軌道の中で位置を変え、季節を観察します。'],
+        meaning: ['Move along a repeating 365-day model orbit to inspect the seasons.', '365日のモデル軌道の中で位置を変え、季節を観察します。'],
         experiment: ['Select Orbit overview, then Play year. Compare the four season buttons.', '「公転を俯瞰」に切り替え「一年を再生」。四季のボタンでも位置を比べてみましょう。'],
         observe: ['Earth moves around the Sun while the rotation axis keeps the same direction in space.', '地球が太陽の周りを動いても、自転軸の向きは宇宙空間で同じ方向を保ちます。'],
         limit: ['Dates are model phases, not exact astronomical calendar dates. Year playback holds rotational phase fixed.', '日付はモデル上の位置で、実際の天文暦とはずれます。一年の再生では自転角を固定しています。'],
@@ -90,7 +97,7 @@ export const HELP: Readonly<Record<string, Help>> = {
     },
     compare: {
         title: ['Compare Earth', '現在の地球との比較'],
-        meaning: ['Use exactly the same model and heat storage at 23.44° as a reference.', '同じモデルと蓄熱設定を使い、傾き23.44°を基準に比較します。'],
+        meaning: ['Use exactly the same orbit, model and heat storage at 23.44° as a reference.', '同じ軌道・モデル・蓄熱設定を使い、傾き23.44°を基準に比較します。'],
         experiment: ['Enable Compare Earth, change the tilt, then look at the gap between the curves.', '「現在の地球と比較」をオンにして傾きを変え、二本のカーブの間隔を見ます。'],
         observe: ['The difference isolates the effect of tilt in this model. At 23.44° the two results coincide.', 'このモデルの中で、傾きだけの違いを比較できます。23.44°同士なら一致します。'],
         limit: ['The reference is another model run, not observed climate normals.', '基準も計算結果であり、観測された気候平年値ではありません。'],
