@@ -2,7 +2,7 @@
 
 ## 現在地
 
-**1.3.0-alpha.2の本画面統合候補をreview中（main/実配信の更新承認は別）。** Classic緯度帯とIdealized Land/Oceanは不変。Earth geographyはNatural Earth 4.1.0の固定18×36海陸fractionと独立2D EBMを、3Dのnearestセル色・地点値・年間曲線・Compare・選択経度Atlasへ接続。schema4のみ新profileを受け入れ、旧1–3の意味を保持する。別ページ `geography-lab.html` は部品参照として残す。復帰は `docs/V1.3.md` → `docs/DESIGN-v1.3-earth-geography.md` → `docs/DESIGN-v1.3-earth-geography-browser.md` → `docs/SCIENCE.md`。実機Safari gateと公開承認は未完了。
+**1.4.0-alpha.1：地球フィードバック実験の候補。** v1.3の実海陸3D/Compare/Atlas/schema4はmainへ統合済み。`feedback-lab.html` は緯度90帯・一様蓄熱の独立した実験ワークスペースで、暖冷初期状態、温度依存反射率、実状態を引き継ぐ履歴／sweep、年間曲線、温度／代理雪氷マップと保存設定を扱う。2D geographyへのfeedbackや本3D地球へのfeedback着色はこのalphaには含まない。`docs/V1.4.md`を最初に読む。mainの既存schema 1–4と物理結果は維持。候補CI/配信更新は別確認、物理iPhone正式受入と公開承認は未完了。
 
 
 `CreamyCappuccino/Mizuki-Playground/earth-axial-tilt/`。独立した静的フロントエンド。**v0.9の比較・同時再生とv1.0の仕上げを実装。v1.0.0-rc.1はChromium／macOS WebKitの自動検証が成功。** 正式版の実機iPhone確認は未完了。公開はしていない。
