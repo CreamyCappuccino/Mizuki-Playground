@@ -7,7 +7,7 @@
 
 `CreamyCappuccino/Mizuki-Playground/earth-axial-tilt/`。独立した静的フロントエンド。**v0.9の比較・同時再生とv1.0の仕上げを実装。v1.0.0-rc.1はChromium／macOS WebKitの自動検証が成功。** 正式版の実機iPhone確認は未完了。公開はしていない。
 
-最短の復帰は **この文書 → ROADMAP.md → docs/V1.3.md → 変更分野のコード**。確認済みのコード・CI・画像は版ごとの検証記録を参照し、着手時はさらに最新HEADのCIを確認する。MCP索引は **Mizuki MM410**。メモリは道案内、最新コード・CI・文書が正本。
+最短の復帰は **この文書 → docs/V1.4.md → ROADMAP.md → 変更分野のコード**。確認済みのコード・CI・画像は版ごとの検証記録を参照し、着手時はさらに最新HEADのCIを確認する。MCP索引は **Mizuki MM410**。メモリは道案内、最新コード・CI・文書が正本。
 
 ## 今できること
 
@@ -30,7 +30,8 @@ v0.8の日英・?・公転俯瞰・大文字・Atlas・EBMを保持。A/B別傾�
 | 日英辞書・? | `src/ui/i18n.ts`、`messages.ts`、`contextHelp.ts` |
 | 表示設定・導入 | `src/ui/releaseControls.ts`、`viewControls.ts`、`src/style.css` |
 | 気候地理・天文の仕様 | `docs/V1.3.md`、`docs/SCIENCE.md`、`src/physics/climateGeography.ts` と `src/physics/` |
-| 実海陸2D候補 | `geography-lab.html`、`src/geographyLab/`、`src/physics/geography*.ts`、`data/land-fractions.json` |
+| 実海陸2Dモデル | `geography-lab.html`、`src/geographyLab/`、`src/physics/geography*.ts`、`data/land-fractions.json` |
+| Feedback専用実験 | `feedback-lab.html`、`src/feedback/`、`docs/V1.4.md`、`audits/feedback/` |
 | 自動検証 | `tests/`、`e2e/`、`scripts/check-docs.mjs`、ルート `.github/workflows/earth-axial-tilt.yml` |
 
 ## 特に壊したくない条件
@@ -44,7 +45,7 @@ v0.8の日英・?・公転俯瞰・大文字・Atlas・EBMを保持。A/B別傾�
 - 一つのWebGLRenderer／sceneを二つのscissor viewportへ描画。Bパスの後は必ずA状態を復元。別々の太陽系を比べる画面であって、同じ軌道に惑星を二つ置いた物理モデルではない。
 - Bの熱計算は独立したrequest管理。傾きとorbitKeyが一致するA=BならAの解を再利用。全軌道パラメータ、profile、保持中のClassic depth、effective depthをcache key・worker request/solutionに含め、一年全体のforcingを更新する。待機・失敗時に古い温度を新条件の値にしない。
 - ClassicのFast/Mixed/Slowは世界全体のglobal knob。Idealized Land/Oceanは固定2.5 m/50 mの対照profileで、両者を混同しない。profileもrequest/cache/solution provenanceに含める。Illustrative modeはClassicだけ。
-- Idealized profileは全球一様で、実在の海岸線・経度差・標高・海流を表さない。Natural Earthは将来候補だが、現在のzonal solverへ見た目だけのmaskを貼らない。
+- Idealized profileは全球一様で、実在の海岸線・経度差・標高・海流を表さない。実海陸profileは別の18×36 solverで扱う。zonal solverへ見た目だけのmaskを貼らない。
 - 言語・画質・Basic/All・Focusは表示だけ。小さい画面で文字を縮めず、並び替えやスクロールを使う。比較時に旧Singleのmargin-top/translateXが復活しないよう確認。
 - 解除可能な任意モジュールの読込失敗は、数値機能を壊さず、明示したページ再読み込みで回復する。
 - bfcacheに入るpagehideはdisposeしない。通常終了ではRAF・Observer・listener・worker・GL資源を片づける。
@@ -65,7 +66,7 @@ README＝今できること、START_HERE＝復帰入口、ROADMAP＝未来、SCI
 
 ## 保存と移行の注意（v1.3）
 
-schema 3のリンクは科学条件とclimate profileを保存し、描画画像・キャッシュ済み温度・言語・画質・再生状態を保存しない。schema 1/2はClassicへ移行する。URLとJSONは同じvalidatorを通し、原子的に適用する。未知のschema versionや不正値は既存状態を維持。optional Compareの読み込みが遅い時は新しい操作が優先する。Heat storageのFast/Slowプリセットは順番に比較する二実験で、A/Bの熱容量を別々にした機能ではない。
+本体schema 4のリンクは科学条件とclimate profileを保存し、描画画像・キャッシュ済み温度・言語・画質・再生状態を保存しない。schema 1/2はClassicへ移行し、schema 3は旧profileの意味を維持、新しいearth-geographyはschema 4だけで受け入れる。Feedback専用ページは独立したearth-feedbacks v1の設定形式で、seedと全履歴を保存する。URLとJSONは同じvalidatorを通し、原子的に適用する。未知のschema versionや不正値は既存状態を維持。optional Compareの読み込みが遅い時は新しい操作が優先する。Heat storageのFast/Slowプリセットは順番に比較する二実験で、A/Bの熱容量を別々にした機能ではない。
 
 検証チェックポイントは `docs/VERIFICATION-1.1-rc.1.md`。v1.1は単体114/Chromium64/macOS WebKit41本を確認（実機Safariではない）。最終HEADの合否はCIで確認する。
 
