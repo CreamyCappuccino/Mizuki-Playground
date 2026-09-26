@@ -61,6 +61,9 @@ export function solveGeographyClimate(
   tilt: number, mask: GeographyMask, options: GeographyClimateOptions = {},
 ): GeographyClimateSolution {
   if (!Number.isFinite(tilt) || tilt < 0 || tilt > 90) throw new RangeError('Obliquity must be finite in [0, 90].');
+  // Larger harmonic grids are matvec tests, not annual runs. Bound the
+  // all-phase history allocation; 36×72 is an explicit research refinement.
+  if (mask.nlat > 36 || mask.nlon > 72) throw new RangeError('Annual geography grid is limited to 36×72 refinement; default science grid is 18×36.');
   const orbit = normalizeOrbit(options.orbit), stepsPerDay = options.stepsPerDay ?? 2;
   const maxYears = options.maxYears ?? 80;
   if (!Number.isInteger(maxYears) || maxYears < 2 || maxYears > 80) throw new RangeError('Maximum years must be an integer in [2, 80].');

@@ -105,6 +105,7 @@ describe('isolated annual geography EBM', () => {
     expect(() => solveGeographyClimate(23.44, production, { maxYears: 2 })).toThrow(/periodic year/);
     expect(() => solveGeographyClimate(23.44, production, { pcg: { maxIterations: 1 } })).toThrow(/PCG did not converge/);
     expect(() => solveGeographyClimate(NaN, production)).toThrow(RangeError);
+    expect(() => solveGeographyClimate(23.44, { ...production, nlat: 72, nlon: 144 })).toThrow(/limited to 36×72/);
     expect(() => solveGeographyClimate(23.44, production, { stepsPerDay: 0 })).toThrow(RangeError);
     expect(() => solveGeographyClimate(23.44, { ...production, provenance: { id: '' } })).toThrow(RangeError);
     expect(() => solveGeographyClimate(23.44, production, { orbit: { eccentricity: 0.31, perihelion: 90, axis: 0 } })).toThrow(RangeError);

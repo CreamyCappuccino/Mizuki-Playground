@@ -120,6 +120,9 @@ linear residual/iterations and source/mask/grid/solver provenance. No runtime
 cache or worker/UI connection exists yet. One retained daily field is 1.89 MB;
 the temporary all-phase convergence history adds 3.78 MB at half-day stepping.
 The fixed-mask whole-array FFT oracle check remains a separate pending gate.
+Annual solves are allocation-bounded to at most 36×72 for explicit refinement;
+larger harmonic grids are matvec-only and cannot accidentally allocate annual
+phase history. The default production profile remains 18×36.
 
 Latest local production-mask 23.44° run: 31 spin-up years, all-phase periodic
 error 7.142699516e-7 °C, annual radiation residual 1.535674178e-6 W/m²,
