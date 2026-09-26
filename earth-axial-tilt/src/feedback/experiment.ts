@@ -36,7 +36,7 @@ export function feedbackFile(value: FeedbackExperiment): string {
 export function parseFeedbackFile(text: string): FeedbackExperiment {
   if (text.length > MAX_TEXT) throw new RangeError('Feedback settings are too long.');
   const v: unknown = JSON.parse(text);
-  if (!isRecord(v) || v.application !== 'earth-feedbacks' || v.version !== 1 || v.model !== FEEDBACK_MODEL)
+  if (!isRecord(v) || Object.keys(v).some(k=>!['application','version','model','state'].includes(k)) || v.application !== 'earth-feedbacks' || v.version !== 1 || v.model !== FEEDBACK_MODEL)
     throw new RangeError('Unsupported feedback settings version/model.');
   return validateFeedbackExperiment(v.state);
 }
