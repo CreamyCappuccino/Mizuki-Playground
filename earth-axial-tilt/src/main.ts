@@ -18,7 +18,7 @@ import { annualProfile, type AnnualPoint } from './physics/climate';
 import { isThermalReady, profileFromSource, temperatureFromSource, temperatureScale, type TemperatureModel, type TemperatureSource } from './physics/temperatureModel';
 import { ClimateController, type ClimateConfiguration } from './ui/climateController';
 import { effectiveHeatDepth, geographyCounterpart, isIdealizedGeography, type ClimateProfile } from './physics/climateGeography';
-import { updateHeatStorageControl } from './ui/heatStorageNote';
+import { renderClimateStatus } from './ui/climateStatus';
 import { dailyMeanInsolation, dayLengthHours, seasonLabel, solarDeclinationDeg, SOLAR_CONSTANT } from './physics/solar';
 import { renderAnnualChart, updateChartDay, formatModelDate, type ChartMetric } from './ui/chart';
 import { parseTiltInput } from './ui/tiltInput';
@@ -129,26 +129,8 @@ function temperatureAt(latitude: number, day: number): number | null {
     return temperatureFromSource(temperatureSource(), latitude, day);
 }
 function updateThermalStatus(): void {
-    const thermal = state.temperatureModel === 'energy-balance';
-    const ready = isThermalReady(temperatureSource());
-    const status = $('#climate-status');
-    const effectiveDepth=effectiveHeatDepth(state.climateProfile,state.heatDepth);
-    status.setAttribute('data-status', climate.error ? 'error' : ready ? 'ready' : 'loading');
-    status.textContent = !thermal ? tr('Illustrative model · original fixed 28-day lag.') : climate.error ? tr('Thermal worker unavailable. Retry or choose the illustrative model.')
-        : ready ? msg `Thermal EBM · ${effectiveDepth} m effective heat storage · periodic year solved.` : tr('Calculating a repeating thermal year… Solar controls remain live.');
-    $<HTMLButtonElement>('#retry-climate').hidden = !climate.error;
-    updateHeatStorageControl(thermal, state.climateProfile);
-    const geographySelect=$<HTMLSelectElement>('#climate-geography');
-    geographySelect.value=state.climateProfile;
-    geographySelect.disabled = !thermal;
-    const warning = $<HTMLElement>('#climate-warning');
-    warning.hidden = !thermal || !ready || !(climate.current!.minimum < -60 || climate.current!.maximum > 60);
-    warning.textContent = tr('Large model extrapolation: linear radiation and fixed reflectivity omit ice, evaporation and climate feedbacks. Extreme temperatures are not predictions.');
-    $('#temperature-model-note').textContent = thermal
-        ? tr(isIdealizedGeography(state.climateProfile)
-            ? 'Idealized land/ocean contrast: one material covers the model world. Same sunlight and latitude transport; only effective heat capacity differs. This is not a real Earth map.'
-            : 'Thermal EBM: experimental latitude-band temperature driven by daily-mean sunlight. Heat storage is uniform across the planet, not a local land/ocean map. Not calibrated to local weather.')
-        : tr('Mean temperature estimate, not the daytime high. Original illustrative latitude-band model; not fitted to local weather.');
+    renderClimateStatus({ source: temperatureSource(), profile: state.climateProfile,
+        classicDepth: state.heatDepth, error: climate.error, extrema: climate.current });
 }
 let reference: AnnualPoint[] = [];
 let chartKey = '';
