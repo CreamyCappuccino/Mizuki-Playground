@@ -48,7 +48,7 @@ export class OrbitOverview extends THREE.Group {
   constructor() {
     super(); this.name = 'orbit-overview'; this.visible = false;
     this.add(createSun(),this.path,this.direction);
-    for (const key of ['Spring reference','Northern summer reference','Autumn reference','Northern winter reference']) {
+    for (const key of ['Northern spring','Northern summer','Northern autumn','Northern winter']) {
       const tick=new THREE.Mesh(new THREE.SphereGeometry(.12,12,8),new THREE.MeshBasicMaterial({color:0xbdcce6}));
       const label=this.label(key);this.add(tick,label);this.seasons.push({tick,label});
     }
@@ -92,7 +92,7 @@ export class OrbitOverview extends THREE.Group {
   refreshLabels(): void {
     for(const {key,canvas,texture} of this.labels){
       const ctx=canvas.getContext('2d')!; ctx.clearRect(0,0,512,112);
-      ctx.font='500 36px system-ui, sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.font='500 40px system-ui, sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
       ctx.shadowColor='#020610';ctx.shadowBlur=10;ctx.fillStyle='#e5efff';ctx.fillText(t(key),256,56);texture.needsUpdate=true;
     }
   }
