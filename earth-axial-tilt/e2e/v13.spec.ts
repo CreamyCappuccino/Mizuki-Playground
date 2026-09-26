@@ -144,3 +144,46 @@ test('Japanese Large mobile, Compare, Orbit and Focus preserve the selected mate
   await page.locator('[data-help-topic="geography"]').click();
   await expect(page.locator('#help-title')).toHaveText('気候の地理');
 });
+
+
+test('real geography preview runs the reviewed worker and changes with longitude', async ({ page }, info) => {
+  await page.goto('/geography-lab.html');
+  const status = page.locator('#status');
+  await expect(status).toHaveAttribute('data-status', 'ready', { timeout: 60_000 });
+  await expect(page.locator('#cell')).toContainText('25.0° / 125.0°');
+  await expect(page.locator('#fraction')).toHaveText('7.47%');
+  await expect(page.locator('#map')).toHaveAttribute('aria-busy', 'false');
+  await expect(page.locator('#atlas')).toHaveAttribute('aria-busy', 'false');
+  const first = Number(await page.locator('#temperature').getAttribute('data-value'));
+  await page.locator('#longitude').fill('-145');
+  await page.locator('#longitude').press('Tab');
+  await expect(page.locator('#cell')).toContainText('25.0° / -145.0°');
+  const second = Number(await page.locator('#temperature').getAttribute('data-value'));
+  expect(Number.isFinite(first)).toBe(true);
+  expect(Number.isFinite(second)).toBe(true);
+  expect(second).not.toBe(first);
+  await page.screenshot({ path: info.outputPath('v13-real-geography-preview.png'), fullPage: true });
+});
+
+test('real geography preview cancels stale work and remains readable on Japanese Large mobile', async ({ page }, info) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript(() => {
+    localStorage.setItem('earth-geography:language', 'ja');
+    localStorage.setItem('earth-geography:large', 'true');
+  });
+  await page.goto('/geography-lab.html');
+  await expect(page.locator('#status')).toHaveAttribute('data-status', 'ready', { timeout: 60_000 });
+  await expect(page.locator('h1')).toHaveText('同じ太陽、違う地表。');
+  await expect(page.locator('html')).toHaveAttribute('data-large', 'true');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
+  await page.locator('#tilt').fill('60');
+  await page.locator('#calculate').click();
+  await expect(page.locator('#temperature')).toHaveText('—');
+  await page.locator('#cancel').click();
+  await expect(page.locator('#status')).toHaveAttribute('data-status', 'canceled');
+  await page.locator('#calculate').click();
+  await expect(page.locator('#status')).toHaveAttribute('data-status', 'ready', { timeout: 60_000 });
+  await expect(page.locator('#temperature')).not.toHaveText('—');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
+  await page.screenshot({ path: info.outputPath('v13-real-geography-mobile-ja.png'), fullPage: true });
+});
