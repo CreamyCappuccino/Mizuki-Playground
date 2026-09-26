@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { GeographyClient, type GeographyState, type GeographyWorker } from '../src/ui/geographyClient';
 import { buildGeographyGrid } from '../src/physics/geographyGrid';
 import type { GeographyClimateSolution } from '../src/physics/geographyClimate';
@@ -29,14 +29,59 @@ function field(r: GeographyRequest): GeographyClimateSolution {
       stepsPerDay: 2, A: 210, B: 2, D: .55, periodicTolerance: 1e-6,
       pcgRelativeTolerance: 1e-11, pcgAbsoluteTolerance: 1e-11 } };
 }
-function setup() {
+function setup(deadlineMs = 60_000) {
   const workers: FakeWorker[] = [];
-  const client = new GeographyClient(() => { const worker = new FakeWorker(); workers.push(worker); return worker; });
+  const client = new GeographyClient(() => { const worker = new FakeWorker(); workers.push(worker); return worker; }, deadlineMs);
   const a: GeographyState[] = [], b: GeographyState[] = [], ref: GeographyState[] = [];
   return { workers, client, a, b, ref };
 }
 
 describe('geography serial compute lifecycle', () => {
+  afterEach(() => vi.useRealTimers());
+  it('times out silent work, advances the lane, ignores late replies and retries explicitly', () => {
+    vi.useFakeTimers();
+    const { client, workers, a, b } = setup(100);
+    client.request('A', conditions(), s => a.push(s));
+    client.request('B', conditions(60), s => b.push(s));
+    vi.advanceTimersByTime(99);
+    const old = workers[0], r = old.request;
+    old.reply({ id: r.id, key: geographyRequestKey(r), status: 'computing' });
+    for (let k = 0; k < 20; k++) client.request('A', conditions(), s => a.push(s));
+    vi.advanceTimersByTime(1);
+    expect(a.at(-1)).toEqual({ status: 'error', error: 'Geography calculation timed out. Retry calculation.' });
+    expect(old.terminated).toBe(true); expect(workers).toHaveLength(2);
+    old.ready(); expect(a.at(-1)?.status).toBe('error');
+    client.request('A', conditions(), s => a.push(s));
+    expect(workers).toHaveLength(2); // render loop must not retry automatically
+    workers[1].ready(); expect(b.at(-1)?.status).toBe('ready');
+    expect(vi.getTimerCount()).toBe(0);
+    client.retry('A'); expect(workers).toHaveLength(3);
+    workers[2].ready(); expect(a.at(-1)?.status).toBe('ready');
+    expect(vi.getTimerCount()).toBe(0); client.dispose();
+  });
+  it('releases deadlines on supersede, cancel, disposal and posting failure', () => {
+    vi.useFakeTimers();
+    const { client, workers, a } = setup(100);
+    client.request('A', conditions(), s => a.push(s));
+    vi.advanceTimersByTime(50);
+    client.request('A', conditions(60), s => a.push(s));
+    expect(workers[0].terminated).toBe(true); expect(vi.getTimerCount()).toBe(1);
+    vi.advanceTimersByTime(50); expect(a.at(-1)?.status).toBe('queued');
+    client.cancel('A'); expect(vi.getTimerCount()).toBe(0);
+    client.retry('A'); expect(workers).toHaveLength(2); // cancellation removed intent
+    vi.advanceTimersByTime(100); expect(a.at(-1)?.status).toBe('canceled');
+    client.request('A', conditions(), s => a.push(s));
+    client.dispose(); expect(vi.getTimerCount()).toBe(0);
+    const badWorker = new FakeWorker();
+    badWorker.postMessage = () => { throw new Error('post failure'); };
+    const bad = new GeographyClient(() => badWorker, 100);
+    bad.request('A', conditions(), s => a.push(s));
+    expect(a.at(-1)).toEqual({ status: 'error', error: 'post failure' });
+    expect(badWorker.terminated).toBe(true); expect(vi.getTimerCount()).toBe(0); bad.dispose();
+  });
+  it.each([0, -1, NaN, Infinity, .5, 2_147_483_648])('rejects invalid deadline %s', ms => {
+    expect(() => new GeographyClient(() => new FakeWorker(), ms)).toThrow('Invalid geography worker deadline');
+  });
   it('serializes A/B/reference, emits honest stages and preserves exact A=B reuse', () => {
     const { client, workers, a, b, ref } = setup();
     client.request('A', conditions(), s => a.push(s));

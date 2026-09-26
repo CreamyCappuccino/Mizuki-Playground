@@ -41,6 +41,11 @@ this slice.
   Debounce slider recomputation; date/location/view edits only resample.
   Expose busy/error/retry/cancel while globe/UI stays responsive. Initially
   stage-based progress, not invented percent; numerical core stays unchanged.
+  Each active solve has an absolute 60-second deadline, including mask loading.
+  Progress/repeated intent does not reset it. Expiry terminates the worker,
+  reports an explicit error and advances the queue; only explicit retry restarts
+  that intent. Finish/cancel/supersede/dispose release the timer. A queued owner
+  receives its own deadline when its worker starts, not while waiting its turn.
 - Bound retained field caches by bytes, initially at most three daily fields
   (~5.68 MB temperatures plus grid/fractions/metadata) across A/B/reference
   client ownership; separately account worker copies and temporary solve

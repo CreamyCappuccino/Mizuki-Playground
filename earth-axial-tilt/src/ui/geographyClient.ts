@@ -28,10 +28,14 @@ export class GeographyClient {
   private desired = new Map<GeographyOwner, Desired>();
   private queue = new Map<GeographyOwner, Desired>();
   private cache = new Map<string, GeographyClimateSolution>();
-  private active: { owner: GeographyOwner; desired: Desired; worker: GeographyWorker } | null = null;
+  private active: { owner: GeographyOwner; desired: Desired; worker: GeographyWorker;
+    timer: ReturnType<typeof setTimeout> | null } | null = null;
   private serial = 0;
   private disposed = false;
-  constructor(private readonly createWorker: () => GeographyWorker) {}
+  constructor(private readonly createWorker: () => GeographyWorker, private readonly deadlineMs = 60_000) {
+    if (!Number.isSafeInteger(deadlineMs) || deadlineMs < 1 || deadlineMs > 2_147_483_647)
+      throw new RangeError('Invalid geography worker deadline.');
+  }
 
   request(owner: GeographyOwner, conditions: GeographyConditions, notify: Desired['notify']): void {
     if (this.disposed) return;
@@ -62,7 +66,7 @@ export class GeographyClient {
   }
   dispose(): void {
     this.disposed = true;
-    this.active?.worker.terminate(); this.active = null;
+    if (this.active) this.stopActive(this.active.owner);
     this.queue.clear(); this.desired.clear(); this.cache.clear();
   }
   get cacheBytes(): number { return [...this.cache.values()].reduce((total, s) => total + geographySolutionBytes(s), 0); }
@@ -70,6 +74,7 @@ export class GeographyClient {
 
   private stopActive(owner: GeographyOwner): void {
     if (this.active?.owner !== owner) return;
+    if (this.active.timer !== null) clearTimeout(this.active.timer);
     this.active.worker.terminate(); this.active = null;
   }
   private pump(): void {
@@ -86,8 +91,14 @@ export class GeographyClient {
     }
     try {
       const worker = this.createWorker();
-      const active = { owner, desired, worker };
+      const active = { owner, desired, worker, timer: null as ReturnType<typeof setTimeout> | null };
       this.active = active;
+      // One absolute deadline per active solve, including data loading. Progress
+      // and repeated render intent cannot extend it indefinitely.
+      active.timer = setTimeout(() => {
+        if (this.active === active && !this.disposed)
+          this.finish(active, { status: 'error', error: 'Geography calculation timed out. Retry calculation.' });
+      }, this.deadlineMs);
       worker.onmessage = event => {
         if (this.active !== active || this.disposed) return;
         if (!isGeographyReply(event.data)) {
@@ -113,13 +124,14 @@ export class GeographyClient {
       };
       worker.postMessage(desired.request);
     } catch (error) {
-      this.active?.worker.terminate(); this.active = null;
+      if (this.active) this.stopActive(this.active.owner);
       desired.notify({ status: 'error', error: error instanceof Error ? error.message : 'Geography worker unavailable.' });
       this.pump();
     }
   }
   private finish(active: NonNullable<GeographyClient['active']>, state: GeographyState): void {
-    active.worker.terminate(); this.active = null;
+    if (this.active !== active) return;
+    this.stopActive(active.owner);
     if (this.desired.get(active.owner) === active.desired) active.desired.notify(state);
     this.pump();
   }
