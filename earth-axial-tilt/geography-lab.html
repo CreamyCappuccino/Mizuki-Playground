@@ -18,7 +18,8 @@
 <label><span data-g="Longitude (°)"></span><input id="longitude" type="number" min="-180" max="180" step="any"></label></div>
 <label><span data-g="Layer"></span><select id="layer"><option value="temperature" data-g="Temperature"></option><option value="difference" data-g="Difference from 23.44°"></option><option value="land" data-g="Land fraction"></option></select></label>
 <dl><dt data-g="Temperature / reference"></dt><dd id="temperature">—</dd><dt data-g="Land fraction"></dt><dd id="fraction">—</dd><dt data-g="Effective storage"></dt><dd id="depth">—</dd><dt data-g="Cell centre"></dt><dd id="cell">—</dd></dl>
-<p class="muted" data-g="10° × 10° · 18 × 36 cells. Not city-scale weather."></p></section>
+<p class="muted" data-g="10° × 10° · 18 × 36 cells. Not city-scale weather."></p>
+<p class="muted" data-g="Land fraction describes the surrounding 10° cell, not whether the exact selected point is land or ocean."></p></section>
 <section><h2 data-g="Settings"></h2><div class="actions"><button id="copy" data-g="Copy experiment link"></button><button id="save" data-g="Save JSON"></button>
 <button id="open-json" data-g="Load JSON"></button><input id="load" type="file" accept="application/json,.json" hidden></div><p id="notice" role="status"></p></section></aside>
 <article><section><h2 data-g="Geographic field"></h2><p id="current-config" class="muted"></p><canvas id="map" tabindex="0" role="img" aria-label="Geographic cell temperatures"></canvas><p data-g="Click a cell. Arrow keys move between cells."></p><p id="map-scale" class="muted"></p></section>
