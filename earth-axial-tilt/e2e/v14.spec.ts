@@ -58,3 +58,25 @@ test('cancel invalidates visible fields and malformed reply fails explicitly bef
  await expect(page.locator('#fb-status')).toHaveAttribute('data-status','canceled');await page.locator('#fb-day').evaluate((el)=>{(el as HTMLInputElement).value='50';el.dispatchEvent(new Event('input',{bubbles:true}));});await expect(page.locator('#fb-status')).toHaveAttribute('data-status','canceled');await expect(page.locator('[data-mean]')).toHaveCount(0);
  await page.locator('#fb-preset').selectOption('compare');await run(page);
 });
+
+test('history presets preserve valid unrun scientific edits and custom factors',async({page})=>{
+ await openLab(page);
+ await page.locator('#fb-tilt').fill('60');await page.locator('#fb-ecc').fill('0.2');await page.locator('#fb-depth').selectOption('50');
+ await page.locator('#fb-preset').selectOption('memory');
+ await expect(page.locator('#fb-tilt')).toHaveValue('60');await expect(page.locator('#fb-ecc')).toHaveValue('0.2');await expect(page.locator('#fb-depth')).toHaveValue('50');
+ await expect(page.locator('#fb-factors')).toHaveValue('1, 0.9, 1, 1.4, 1');
+ await page.locator('#fb-factors').fill('1, 0.8, 1.2');await page.locator('#fb-preset').selectOption('custom');
+ await expect(page.locator('#fb-factors')).toHaveValue('1, 0.8, 1.2');
+ await expect(page.locator('#fb-status')).toHaveAttribute('data-status','idle');await expect(page.locator('[data-mean]')).toHaveCount(0);
+});
+
+test('an unsettled 80-year history remains inspectable without claiming equilibrium',async({page},info)=>{
+ await page.goto('/feedback-lab.html'+feedbackHash({...DEFAULT_FEEDBACK,depth:50,mode:'path',multipliers:[.92,1]}));
+ await expect(page.locator('#fb-status')).toHaveAttribute('data-status','idle');await page.locator('#fb-language').selectOption('en');
+ await run(page);await expect(page.locator('#fb-unsettled')).toBeVisible();
+ await expect(page.locator('#fb-status')).toContainText('not an equilibrium');
+ await expect(page.locator('#fb-selected option')).toHaveCount(1);
+ await expect(page.locator('#fb-cards')).toContainText('Last simulated year');
+ await expect(page.locator('.feedback-curve')).toHaveCount(1);
+ await page.locator('#fb-cards').scrollIntoViewIfNeeded();await page.screenshot({path:info.outputPath('v14-feedback-unsettled.png')});
+});
