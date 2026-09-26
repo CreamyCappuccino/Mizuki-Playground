@@ -139,3 +139,36 @@ test('extreme forcing, polar cap sector and orbit rendering stay finite', async 
   await page.locator('#earth-canvas').screenshot({path:info.outputPath('geography-extreme-polar-orbit.png')});
   expect(errors).toEqual([]);
 });
+
+
+test('reference-only failure is visible and retries without losing the accepted A field', async ({page}) => {
+  await page.addInitScript(() => {
+    const Native = window.Worker; let failed = false;
+    window.Worker = class extends Native {
+      private geo: boolean;
+      constructor(url:string|URL, options?:WorkerOptions) { super(url,options); this.geo=String(url).includes('geography.worker'); }
+      postMessage(message:unknown, options:Transferable[]|StructuredSerializeOptions=[]):void {
+        if (this.geo && !failed && (message as {tilt:number}).tilt===23.44) {
+          failed=true; queueMicrotask(()=>this.dispatchEvent(new MessageEvent('message',{data:null})));
+        } else if(Array.isArray(options)) super.postMessage(message,options); else super.postMessage(message,options);
+      }
+    };
+  });
+  await page.goto('/'+encodeExperiment({...DEFAULT_EXPERIMENT,climateProfile:'earth-geography',tilt:60,reference:true,surfaceMode:'temperature'}));
+  await expect(page.locator('#climate-reference-status')).toBeVisible({timeout:90_000});
+  await expect(page.locator('#climate-status')).toHaveAttribute('data-status','ready');
+  await expect(page.locator('#metric-temp')).toContainText('°C');
+  await expect(page.locator('#chart-title')).toHaveText('Temperature unavailable');
+  await expect(page.locator('#retry-climate')).toBeVisible();
+  await page.locator('#open-atlas').click();
+  await page.locator('#atlas-metric').selectOption('temperature');
+  await page.locator('#atlas-view').selectOption('difference');
+  await expect(page.locator('#atlas-status')).toContainText('Temperature unavailable');
+  await page.locator('#atlas-close').click();
+  await page.locator('#retry-climate').click();
+  await expect(page.locator('#annual-chart svg')).toBeVisible({timeout:90_000});
+  await expect(page.locator('#climate-reference-status')).toBeHidden();
+  const metrics=await page.evaluate(()=>(window as unknown as {geographyMetrics:{solves:{tilt:number}[]}}).geographyMetrics);
+  expect(metrics.solves.filter(s=>s.tilt===60)).toHaveLength(1);
+  expect(metrics.solves.filter(s=>s.tilt===23.44)).toHaveLength(1);
+});
