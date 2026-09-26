@@ -56,9 +56,13 @@ found three old `v04` pointer-boundary expectations one unit low (`365` vs
 `364`, `12:00` vs `11:59`); those suites are outside the established WebKit
 gate and no unrelated test or graph behavior was changed in this slice.
 
+GitHub Actions run
+[`36240023681`](https://github.com/CreamyCappuccino/Mizuki-Playground/actions/runs/36240023681)
+passed both the Ubuntu Chromium `verify` job and the macOS WebKit job at review
+fix commit `72aa5d22cfde8ba68d64acad4758bdc498cb1251`.
+
 ## Remaining gates
 
-- Same-HEAD GitHub CI must pass after the review branch is pushed/dispatched.
 - Physical iPhone Safari remains separate and pending.
 - A real land/ocean mask remains deferred until a longitude-aware model,
   weighting, transport and Atlas design are specified and validated.
