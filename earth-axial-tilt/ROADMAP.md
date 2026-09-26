@@ -175,7 +175,8 @@ A/Bで
 ## 1. Land / ocean heat capacity
 
 - **alpha 1完了:** 同緯度・同じforcingで、全球一様なLand 2.5 m相当／Ocean 50 m相当を切り替え、年間曲線とAtlas差分で振幅・lagを見る。
-- **次段階:** Earth mapをland/ocean maskとして使う前に、longitudeを持つ格子・solver・Atlas表現を設計する。
+- **alpha 2 review候補:** Natural Earth 4.1.0を固定し、18×36のlongitude-aware grid、面積fraction、可変熱容量、周期EBM、bounded PCGを独立coreとして実装。別ページの実Worker previewで地点・年間曲線・選択経度sectionまで接続。
+- **残り:** 既存3D Earth profile、A/B Compare、本体Season Atlas、共有state/schemaへ同じsampler/provenanceを安全に統合する。
 - latitude-band EBMを2D GCMへ一気に変えず、どの解像度で扱うか設計レビューを先に行う。
 - alpha 1では既存Fast/Slowの係数を再利用し、根拠のない新定数を追加しない。
 - 「Mixed 10m」というglobal knobと地理分布modeの意味を混同しない。
