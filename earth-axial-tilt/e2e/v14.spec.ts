@@ -16,6 +16,7 @@ test('history retains previous states and revisiting the same multiplier is path
  await expect(page.locator('#fb-selected option')).toHaveCount(5);const first=Number(await page.locator('[data-mean]').getAttribute('data-mean'));
  await page.locator('#fb-selected').selectOption('2');const returned=Number(await page.locator('[data-mean]').getAttribute('data-mean'));
  expect(first).toBeGreaterThan(10);expect(returned).toBeLessThan(-30);
+ await expect(page.locator('#fb-history svg text').filter({hasText:/^1\.15$/})).toHaveCount(1);
  await page.locator('#fb-history').scrollIntoViewIfNeeded();await page.screenshot({path:info.outputPath('v14-feedback-history.png')});
  await page.locator('#fb-selected').selectOption('4');expect(Number(await page.locator('[data-mean]').getAttribute('data-mean'))).toBeGreaterThan(10);
 });
@@ -80,5 +81,6 @@ test('an unsettled 80-year history remains inspectable without claiming equilibr
  await expect(page.locator('#fb-annual .feedback-curve')).toHaveCount(1);
  // Annual response and history use the same SVG curve class; inspect each chart, not their combined count.
  await expect(page.locator('#fb-history circle')).toHaveCount(1);
+ await expect(page.locator('#fb-history svg text').filter({hasText:/^0\.92$/})).toHaveCount(1);
  await page.locator('#fb-cards').scrollIntoViewIfNeeded();await page.screenshot({path:info.outputPath('v14-feedback-unsettled.png')});
 });
