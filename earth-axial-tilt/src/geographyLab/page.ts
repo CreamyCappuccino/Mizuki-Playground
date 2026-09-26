@@ -4,7 +4,7 @@ import { geographyCell, sampleGeographyTemperature } from '../physics/geographyS
 import { DEFAULT_GEOGRAPHY_EXPERIMENT, decodeGeographyExperiment, encodeGeographyExperiment,
   geographyExperimentHash, geographyExperimentFromHash, type GeographyExperiment } from '../experiments/geographyExperiment';
 import { clearPlot, differenceBound, renderAnnual, renderAtlas, renderMap, selectedMaterial, type PlotBounds } from './plots';
-import { getLanguage, setLanguage, t, translateDocument, type Language } from './i18n';
+import { setLanguage, t, translateDocument, type Language } from './i18n';
 import type { GeographyClimateSolution } from '../physics/geographyClimate';
 import { normalizeOrbit } from '../physics/orbit';
 
@@ -148,5 +148,5 @@ window.addEventListener('pagehide',event=>{if(event.persisted)return;disposed=tr
 window.addEventListener('pageshow',schedule);
 try{const lang=localStorage.getItem('earth-geography:language')??localStorage.getItem('earth-lab:language');if(lang==='en'||lang==='ja'){setLanguage(lang);select('language').value=lang;}
   const large=localStorage.getItem('earth-geography:large')==='true';document.documentElement.dataset.large=String(large);el('large').setAttribute('aria-pressed',String(large));}catch{}
-syncInputs(true);let restored=false;try{const next=geographyExperimentFromHash(location.hash);if(next){state=next;syncInputs(true);restored=true;}}catch{pendingNotice='Invalid settings; the previous experiment is unchanged.';}
+syncInputs(true);try{const next=geographyExperimentFromHash(location.hash);if(next){state=next;syncInputs(true);}}catch{pendingNotice='Invalid settings; the previous experiment is unchanged.';}
 startScience();schedule();
