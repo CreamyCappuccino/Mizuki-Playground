@@ -907,3 +907,15 @@ select { min-height: 44px; }
 :root[data-text-size="large"] .experiment-tools label,
 :root[data-text-size="large"] .experiment-tools .input-help,
 :root[data-text-size="large"] .experiment-actions button { font-size:1rem; }
+
+/* v1.2: orbital controls retain legible type and wrap within the scrolling column. */
+.orbit-lab { margin-bottom: 18px; }
+.workbench-heading { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:12px 0; font-size:1rem; }
+.orbit-inputs { display:grid; gap:10px; }
+.orbit-inputs label { display:grid; gap:6px; margin:0; min-width:0; }
+.orbit-inputs input { width:100%; min-width:0; min-height:44px; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:#08101d; color:inherit; font:inherit; font-size:1rem; }
+.orbit-actions { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:8px; margin:12px 0; }
+.orbit-actions button { min-height:44px; padding:8px 10px; font-size:1rem; line-height:1.4; white-space:normal; overflow-wrap:anywhere; }
+#orbit-workbench { min-width:0; }
+#orbit-workbench .input-help, #orbit-values { line-height:1.65; overflow-wrap:anywhere; }
+#orbit-input-status:not(:empty) { color:#ffbbac; }
