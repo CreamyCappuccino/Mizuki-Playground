@@ -14,6 +14,8 @@ import { geographicToCartesian, cartesianToGeographic, sunDirection } from '../p
 import { rotatingSunDirection, wrapRotation } from '../physics/diurnal';
 import { createInstantSolarLayer } from './instantSolar';
 import { EarthAppearance } from './earthAppearance';
+import { GeographyLayer } from './geographyLayer';
+import type { GeographyTemperatureSource } from '../physics/geographyTemperatureSource';
 import { parseVisualQuality, qualitySettings, viewFieldOfView, type VisualQuality } from './visualQuality';
 
 export type SurfaceMode = 'normal' | 'insolation' | 'daylight' | 'temperature' | 'instant';
@@ -31,6 +33,7 @@ export interface SceneState {
   climateProfile: ClimateProfile;
   heatDepth: number;
   thermal: ThermalSolution | null;
+  geography?: GeographyTemperatureSource | null;
 }
 
 interface EarthSceneOptions {
@@ -50,7 +53,7 @@ export class EarthScene {
   private readonly controls: OrbitControls;
   private readonly appearance: EarthAppearance;
   private readonly resizeObserver: ResizeObserver;
-  private comparison: { tilt: number; thermal: ThermalSolution | null; orbit?: OrbitParameters } | null = null;
+  private comparison: { tilt: number; thermal: ThermalSolution | null; orbit?: OrbitParameters; geography?: GeographyTemperatureSource | null } | null = null;
   private applyingPass = false;
   private colorCache: { key: string; thermal: ThermalSolution | null; values: Float32Array }[] = [];
   private quality: VisualQuality = 'high';
@@ -71,6 +74,7 @@ export class EarthScene {
   private readonly earthGroup = new THREE.Group();
   private readonly earthMesh: THREE.Mesh<THREE.SphereGeometry, THREE.MeshPhongMaterial>;
   private readonly dataMesh: THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial>;
+  private readonly geographyLayer: GeographyLayer;
   private readonly instantMesh: THREE.Mesh<THREE.SphereGeometry, THREE.ShaderMaterial>;
   private readonly marker = this.createLocationMarker();
   private readonly sunLight = new THREE.DirectionalLight(0xffffff, 3.4);
@@ -171,6 +175,8 @@ export class EarthScene {
     this.dataMesh.scale.setScalar(1.002);
     this.dataMesh.visible = false;
     this.earthGroup.add(this.dataMesh);
+    this.geographyLayer = new GeographyLayer(earthGeometry);
+    this.earthGroup.add(this.geographyLayer.mesh);
     this.instantMesh = createInstantSolarLayer(earthGeometry);
     this.earthGroup.add(this.instantMesh);
 
@@ -231,7 +237,7 @@ export class EarthScene {
       );
     }
     // Daily-mean maps do not depend on rotational phase. No CPU recoloring on spin.
-    if (seasonChanged || next.mode !== undefined || previous.radiationMax !== this.state.radiationMax || previous.thermal !== this.state.thermal || previous.temperatureModel !== this.state.temperatureModel || previous.heatDepth !== this.state.heatDepth) this.updateDataLayer();
+    if (seasonChanged || next.mode !== undefined || previous.radiationMax !== this.state.radiationMax || previous.thermal !== this.state.thermal || previous.geography !== this.state.geography || previous.temperatureModel !== this.state.temperatureModel || previous.heatDepth !== this.state.heatDepth) this.updateDataLayer();
     // Current world matrices are also needed for picking before the next frame.
     this.syncOrbitLayout();
     this.earthRoot.updateMatrixWorld(true);
@@ -242,15 +248,15 @@ export class EarthScene {
     this.invalidate();
   }
 
-  setComparison(value: { tilt: number; thermal: ThermalSolution | null; orbit?: OrbitParameters } | null): void {
-    if (value?.tilt === this.comparison?.tilt && value?.thermal === this.comparison?.thermal && orbitKey(value?.orbit) === orbitKey(this.comparison?.orbit)) return;
+  setComparison(value: { tilt: number; thermal: ThermalSolution | null; orbit?: OrbitParameters; geography?: GeographyTemperatureSource | null } | null): void {
+    if (value?.tilt === this.comparison?.tilt && value?.thermal === this.comparison?.thermal && value?.geography === this.comparison?.geography && orbitKey(value?.orbit) === orbitKey(this.comparison?.orbit)) return;
     this.comparison = value;
     this.canvas.dataset.comparison = String(value !== null);
     this.resize();
   }
 
   private comparisonState(): SceneState {
-    return { ...this.state, tilt: this.comparison!.tilt, thermal: this.comparison!.thermal, orbit: this.comparison!.orbit ?? this.state.orbit };
+    return { ...this.state, tilt: this.comparison!.tilt, thermal: this.comparison!.thermal, geography: this.comparison!.geography ?? null, orbit: this.comparison!.orbit ?? this.state.orbit };
   }
 
   /** Independent presentation passes over shared geometry/textures, not extra WebGL contexts. */
@@ -380,6 +386,7 @@ export class EarthScene {
     document.removeEventListener('visibilitychange', this.invalidate);
     this.resizeObserver.disconnect();
     this.colorCache = [];
+    this.geographyLayer.dispose();
     this.appearance.dispose();
     this.orbitOverview.disposeLabels();
     this.disposed = true;
@@ -623,6 +630,14 @@ export class EarthScene {
   }
 
   private updateDataLayer(): void {
+    const geography = this.state.geography ? { ...this.state.geography, tilt: this.state.tilt,
+      orbit: normalizeOrbit(this.state.orbit), depth: this.state.heatDepth } : null;
+    this.geographyLayer.update(geography, this.state.day, this.state.mode === 'temperature');
+    if (geography && this.state.mode === 'temperature') {
+      this.dataMesh.visible = false;
+      this.canvas.dataset.temperatureLayer = this.geographyLayer.mesh.visible ? 'earth-geography' : 'pending';
+      return;
+    }
     this.dataMesh.visible = this.state.mode !== 'normal' && this.state.mode !== 'instant' &&
       (this.state.mode !== 'temperature' || isThermalReady({ model: this.state.temperatureModel, climateProfile:this.state.climateProfile,
         tilt: this.state.tilt, depth: this.state.heatDepth, orbit: this.state.orbit, solution: this.state.thermal }));
