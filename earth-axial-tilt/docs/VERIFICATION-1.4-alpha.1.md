@@ -74,3 +74,14 @@ M4 source/process/HTTP checks occur only after an exact accepted revision is
 promoted. Cold-area output is a snow/ice threshold proxy, not ice mass, latent
 heat or seawater freezing. The v1.4 track's later geographic/3D integration is
 not declared finished by this first workspace milestone.
+
+## Final test-selector correction
+
+CI69 at `14daad76` passed all numerical checks and the first six feedback
+browser scenarios. The unsettled-path scenario reached the correct one-result,
+80-year, not-equilibrium UI, then failed a page-wide `.feedback-curve` count:
+that shared class belongs to both the annual and history charts. The regression
+now asserts one annual curve under `#fb-annual` and one history checkpoint under
+`#fb-history`, rather than counting unrelated chart paths together. No model
+results, tolerances, time limits or production code were changed for this fix.
+The corrected same-head run remains the promotion gate.
