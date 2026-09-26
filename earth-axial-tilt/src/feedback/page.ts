@@ -41,9 +41,9 @@ function render(){
  const ready=current.status==='ready'&&current.result.key===feedbackKey(settings);
  el<HTMLSelectElement>('selected').disabled=!ready;
  if(current.status!=='ready'||!ready){
-   el('cards').replaceChildren();el('annual').textContent=ft('empty');el('history').replaceChildren();el('diagnostics').replaceChildren();el('reading').textContent='';
+   el('selected').replaceChildren();el('cards').replaceChildren();el('annual').textContent=ft('empty');el('history').replaceChildren();el('diagnostics').replaceChildren();el('reading').textContent='';
    el<HTMLCanvasElement>('map').getContext('2d')?.clearRect(0,0,el<HTMLCanvasElement>('map').width,el<HTMLCanvasElement>('map').height);
-   el('map-scale').textContent='';el('unsettled').hidden=true;el('extreme').hidden=true;el('proxy-off').hidden=true;el('history-card').hidden=true;return;
+   el('ramp').hidden=true;el('map-scale').textContent='';el('unsettled').hidden=true;el('extreme').hidden=true;el('proxy-off').hidden=true;el('history-card').hidden=true;return;
  }
  const r=current.result;selected=Math.min(selected,r.items.length-1);
  const choose=el<HTMLSelectElement>('selected');
@@ -62,6 +62,7 @@ function render(){
  el('unsettled').hidden=!r.items.some(v=>!v.converged);el('extreme').hidden=!r.items.some(v=>v.minimum < -60||v.maximum >60);
  el('proxy-off').hidden=settings.enabled;el('annual-note').textContent=ft(r.experiment.mode==='compare'?'annualNote':'annualPath');
  plotFeedbackAnnual(el('annual'),r,selected,settings.latitude);
+ el('ramp').hidden=input('layer').value==='proxy';
  const range=plotFeedbackMap(el('map'),r,selected,settings.day,settings.latitude,input('layer').value==='proxy');el('map-scale').textContent=input('layer').value==='proxy'?ft(settings.enabled?'proxyMap':'proxyOff'):`${ft('legend')}: ${range[0].toFixed(1)} → ${range[1].toFixed(1)} · ${label(selected)}`;
  el('history-card').hidden=r.experiment.mode!=='path';if(r.experiment.mode==='path')plotFeedbackHistory(el('history'),r);
  const entries=[[ft('residual'),s.energyResidual.toExponential(3)],[ft('stepError'),s.maxStepEnergyResidual.toExponential(3)],
@@ -97,4 +98,17 @@ let frame=0;
 const observer=new ResizeObserver(()=>{cancelAnimationFrame(frame);frame=requestAnimationFrame(render);});observer.observe(el('annual'));
 window.addEventListener('pagehide',event=>{if(event.persisted)return;observer.disconnect();cancelAnimationFrame(frame);client.dispose();events.abort();},{signal:events.signal});
 input('language').value=navigator.language.startsWith('ja')?'ja':'en';setFeedbackLanguage(input('language').value);translateFeedback();writeControls();
-try{const restored=parseFeedbackHash(location.hash);if(restored)applySettings(restored);else render();}catch{render();el('share-status').textContent=ft('invalid');}
+/** Same-document links/back-forward change only the fragment; they do not reload
+ * this module. Validate before mutation and never start work from a URL. */
+function restoreHash(): void {
+ try {
+   const restored=parseFeedbackHash(location.hash);
+   if(restored){applySettings(restored);el('share-status').textContent=ft('applied');}
+   else render();
+ } catch {
+   // Invalid links leave the accepted experiment/result intact.
+   render();el('form-error').textContent=ft('invalid');el('share-status').textContent=ft('invalid');
+ }
+}
+window.addEventListener('hashchange',restoreHash,{signal:events.signal});
+restoreHash();
