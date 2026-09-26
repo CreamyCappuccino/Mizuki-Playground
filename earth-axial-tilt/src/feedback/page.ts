@@ -17,12 +17,12 @@ function writeControls(){
  input('preset').value=settings.mode==='compare'?'compare':JSON.stringify(settings.multipliers)===JSON.stringify(MEMORY_PATH)?'memory':JSON.stringify(settings.multipliers)===JSON.stringify(SWEEP_PATH)?'sweep':'custom';
  el('seed-control').hidden=settings.mode==='compare';
 }
-function readControls():FeedbackExperiment{
+function readControls(plan?:Pick<FeedbackExperiment,'mode'|'multipliers'>):FeedbackExperiment{
  const number=(id:string)=>{const value=input(id).value.trim();if(!value)throw new Error('Empty numeric setting');return Number(value);};
- const raw=input('factors').value.split(',').map(s=>s.trim());if(raw.some(v=>!v))throw new Error('Empty multiplier');
+ const raw=input('factors').value.split(',').map(s=>s.trim());if(!plan&&raw.some(v=>!v))throw new Error('Empty multiplier');
  return validateFeedbackExperiment({tilt:number('tilt'),depth:number('depth'),eccentricity:number('ecc'),
  perihelion:number('peri'),axis:number('axis'),enabled:input('enabled').value==='true',
- mode:input('preset').value==='compare'?'compare':'path',seed:input('seed').value,multipliers:raw.map(Number),latitude:settings.latitude,day:settings.day});
+ mode:plan?.mode??(input('preset').value==='compare'?'compare':'path'),seed:input('seed').value,multipliers:plan?.multipliers??raw.map(Number),latitude:settings.latitude,day:settings.day});
 }
 function label(index:number):string{
  if(current.status!=='ready')return '';
@@ -79,9 +79,14 @@ const on=(id:string,event:string,fn:()=>void)=>el(id).addEventListener(event,fn,
 on('run','click',run);on('cancel','click',()=>client.cancel());
 on('preset','change',()=>{
  const preset=input('preset').value;
- if(preset==='compare')settings={...settings,mode:'compare',multipliers:[1]};
- else settings={...settings,mode:'path',multipliers:[...(preset==='sweep'?SWEEP_PATH:MEMORY_PATH)]};
- writeControls();if(preset==='custom')input('preset').value='custom';invalidate();
+ try {
+   // Changing the history must not undo valid scientific edits made before Run.
+   const plan:Pick<FeedbackExperiment,'mode'|'multipliers'>|undefined=preset==='custom'?undefined:
+     {mode:preset==='compare'?'compare':'path',multipliers:preset==='compare'?[1]:[...(preset==='sweep'?SWEEP_PATH:MEMORY_PATH)]};
+   settings=readControls(plan);writeControls();if(preset==='custom')input('preset').value='custom';
+   el('form-error').textContent='';invalidate();
+ } catch {el('form-error').textContent=ft('invalid');}
+
 });
 el('science').addEventListener('input',invalidate,{signal:events.signal});
 on('layer','change',render);
