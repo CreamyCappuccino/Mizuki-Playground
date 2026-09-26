@@ -6,7 +6,7 @@ test('feedback real worker distinguishes warm/cold and off restores a common cli
  await openLab(page);await run(page);
  const values=await page.locator('[data-mean]').evaluateAll(nodes=>nodes.map(n=>Number((n as HTMLElement).dataset.mean)));
  expect(values[0]).toBeGreaterThan(10);expect(values[1]).toBeLessThan(-30);expect(values).toHaveLength(2);
- await expect(page.locator('.feedback-curve')).toHaveCount(2);await page.screenshot({path:info.outputPath('v14-feedback-warm-cold.png'),fullPage:true});
+ await expect(page.locator('.feedback-curve')).toHaveCount(2);await expect(page.locator('#fb-ramp')).toBeVisible();await page.screenshot({path:info.outputPath('v14-feedback-warm-cold.png'),fullPage:true});
  await page.locator('#fb-enabled').selectOption('false');await expect(page.locator('#fb-status')).toHaveAttribute('data-status','idle');await run(page);
  const off=await page.locator('[data-mean]').evaluateAll(nodes=>nodes.map(n=>Number((n as HTMLElement).dataset.mean)));
  expect(Math.abs(off[0]-off[1])).toBeLessThan(1e-5);await expect(page.locator('#fb-proxy-off')).toBeVisible();
@@ -26,6 +26,16 @@ test('portable history is atomic and a restored link does not auto-run',async({p
  await page.locator('#fb-json').fill(feedbackFile({...DEFAULT_FEEDBACK,tilt:60}));await page.locator('#fb-apply').click();
  await expect(page.locator('#fb-tilt')).toHaveValue('60');await expect(page.locator('#fb-status')).toHaveAttribute('data-status','idle');
  await page.goto('/feedback-lab.html'+feedbackHash({...DEFAULT_FEEDBACK,tilt:45}));await expect(page.locator('#fb-tilt')).toHaveValue('45');await expect(page.locator('#fb-status')).toHaveAttribute('data-status','idle');
+ await run(page);
+ await page.evaluate(()=>{location.hash='feedback=99&state=invalid';});
+ await expect(page.locator('#fb-form-error')).toContainText('Invalid');
+ await expect(page.locator('#fb-tilt')).toHaveValue('45');
+ await expect(page.locator('#fb-status')).toHaveAttribute('data-status','ready');
+ // Two valid same-document edits restore the newest full intent, still paused.
+ await page.evaluate(hash=>{location.hash=hash;},feedbackHash({...DEFAULT_FEEDBACK,tilt:30,mode:'path',multipliers:[1,.9,1]}));
+ await expect(page.locator('#fb-tilt')).toHaveValue('30');await expect(page.locator('#fb-preset')).toHaveValue('custom');
+ await expect(page.locator('#fb-status')).toHaveAttribute('data-status','idle');await expect(page.locator('[data-mean]')).toHaveCount(0);
+ await page.reload();await expect(page.locator('#fb-tilt')).toHaveValue('30');await expect(page.locator('#fb-status')).toHaveAttribute('data-status','idle');
 });
 test('Japanese Large remains readable and display sampling does not start another worker',async({page},info)=>{
  await page.setViewportSize({width:390,height:844});
@@ -35,6 +45,7 @@ test('Japanese Large remains readable and display sampling does not start anothe
  await page.locator('#fb-latitude').fill('90');await page.locator('#fb-latitude').press('Tab');await page.locator('#fb-day').evaluate((el)=>{(el as HTMLInputElement).value='365';el.dispatchEvent(new Event('input',{bubbles:true}));});
  expect(await page.evaluate(()=>(window as unknown as {fbStarts:number}).fbStarts)).toBe(starts);
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
+ await expect(page.locator('#fb-ramp')).toBeVisible();
  await page.locator('#fb-annual').scrollIntoViewIfNeeded();await page.screenshot({path:info.outputPath('v14-feedback-mobile-ja.png')});
 });
 test('cancel invalidates visible fields and malformed reply fails explicitly before deliberate retry',async({page})=>{
