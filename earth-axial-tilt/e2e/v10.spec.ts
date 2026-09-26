@@ -46,6 +46,9 @@ test('failed optional module is retryable while the primary planet remains usabl
  await page.unroute('**/seasonAtlas-*.js');
  // Browser module maps may retain an import failure. Reload is always a supported recovery.
  await Promise.all([page.waitForEvent('load'), page.locator('#open-atlas').click()]);
+ // A document load does not prove the new app has bound its lazy launcher.
+ // Wait for the same application-ready signal used before the initial click.
+ await expect(page.locator('#climate-status')).toHaveAttribute('data-status','ready');
  await page.locator('#open-atlas').click();await expect(page.locator('#season-atlas')).toBeVisible();
 });
 
