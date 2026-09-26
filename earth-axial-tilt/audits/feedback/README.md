@@ -17,3 +17,9 @@ The output directory must be outside the repository. Compare all six complete
 fields against max absolute difference <1e-5°C. Never widen this criterion or
 update a baseline to make an unexplained mismatch pass. The source contract and
 limits are in `docs/V1.4.md`.
+
+Time/grid sensitivity of the actual implementation (not a weather uncertainty bound):
+
+```sh
+node audits/feedback/refinement.mjs /tmp/earth-feedback-refinement
+```
