@@ -162,6 +162,8 @@ test('real geography preview runs the reviewed worker and changes with longitude
   expect(Number.isFinite(first)).toBe(true);
   expect(Number.isFinite(second)).toBe(true);
   expect(second).not.toBe(first);
+  await page.locator('#layer').selectOption('land');
+  await expect(page.locator('#map-scale')).toContainText('0–100%');
   await page.screenshot({ path: info.outputPath('v13-real-geography-preview.png'), fullPage: true });
 });
 
