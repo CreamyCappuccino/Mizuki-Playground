@@ -6,7 +6,8 @@ const format=(n:number)=>Number(n.toFixed(1)).toString();
 function linePlot(host:HTMLElement,series:{x:number[];y:number[];name:string;dashed?:boolean}[],xLabel:string):void{
  const font=document.documentElement.dataset.large==='true'?18:15;
  const width=Math.max(260,host.clientWidth),height=290,left=52,right=width-16,top=45,bottom=height-48;
- const xs=series.flatMap(s=>s.x),ys=series.flatMap(s=>s.y),xmin=Math.min(...xs),xmax=Math.max(...xs);
+ const xs=series.flatMap(s=>s.x),ys=series.flatMap(s=>s.y);
+ let xmin=Math.min(...xs),xmax=Math.max(...xs);if(xmin===xmax){xmin-=.05;xmax+=.05;}
  let ymin=Math.min(...ys),ymax=Math.max(...ys);const pad=Math.max(2,(ymax-ymin)*.08);ymin-=pad;ymax+=pad;
  const x=(v:number)=>left+(v-xmin)/Math.max(1e-8,xmax-xmin)*(right-left),y=(v:number)=>bottom-(v-ymin)/(ymax-ymin)*(bottom-top);
  let body='';
