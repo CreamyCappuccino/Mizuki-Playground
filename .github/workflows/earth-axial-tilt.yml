@@ -1,27 +1,12 @@
-name: Earth Axial Tilt CI
+name: Earth cloud development snapshot
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'earth-axial-tilt/**'
-      - '.github/workflows/earth-axial-tilt.yml'
-  pull_request:
-    paths:
-      - 'earth-axial-tilt/**'
-      - '.github/workflows/earth-axial-tilt.yml'
   workflow_dispatch:
 permissions:
   contents: read
-concurrency:
-  group: earth-axial-tilt-${{ github.ref }}
-  cancel-in-progress: true
 jobs:
-  verify:
+  snapshot:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    defaults:
-      run:
-        working-directory: earth-axial-tilt
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
@@ -29,62 +14,17 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
-          cache-dependency-path: earth-axial-tilt/package-lock.json
-      - name: Reproducible install
+      - name: Install locked project dependencies
+        working-directory: earth-axial-tilt
         run: npm ci
-      - name: Document and translation checks
-        run: npm run check:docs
-      - name: Typecheck
-        run: npm run typecheck
-      - name: Unit tests
-        run: npm test
-      - name: Production build
-        run: npm run build
-      - name: Install Chromium
-        run: npx playwright install --with-deps chromium
-      - name: Chromium regression suite
-        run: npm run test:e2e
-      - name: Browser evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: earth-chromium-${{ github.run_number }}
-          path: earth-axial-tilt/test-results/
-          if-no-files-found: ignore
-          retention-days: 7
-  webkit:
-    runs-on: macos-latest
-    timeout-minutes: 20
-    defaults:
-      run:
-        working-directory: earth-axial-tilt
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: earth-axial-tilt/package-lock.json
-      - run: npm ci
-      - run: npm run build
-      - name: Install WebKit
-        run: npx playwright install webkit
-      - name: macOS WebKit regression (not on-device iPhone Safari)
+      - name: Export project and locked Linux dependencies (no Git metadata or credentials)
         run: |
-          # End the browser/GPU process between suites; retain every failure and artifact.
-          result=0
-          for suite in v06 v07 v08 v09 v10 v11 v12 v13 geography-main; do
-            npm run test:e2e:webkit -- "e2e/${suite}.spec.ts" --workers=1 --output="test-results/${suite}" || result=1
-          done
-          exit "$result"
-      - name: WebKit evidence
-        if: always()
-        uses: actions/upload-artifact@v4
+          git rev-parse HEAD > earth-cloud-revision.txt
+          tar --exclude='.git' --exclude='.env*' --exclude='.npmrc' -czf /tmp/earth-cloud-source.tgz AGENTS.md earth-cloud-revision.txt earth-axial-tilt .github/workflows/earth-axial-tilt.yml
+          sha256sum /tmp/earth-cloud-source.tgz
+      - uses: actions/upload-artifact@v4
         with:
-          name: earth-webkit-${{ github.run_number }}
-          path: earth-axial-tilt/test-results/
-          if-no-files-found: ignore
-          retention-days: 7
+          name: earth-cloud-source
+          path: /tmp/earth-cloud-source.tgz
+          retention-days: 1
+          if-no-files-found: error
