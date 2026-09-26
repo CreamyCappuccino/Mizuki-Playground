@@ -1,7 +1,7 @@
 # Earth geography — isolated physics/data design candidate
 
 Updated: 2026-09-26. Decision sources: Chat-side science designer's
-CX-MSG0211–0213 and CX-MSG0216–0217; 0212 supersedes the original grid reuse.
+CX-MSG0211–0213 and CX-MSG0216–0219; 0212 supersedes the original grid reuse.
 Status: **physics/data implementation authorized; no solver or UI release yet**.
 Display follow-up at `a8c096f` was accepted and FF-integrated into main and
 the existing serving clone. Same-head CI #53 / run 36246368748 and main CI #54 /
@@ -91,6 +91,24 @@ norm, shared-face symmetry/dissipation, constant field, seam/poles, spherical
 area and variable-capacity weighted conservation. This is not a PCG solver or
 completed annual climate validation; Classic code and UI are unchanged.
 
+CX-MSG0219 independently reviewed the actual `cf08e023` grid against a Python
+pairwise sparse matrix: operator max difference 1.37e-11, global weighted
+transport 7.45e-14, weight difference 2.3e-16 and negative dissipation. This
+acceptance covers the grid/transport only, not a complete annual solver.
+
+`geographySystem.ts` snapshots variable-capacity matrix coefficients;
+`geographyPcg.ts` implements bounded Jacobi-PCG, default relative/absolute
+tolerances 1e-11, positive denominator/diagonal guards and actual residual
+verification (with residual replacement/restart). `geographyPcg.test.ts`
+compares a 6×12 matrix and solve to separately assembled dense Gaussian
+elimination, checks the full 18×36 true residual and exact warm start, and
+tests zero RHS, D=0, source snapshots and explicit numerical failures.
+PCG validation does not establish periodic spin-up or annual energy balance.
+Local default-grid smooth mask `f_k=(1+sin(.17*k))/2`, rhs `100*sin(.17*k)`:
+34 iterations, actual residual norm 1.0499100680011729e-8, relative L2 residual
+5.838234044981182e-12. A single local run took ~2.5 ms; this is not a mobile or
+annual-solve guarantee, nor the designer's sparse-direct oracle comparison.
+
 ## Gates before UI integration
 
 1. Reproduce the harmonic convergence test and area-weighted transport sum
@@ -104,7 +122,7 @@ completed annual climate validation; Classic code and UI are unchanged.
    CX-MSG0217 additionally reports new-grid smooth fractional-mask PCG vs sparse
    direct max difference 6.34e-11, actual relative-L2 residual 2.34e-11,
    matrix symmetry error 8.9e-16. These are independent designer results;
-   local PCG still needs implementation and oracle comparison.
+   local PCG is implemented; independent sparse oracle comparison is pending.
 3. Uniform land/ocean must reduce to an independently implemented 1D finite
    volume solve on the **same new grid**, not byte-match an old 18-band
    x-center discretization. Independently retain Classic byte regressions.
@@ -149,6 +167,10 @@ and preservation of self-intersecting feature 78. Source-roundoff coordinates
 are retained, with no broad geometry repair. Tests include synthetic holes,
 seam/poles/area, source locations and sampling refinement. Full 648-cell
 independent oracle audit and solver implementation are still pending.
+CX-MSG0219 reports an independently implemented identical quadrature vs the
+clipped-edge oracle: q64 max fraction error 0.003036 / area RMS 0.000466;
+q128 max 0.001313 / area RMS 0.000154. These are reported approximation errors,
+not local full-cell verification and not solver errors on a fixed mask.
 The designer has prepared an independent Shapely cell-clipping / line-integral
 area oracle (`-integral sin(phi) d_lambda` for lon/lat-linear polygon edges),
 with rectangle/holes/poles/4π fixtures. Compare its results against the local
