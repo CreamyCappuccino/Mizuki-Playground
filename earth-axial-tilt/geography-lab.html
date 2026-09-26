@@ -1,0 +1,29 @@
+<!doctype html><html lang="ja"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Earth Geography Lab · Integration preview</title><link rel="stylesheet" href="./src/geographyLab/lab.css"></head>
+<body><header><div><p class="eyebrow" data-g="Earth geography · experimental"></p><h1 data-g="Same sunlight. Different ground."></h1>
+<p data-g="Pinned real land fractions + a 648-cell educational climate model."></p></div><nav><a href="./index.html" data-g="Back to Earth Lab"></a>
+<label><span class="sr-only">Language</span><select id="language"><option value="ja">日本語</option><option value="en">English</option></select></label>
+<button id="large" aria-pressed="false" data-g="Large text"></button></nav></header>
+<main><aside><section><h2 data-g="Experiment"></h2><form id="science-form"><div class="inputs">
+<label><span data-g="Tilt (°)"></span><input id="tilt" type="number" min="0" max="90" step="any" required></label>
+<label><span data-g="Eccentricity"></span><input id="eccentricity" type="number" min="0" max="0.3" step="any" required></label>
+<label><span data-g="Perihelion direction (°)"></span><input id="perihelion" type="number" min="0" max="360" step="any" required></label>
+<label><span data-g="Axis direction (°)"></span><input id="axis" type="number" min="0" max="360" step="any" required></label></div>
+<label class="check"><input id="reference" type="checkbox"><span data-g="23.44° reference"></span></label>
+<div class="actions"><button type="submit" id="calculate" data-g="Calculate"></button><button type="button" id="cancel" data-g="Cancel"></button></div></form>
+<p class="muted" data-g="Apply tilt/orbit edits with Calculate. Day and location need no new solve."></p>
+<h3 data-g="Run status"></h3><p id="status" role="status" aria-live="polite" data-status="idle"></p><p id="diagnostics" class="muted"></p></section>
+<section><h2 data-g="Selected model cell"></h2><label><span data-g="Model day"></span> <output id="day-output"></output><input id="day" type="range" min="1" max="365" step="1"></label>
+<div class="inputs"><label><span data-g="Latitude (°)"></span><input id="latitude" type="number" min="-90" max="90" step="any"></label>
+<label><span data-g="Longitude (°)"></span><input id="longitude" type="number" min="-180" max="180" step="any"></label></div>
+<label><span data-g="Layer"></span><select id="layer"><option value="temperature" data-g="Temperature"></option><option value="difference" data-g="Difference from 23.44°"></option><option value="land" data-g="Land fraction"></option></select></label>
+<dl><dt data-g="Temperature / reference"></dt><dd id="temperature">—</dd><dt data-g="Land fraction"></dt><dd id="fraction">—</dd><dt data-g="Effective storage"></dt><dd id="depth">—</dd><dt data-g="Cell centre"></dt><dd id="cell">—</dd></dl>
+<p class="muted" data-g="10° × 10° · 18 × 36 cells. Not city-scale weather."></p></section>
+<section><h2 data-g="Settings"></h2><div class="actions"><button id="copy" data-g="Copy experiment link"></button><button id="save" data-g="Save JSON"></button>
+<button id="open-json" data-g="Load JSON"></button><input id="load" type="file" accept="application/json,.json" hidden></div><p id="notice" role="status"></p></section></aside>
+<article><section><h2 data-g="Geographic field"></h2><p id="current-config" class="muted"></p><canvas id="map" tabindex="0" role="img" aria-label="Geographic cell temperatures"></canvas><p data-g="Click a cell. Arrow keys move between cells."></p><p id="map-scale" class="muted"></p></section>
+<section><h2 data-g="Annual response at the selected cell"></h2><p id="annual-summary"></p><canvas id="annual" role="img" aria-label="Annual cell temperatures"></canvas><p id="annual-legend" data-g="Solid: selected tilt · dashed: 23.44°, same orbit and geography."></p></section>
+<section><h2 data-g="Selected-longitude season atlas"></h2><p id="section-longitude"></p><canvas id="atlas" tabindex="0" role="img" aria-label="Latitude by model day at selected longitude"></canvas><p data-g="North at top; model day across. This is a longitude section, not a zonal mean."></p></section>
+<section><p id="warning" class="warning" hidden data-g="Extreme model extrapolation. These temperatures are not climate predictions."></p><h2 data-g="What this experiment does not simulate"></h2><p data-g="No weather, winds, ocean currents, topography, clouds, melting ice or nonlinear feedback."></p>
+<p class="muted" data-g="Natural Earth 1:110m v4.1.0 · public-domain source · q64 equal-area land fractions."></p><p class="muted" data-g="This preview uses the reviewed geography engine without changing the accepted main Earth schema yet."></p></section></article></main>
+<script type="module" src="./src/geographyLab/page.ts"></script></body></html>
