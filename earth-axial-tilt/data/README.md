@@ -1,7 +1,7 @@
 # Earth geography source data
 
-Acquired / verified: 2026-09-26. This is an isolated source checkpoint, not a
-completed land-fraction dataset, validated climate solver or connected UI.
+Acquired / generated: 2026-09-26. This is an isolated mask candidate awaiting
+full independent cell-area audit, not a validated climate solver or connected UI.
 The implementation contract is [the geography design](../docs/DESIGN-v1.3-earth-geography.md).
 
 ## Layout and pinned source
@@ -43,13 +43,56 @@ unzip -p data/sources/ne_110m_land-4.1.0.zip ne_110m_land.VERSION.txt
 unzip -p data/sources/ne_110m_land-4.1.0.zip ne_110m_land.prj
 ```
 
-## Next generation gate
+## Reproducible mask candidate
 
-Generate the 18×36 fractional mask from vector polygons with a pinned builder,
-equal-area subcell sampling uniform in sin(latitude) and longitude, and record
-quadrature parameters plus output hash. Check holes, antimeridian, polar cells,
-major land/ocean locations, coast fractions, total area and sampling refinement.
-No generated mask exists at this checkpoint; there is no output checksum yet.
+`land-fractions.json` contains 648 fractions, south-to-north rows and
+west-to-east columns (latitudes −85…85°, longitudes −175…175°). Generate/check
+from the project directory with Node >=22.12 and `unzip`, without network:
+
+```sh
+npm run data:geography
+npm run data:geography -- --check
+npm run data:geography -- --help
+```
+
+The builder verifies the archive and all seven component hashes, reads Polygon
+shape-type 5 directly, and uses 64×64 midpoint samples per cell, uniform in
+sin(latitude) and longitude. Edges are straight in the source lon/lat plane.
+Fill is **even-odd within each feature, union across features**, independent of
+ring winding. Ray crossings use half-open latitude intervals; boundaries are
+measure-zero, not a reliable point coastline classifier. Source coordinates
+that overshoot 180°/−90° by floating roundoff (<1e-9°) are accepted unchanged.
+No feature is removed, buffered, union-normalized or repaired. In particular,
+feature index 78's reported self-intersection near −132.7100°, 54.0400° remains
+interpreted by the declared even-odd rule. An independent repaired/union oracle
+may differ there; compare the affected cells before considering any change.
+
+Builder file hashes and source/grid/quadrature identity are embedded in the
+JSON; fraction payload hash is over 648 Float64 values encoded little-endian:
+`09462b795716c3a3ce747bcf0835b089b38be8028d09b75cc1cdd196b2567084`.
+Entire generated JSON SHA-256:
+`d9e50b8fcec281c898af983e303fd982fcbe64e6a52c0eccb181be71da9a2e89`.
+
+The 64×64 candidate global land fraction is 0.28866904568519103, versus the
+independent clipped-edge oracle's reported 0.28869879277471266. Row 11,
+column 30 (20–30°N, 120–130°E) is 0.07470703125 vs reported 0.0741207605927434.
+Taipei's point itself is land: this fraction describes the **surrounding coarse
+cell**, not whether that city is ocean. Sahara/Australia/Amazon cells are 1,
+the Pacific reference cell is 0. Tests cover area sampling, winding/holes,
+feature union, self-intersections, periodic seam, polar cap, full-world area,
+locations and 32/64/128 sampling refinement. Full 648-cell independent area
+comparison is still pending; sampling convergence is not that independent audit.
+
+Local refinement (32 / 64 / 128 samples per axis): global fractions
+0.2887587704291773 / 0.28866904568519103 / 0.2886988767623647.
+64→128 maximum cell difference is 0.00299072265625 and global area RMS is
+0.0005125171951266894 (fraction units). Taipei's cell at 128 is 0.0743408203125;
+the cell containing source feature 78 (50–60°N, 140–130°W) changes from
+0.247314453125 to 0.24810791015625. These quantify quadrature sensitivity,
+not a comparison of every cell against the independent exact-area oracle.
+
 This coarse dataset misses small islands and does not distinguish inland lakes
-or ice as separate thermal materials. Source version alone is not model provenance:
+or ice as separate thermal materials. Polygon holes are respected, but inland
+lake coverage follows the source polygons, not a separate lake dataset.
+Source version alone is not model provenance:
 the grid, builder, quadrature, output hash and solver version must also be included.

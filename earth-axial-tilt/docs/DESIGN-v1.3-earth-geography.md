@@ -142,8 +142,13 @@ Build fractional coverage reproducibly from polygons. Cell subsampling must
 be uniform in `sin(phi)` and longitude for area weighting, with refinement
 checks. Test major continents, Pacific ocean, antimeridian wrapping, polar
 caps, holes and small-island resolution limits. Pin the builder, parameters
-and output checksum. Source is acquired; fractional mask generation and its
-tests, output hash and solver implementation are still pending.
+and output checksum. A 64×64 equal-area midpoint mask candidate now exists:
+`data/land-fractions.json`, generated offline with `npm run data:geography`.
+See data README for pinned builder/output hashes, explicit even-odd fill rule
+and preservation of self-intersecting feature 78. Source-roundoff coordinates
+are retained, with no broad geometry repair. Tests include synthetic holes,
+seam/poles/area, source locations and sampling refinement. Full 648-cell
+independent oracle audit and solver implementation are still pending.
 The designer has prepared an independent Shapely cell-clipping / line-integral
 area oracle (`-integral sin(phi) d_lambda` for lon/lat-linear polygon edges),
 with rectangle/holes/poles/4π fixtures. Compare its results against the local
