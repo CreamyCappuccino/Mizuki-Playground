@@ -160,4 +160,47 @@ describe('geography serial compute lifecycle', () => {
     expect(() => client.request('B', conditions(NaN), () => {})).toThrow();
     client.dispose();
   });
+  it.each(['phi', 'lambda', 'weight', 'northSouth', 'eastWest'] as const)(
+    'rejects missing grid.%s before cache insertion and cannot poison B same-key', name => {
+      const { client, workers, a, b } = setup();
+      client.request('A', conditions(), s => a.push(s));
+      client.request('B', conditions(), s => b.push(s));
+      const bad = field(workers[0].request);
+      Object.assign(bad.grid, { [name]: undefined });
+      workers[0].ready(bad);
+      expect(a.at(-1)?.status).toBe('error'); expect(workers[0].terminated).toBe(true);
+      expect(client.cacheFields).toBe(0); expect(client.cacheBytes).toBe(0);
+      expect(b.map(s => s.status)).toEqual(['queued']); expect(workers).toHaveLength(2);
+      workers[1].ready(); expect(b.at(-1)?.status).toBe('ready');
+      client.dispose();
+    });
+  it.each([null, undefined, false, 0, '', [], {}, { status: 'alien' }])(
+    'makes malformed reply %j an explicit error and continues the next queued owner', packet => {
+      const { client, workers, a, b } = setup();
+      client.request('A', conditions(), s => a.push(s));
+      client.request('B', conditions(60), s => b.push(s));
+      expect(() => workers[0].reply(packet as GeographyReply)).not.toThrow();
+      expect(a.at(-1)?.status).toBe('error'); expect(workers[0].terminated).toBe(true);
+      expect(client.cacheFields).toBe(0); expect(workers).toHaveLength(2);
+      workers[1].ready(); expect(b.at(-1)?.status).toBe('ready');
+      client.dispose();
+    });
+  it('rejects wrong grid type/length/values and false summary/diagnostics', () => {
+    const mutations: ((s: GeographyClimateSolution) => void)[] = [
+      s => { s.grid.phi = new Float64Array(17); },
+      s => Object.assign(s.grid, { phi: new Float32Array(18) }),
+      s => { s.grid.weight[0] = 0; }, s => { s.grid.eastWest[0] = NaN; },
+      s => { s.grid.phi[0] += .01; }, s => { s.grid.diffusion = 0; },
+      s => { s.minimum = NaN; }, s => { s.maximum = 1; },
+      s => { s.periodicError = -1; }, s => { s.maxStepEnergyResidual = -1; },
+      s => { s.maxRelativeLinearResidual = -1; }, s => { s.maxLinearIterations = -1; },
+    ];
+    for (const mutate of mutations) {
+      const { client, workers, a } = setup();
+      client.request('A', conditions(), s => a.push(s));
+      const bad = field(workers[0].request); mutate(bad); workers[0].ready(bad);
+      expect(a.at(-1)?.status).toBe('error'); expect(client.cacheFields).toBe(0);
+      client.dispose();
+    }
+  });
 });

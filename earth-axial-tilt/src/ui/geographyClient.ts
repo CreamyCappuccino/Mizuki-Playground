@@ -1,5 +1,5 @@
 import type { GeographyClimateSolution } from '../physics/geographyClimate';
-import { geographyRequest, geographyRequestKey, geographySolutionBytes, matchingGeographySolution,
+import { geographyRequest, geographyRequestKey, geographySolutionBytes, matchingGeographySolution, isGeographyReply,
   type GeographyConditions, type GeographyReply, type GeographyRequest } from '../physics/geographyProtocol';
 
 export type GeographyOwner = 'A' | 'B' | 'reference';
@@ -90,6 +90,9 @@ export class GeographyClient {
       this.active = active;
       worker.onmessage = event => {
         if (this.active !== active || this.disposed) return;
+        if (!isGeographyReply(event.data)) {
+          this.finish(active, { status: 'error', error: 'Malformed geography worker reply.' }); return;
+        }
         const reply = event.data;
         if (reply.id !== desired.request.id || reply.key !== desired.key) {
           this.finish(active, { status: 'error', error: 'Geography worker request/provenance mismatch.' }); return;
@@ -121,8 +124,14 @@ export class GeographyClient {
     this.pump();
   }
   private retain(key: string, solution: GeographyClimateSolution): void {
-    this.cache.delete(key);
-    this.cache.set(key, solution);
-    while (this.cache.size > 3 || this.cacheBytes > MAX_FIELD_BYTES) this.cache.delete(this.cache.keys().next().value!);
+    // Validate accounting before mutation, and commit a proposed cache only
+    // after eviction/accounting succeeds. Exceptions cannot poison later hits.
+    const bytes = geographySolutionBytes(solution);
+    if (!Number.isSafeInteger(bytes) || bytes < 1 || bytes > MAX_FIELD_BYTES) throw new Error('Invalid geography field byte size.');
+    const proposed = new Map(this.cache);
+    proposed.delete(key); proposed.set(key, solution);
+    const totalBytes = () => [...proposed.values()].reduce((total, s) => total + geographySolutionBytes(s), 0);
+    while (proposed.size > 3 || totalBytes() > MAX_FIELD_BYTES) proposed.delete(proposed.keys().next().value!);
+    this.cache = proposed;
   }
 }

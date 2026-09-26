@@ -115,3 +115,16 @@ under 6 MiB of owned typed arrays. Fake-worker lifecycle tests exercise
 A=B exact reuse, unchanged-intent deduplication, queue fairness, cancellation,
 wrong replies, errors/retries and real-byte eviction. These are component
 tests, not an actual browser-worker or completed UI proof.
+
+CX-MSG0231 independently accepts the actual sampler: 960 boundary/seam/pole/
+day-wrap fixtures agreed (maximum rounding difference 3.55e-15 °C); all annual
+getter and longitude-slice values exactly matched production raw fields.
+It also exposed two malformed-reply defects, now covered by regressions:
+missing grid arrays previously poisoned a cache before byte accounting threw,
+and null messages threw outside the callback guard. Validate fixed grid arrays,
+actual temperature min/max and nonnegative diagnostics before insertion;
+commit cache changes transactionally. Guard reply shape before dereference,
+emit error, terminate the bad worker and continue other queued owners. These
+are internal message-defence failures, not observed external attacks. A canceled
+slot resumes only with a deliberate fresh request using current conditions;
+`retry` is for retained error intent, not an automatic cancel undo.
