@@ -45,7 +45,8 @@ test('failed optional module is retryable while the primary planet remains usabl
  await expect(page.locator('#tilt')).toBeEnabled();
  await page.unroute('**/seasonAtlas-*.js');
  // Browser module maps may retain an import failure. Reload is always a supported recovery.
- await page.locator('#open-atlas').click();await page.waitForLoadState();await page.locator('#open-atlas').click();await expect(page.locator('#season-atlas')).toBeVisible();
+ await Promise.all([page.waitForEvent('load'), page.locator('#open-atlas').click()]);
+ await page.locator('#open-atlas').click();await expect(page.locator('#season-atlas')).toBeVisible();
 });
 
 test('Japanese large landscape controls and modal focus survive display switches',async({page},info)=>{
