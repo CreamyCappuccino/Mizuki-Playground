@@ -1,5 +1,10 @@
 /** English source phrases are stable keys. Placeholders {0}… retain ordering in both languages. */
 export const jaMessages: Readonly<Record<string, string>> = {
+  "Spring": "春",
+  "Summer": "夏",
+  "Autumn": "秋",
+  "Winter": "冬",
+  "Classic value retained, currently unused. Effective storage: land 2.5 m / ocean 50 m equivalent.": "Classic用の保持値で、現在は未使用です。実際の蓄熱は陸2.5 m／海50 m相当です。",
   "Earth Axial Tilt Lab": "地球の傾きラボ",
   "Earth Axial Tilt": "地球の傾きラボ",
   "MIZUKI PLAYGROUND / PLANET LAB · v0.8": "MIZUKI PLAYGROUND / 惑星実験室 · v0.8",

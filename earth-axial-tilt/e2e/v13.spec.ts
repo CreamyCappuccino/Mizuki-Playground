@@ -24,6 +24,8 @@ test('idealized land and ocean expose a same-forcing amplitude and lag contrast'
   await page.locator('#climate-geography').selectOption('idealized-land');
   await expect(page.locator('#climate-status')).toHaveAttribute('data-status', 'ready');
   await expect(page.locator('#heat-storage')).toBeDisabled();
+  await expect(page.locator('#heat-retained-note')).toContainText('Classic value retained, currently unused');
+  await expect(page.locator('#heat-retained-note')).toContainText('land 2.5 m / ocean 50 m');
   await expect(page.locator('#profile-reference-control')).toBeHidden();
   await expect(page.locator('#profile-reference-note')).toBeVisible();
   await expect(page.locator('#temperature-model-note')).toContainText('not a real Earth map');
@@ -38,6 +40,31 @@ test('idealized land and ocean expose a same-forcing amplitude and lag contrast'
   await page.locator('#temperature-model').selectOption('illustrative');
   await expect(page.locator('#climate-geography')).toHaveValue('classic');
   await expect(page.locator('#climate-geography')).toBeDisabled();
+  await expect(page.locator('#heat-retained-note')).toBeHidden();
+});
+
+test('annual land/ocean counterpart curves are fully visible in browser evidence', async ({ page }, info) => {
+  await page.setViewportSize({ width: 1440, height: 1100 });
+  await open(page, { ...DEFAULT_EXPERIMENT, climateProfile: 'idealized-land' });
+  await expect(page.locator('#profile-summary')).toContainText('Dashed: other idealized surface');
+  await page.locator('#annual-chart').scrollIntoViewIfNeeded();
+  await expect(page.locator('#annual-chart')).toBeInViewport({ ratio: 1 });
+  await expect(page.locator('#annual-chart svg')).toBeVisible();
+  await expect(page.locator('#annual-chart .chart-line')).toBeVisible();
+  await expect(page.locator('#annual-chart .chart-reference')).toBeVisible();
+  await page.screenshot({ path: info.outputPath('v13-annual-land-ocean-curves.png') });
+});
+
+test('desktop dual and single orbit retain the full presentation', async ({ page }, info) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await open(page, { ...DEFAULT_EXPERIMENT, dual: true, sceneView: 'orbit' });
+  await expect(page.locator('#compare-status')).toHaveAttribute('data-status', 'ready');
+  await expect(page.locator('#earth-canvas')).toHaveAttribute('data-orbit-compact', 'false');
+  await page.locator('#earth-canvas').screenshot({ path: info.outputPath('v13-desktop-dual-orbit.png') });
+  await page.locator('#compare-toggle').click();
+  await expect(page.locator('#earth-canvas')).not.toHaveAttribute('data-view-b', /.+/);
+  await expect(page.locator('#earth-canvas')).toHaveAttribute('data-orbit-compact', 'false');
+  await page.locator('#earth-canvas').screenshot({ path: info.outputPath('v13-desktop-single-orbit.png') });
 });
 
 test('schema 3 keeps geography while schema 2 migrates to Classic', async ({ page }) => {
@@ -106,8 +133,11 @@ test('Japanese Large mobile, Compare, Orbit and Focus preserve the selected mate
   await expect(page.locator('#compare-status')).toHaveAttribute('data-status', 'ready');
   await expect(page.locator('#climate-geography')).toHaveValue('idealized-ocean');
   await expect(page.locator('#temperature-model-note')).toContainText('実際の地球地図ではありません');
+  await expect(page.locator('#heat-retained-note')).toContainText('Classic用の保持値で、現在は未使用');
   await page.locator('#focus-view').click();
   await expect(page.locator('#earth-canvas')).toHaveAttribute('data-scene-view', 'orbit');
+  await expect(page.locator('#earth-canvas')).toHaveAttribute('data-orbit-compact', 'true');
+  await expect(page.locator('#earth-canvas')).toHaveAttribute('data-orbit-label-font', '20');
   await page.screenshot({ path: info.outputPath('v13-ocean-compare-focus-ja.png') });
   await page.keyboard.press('Escape');
   await expect(page.locator('#climate-geography')).toHaveValue('idealized-ocean');

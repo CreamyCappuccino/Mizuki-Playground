@@ -2,6 +2,7 @@ import { CLASSIC_ORBIT, orbitKey, dayAtSeasonalLongitude, normalizeOrbit, type O
 import * as THREE from 'three';
 import { orbitLayout, ORBIT_RADIUS } from './orbitLayout';
 import { t } from '../ui/i18n';
+import { compactOrbitViewport, orbitLabelKey } from './orbitPresentation';
 
 /** Static artistic Sun. No continuous animation, irradiance or climate inputs. */
 function createSun(): THREE.Group {
@@ -45,9 +46,12 @@ export class OrbitOverview extends THREE.Group {
   private readonly direction = new THREE.ArrowHelper(new THREE.Vector3(0,0,-1),new THREE.Vector3(ORBIT_RADIUS,0,0),1.6,0x92bfe1,.65,.35);
   private readonly paths = new Map<string,Float32Array>();
   private currentKey='';
+  private compactLabels = false;
+  private readonly sun = createSun();
+  private readonly sunLabel: THREE.Sprite;
   constructor() {
     super(); this.name = 'orbit-overview'; this.visible = false;
-    this.add(createSun(),this.path,this.direction);
+    this.add(this.sun,this.path,this.direction);
     for (const key of ['Northern spring','Northern summer','Northern autumn','Northern winter']) {
       const tick=new THREE.Mesh(new THREE.SphereGeometry(.12,12,8),new THREE.MeshBasicMaterial({color:0xbdcce6}));
       const label=this.label(key);this.add(tick,label);this.seasons.push({tick,label});
@@ -56,7 +60,7 @@ export class OrbitOverview extends THREE.Group {
       const tick=new THREE.Mesh(new THREE.OctahedronGeometry(.2),new THREE.MeshBasicMaterial({color:0xffc275}));
       const label=this.label(key);this.add(tick,label);this.apsides.push({tick,label});
     }
-    const sunLabel=this.label('Sun');sunLabel.position.set(0,3.5,0);this.add(sunLabel);
+    this.sunLabel=this.label('Sun');this.sunLabel.position.set(0,3.5,0);this.add(this.sunLabel);
     this.setOrbit(CLASSIC_ORBIT);
   }
   setOrbit(value:OrbitParameters=CLASSIC_ORBIT):void {
@@ -93,6 +97,8 @@ export class OrbitOverview extends THREE.Group {
     sprite.frustumCulled=false;
     sprite.onBeforeRender=(renderer,_scene,camera)=>{
       renderer.getViewport(viewport);
+      const compact = compactOrbitViewport(viewport.z, viewport.w);
+      if (compact !== this.compactLabels) { this.compactLabels = compact; this.refreshLabels(); }
       const fontPixels=document.documentElement.dataset.textSize==='large'?20:17;
       const height=fontPixels*(112/40)*2/(Math.max(1,viewport.w)*camera.projectionMatrix.elements[5]);
       sprite.scale.set(height*(512/112),height,1);sprite.updateMatrixWorld(true);
@@ -104,7 +110,20 @@ export class OrbitOverview extends THREE.Group {
     for(const {key,canvas,texture} of this.labels){
       const ctx=canvas.getContext('2d')!; ctx.clearRect(0,0,512,112);
       ctx.font='500 40px system-ui, sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
-      ctx.shadowColor='#020610';ctx.shadowBlur=10;ctx.fillStyle='#e5efff';ctx.fillText(t(key),256,56);texture.needsUpdate=true;
+      ctx.shadowColor='#020610';ctx.shadowBlur=10;ctx.fillStyle='#e5efff';ctx.fillText(t(orbitLabelKey(key,this.compactLabels)),256,56);texture.needsUpdate=true;
+    }
+  }
+  setCompactPresentation(compact: boolean): void {
+    this.sun.scale.setScalar(compact ? 1.3 : 1);
+    this.sunLabel.position.set(compact ? 7 : 0, compact ? 0 : 3.5, 0);
+    for (const { tick, label } of this.seasons) {
+      label.position.copy(tick.position).multiplyScalar(compact ? 1.02 : 1.18);
+      if (compact) {
+        // A tangential offset keeps a planet at a seasonal marker out from under its label.
+        const tangent = new THREE.Vector3(tick.position.z, 0, -tick.position.x).normalize();
+        label.position.addScaledVector(tangent, 4.5);
+      }
+      label.position.y = -1.3;
     }
   }
   disposeLabels(): void { this.paths.clear();for(const texture of this.labelTextures)texture.dispose(); }

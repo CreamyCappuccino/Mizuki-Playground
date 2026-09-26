@@ -2,6 +2,7 @@ import { CLASSIC_ORBIT, orbitKey, orbitalMoment, normalizeOrbit, type OrbitParam
 import { comparisonViewports } from '../physics/comparison';
 import { OrbitOverview } from './orbitOverview';
 import { orbitLayout, ORBIT_EARTH_SCALE } from './orbitLayout';
+import { compactOrbitViewport, orbitViewportFov } from './orbitPresentation';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { dailyMeanInsolation, dayLengthHours, solarIrradiance, SOLAR_CONSTANT } from '../physics/solar';
@@ -264,9 +265,14 @@ export class EarthScene {
         const y = this.canvas.clientHeight - view.y - view.height;
         this.camera.aspect = view.width / view.height;
         this.camera.fov = Math.min(100, viewFieldOfView(this.camera.aspect) * (this.comparison ? 1.12 : 1));
+        this.camera.fov = orbitViewportFov(this.camera.fov, view.width, view.height, this.orbitView);
         this.camera.updateProjectionMatrix();
         this.renderer.setViewport(view.x, y, view.width, view.height);
         this.renderer.setScissor(view.x, y, view.width, view.height);
+        const compactOrbit = this.orbitView && compactOrbitViewport(view.width, view.height);
+        this.orbitOverview.setCompactPresentation(compactOrbit);
+        this.earthRoot.scale.setScalar(this.orbitView ? ORBIT_EARTH_SCALE * (compactOrbit ? 1.55 : 1) : 1);
+        this.canvas.dataset.orbitCompact = String(compactOrbit);
         this.renderer.render(this.scene, this.camera);
         const axis = new THREE.Vector3(0,1,0).transformDirection(this.earthGroup.matrixWorld).toArray();
         this.canvas.dataset[view.side === 'A' ? 'viewA' : 'viewB'] = JSON.stringify({
@@ -697,8 +703,11 @@ export class EarthScene {
     const primary = this.state;
     if (view.side === 'B') { this.applyingPass = true; this.setState(this.comparisonState()); }
     this.camera.aspect = view.width / view.height; this.camera.fov = Math.min(100, viewFieldOfView(this.camera.aspect) * (this.comparison ? 1.12 : 1));
+    this.camera.fov = orbitViewportFov(this.camera.fov, view.width, view.height, this.orbitView);
     this.camera.updateProjectionMatrix();
     this.pointer.x = ((px - view.x) / view.width) * 2 - 1;
+    this.earthRoot.scale.setScalar(this.orbitView ? ORBIT_EARTH_SCALE * (compactOrbitViewport(view.width, view.height) ? 1.55 : 1) : 1);
+    this.earthRoot.updateMatrixWorld(true);
     this.pointer.y = -((py - view.y) / view.height) * 2 + 1;
     // Camera controls can change orientation before the next animation frame.
     this.camera.updateMatrixWorld(true);

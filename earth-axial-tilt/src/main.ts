@@ -18,6 +18,7 @@ import { annualProfile, type AnnualPoint } from './physics/climate';
 import { isThermalReady, profileFromSource, temperatureFromSource, temperatureScale, type TemperatureModel, type TemperatureSource } from './physics/temperatureModel';
 import { ClimateController, type ClimateConfiguration } from './ui/climateController';
 import { effectiveHeatDepth, geographyCounterpart, isIdealizedGeography, type ClimateProfile } from './physics/climateGeography';
+import { updateHeatStorageControl } from './ui/heatStorageNote';
 import { dailyMeanInsolation, dayLengthHours, seasonLabel, solarDeclinationDeg, SOLAR_CONSTANT } from './physics/solar';
 import { renderAnnualChart, updateChartDay, formatModelDate, type ChartMetric } from './ui/chart';
 import { parseTiltInput } from './ui/tiltInput';
@@ -136,7 +137,7 @@ function updateThermalStatus(): void {
     status.textContent = !thermal ? tr('Illustrative model · original fixed 28-day lag.') : climate.error ? tr('Thermal worker unavailable. Retry or choose the illustrative model.')
         : ready ? msg `Thermal EBM · ${effectiveDepth} m effective heat storage · periodic year solved.` : tr('Calculating a repeating thermal year… Solar controls remain live.');
     $<HTMLButtonElement>('#retry-climate').hidden = !climate.error;
-    $<HTMLSelectElement>('#heat-storage').disabled = !thermal || isIdealizedGeography(state.climateProfile);
+    updateHeatStorageControl(thermal, state.climateProfile);
     const geographySelect=$<HTMLSelectElement>('#climate-geography');
     geographySelect.value=state.climateProfile;
     geographySelect.disabled = !thermal;
