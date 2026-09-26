@@ -1,7 +1,7 @@
 # Earth geography source data
 
-Acquired / generated: 2026-09-26. This is an isolated mask candidate awaiting
-full independent cell-area audit, not a validated climate solver or connected UI.
+Acquired / generated / independently reviewed: 2026-09-26. This is an isolated
+reviewed mask, not a validated annual climate solver or connected UI.
 The implementation contract is [the geography design](../docs/DESIGN-v1.3-earth-geography.md).
 
 ## Layout and pinned source
@@ -81,7 +81,7 @@ cell**, not whether that city is ocean. Sahara/Australia/Amazon cells are 1,
 the Pacific reference cell is 0. Tests cover area sampling, winding/holes,
 feature union, self-intersections, periodic seam, polar cap, full-world area,
 locations and 32/64/128 sampling refinement. Full 648-cell independent area
-comparison is still pending; sampling convergence is not that independent audit.
+comparison was subsequently completed in CX-MSG0220, described below.
 
 Local refinement (32 / 64 / 128 samples per axis): global fractions
 0.2887587704291773 / 0.28866904568519103 / 0.2886988767623647.
@@ -90,6 +90,21 @@ Local refinement (32 / 64 / 128 samples per axis): global fractions
 the cell containing source feature 78 (50–60°N, 140–130°W) changes from
 0.247314453125 to 0.24810791015625. These quantify quadrature sensitivity,
 not a comparison of every cell against the independent exact-area oracle.
+
+## Independent acceptance (CX-MSG0220)
+
+Chat-side Mizuki reviewed `f4efae55`, regenerated JSON byte-exactly offline,
+verified every hash, and matched **all 648 fractions exactly** against a separate
+Python scanline q64 implementation. Against independent Shapely clipping and
+spherical line integration, max cell error is 0.003036385764141891, global
+area RMS 0.00046561603838309805, and global land-fraction difference
+−0.00002974708952234919. Feature 78's cell is 0.247314453125 vs exact-area
+0.2477044444853129 (difference −0.0003899913603129), consistent with this
+quadrature approximation without modifying source rings. This is designer-
+reported independent review acceptance, not a local Shapely implementation.
+Mask/source/grid are accepted **within this declared approximation**. Solver
+errors must be evaluated using this same fixed mask, separately from mask
+approximation error; other exact-area-mask prototypes do not certify our solver.
 
 This coarse dataset misses small islands and does not distinguish inland lakes
 or ice as separate thermal materials. Polygon holes are respected, but inland

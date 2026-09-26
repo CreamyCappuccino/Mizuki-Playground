@@ -1,7 +1,7 @@
 # Earth geography — isolated physics/data design candidate
 
 Updated: 2026-09-26. Decision sources: Chat-side science designer's
-CX-MSG0211–0213 and CX-MSG0216–0219; 0212 supersedes the original grid reuse.
+CX-MSG0211–0213 and CX-MSG0216–0220; 0212 supersedes the original grid reuse.
 Status: **physics/data implementation authorized; no solver or UI release yet**.
 Display follow-up at `a8c096f` was accepted and FF-integrated into main and
 the existing serving clone. Same-head CI #53 / run 36246368748 and main CI #54 /
@@ -109,6 +109,47 @@ Local default-grid smooth mask `f_k=(1+sin(.17*k))/2`, rhs `100*sin(.17*k)`:
 5.838234044981182e-12. A single local run took ~2.5 ms; this is not a mobile or
 annual-solve guarantee, nor the designer's sparse-direct oracle comparison.
 
+`geographyClimate.ts` now implements the isolated annual solve. Step-end forcing
+is evaluated at day `1+(step+1)/stepsPerDay`; daily outputs sample the state at
+days 1…365 before that day's first step, consistent with Classic's phase.
+Spin-up compares **all step-end phases** to the preceding year (<1e-6 °C),
+bounded at 80 years; it never clips or falls back. Stationary annual-mean
+phi-grid 1D temperatures are an initial guess only. It reports annual radiation
+residual, per-step radiation minus capacity-weighted storage residual, actual
+linear residual/iterations and source/mask/grid/solver provenance. No runtime
+cache or worker/UI connection exists yet. One retained daily field is 1.89 MB;
+the temporary all-phase convergence history adds 3.78 MB at half-day stepping.
+The fixed-mask whole-array FFT oracle check remains a separate pending gate.
+
+Latest local production-mask 23.44° run: 31 spin-up years, all-phase periodic
+error 7.142699516e-7 °C, annual radiation residual 1.535674178e-6 W/m²,
+maximum step energy residual 1.597994728e-7 W/m², maximum linear relative residual
+9.999661464e-12, maximum 39 PCG iterations/step, temperature range −20.891…31.201 °C,
+~3.68 s on this M4 (initial run ~4.24 s). Not a mobile or climate accuracy claim.
+
+Local `npm run verify` passes 170 tests: uniform land/ocean vs independently
+assembled phi-grid 1D direct solves (full-array max <1e-5 °C), exact uniform
+longitude invariance, production-mask 23.44°/60°/90° with e=.3/perihelion 90°,
+full-phase periodic/linear/energy checks, half→quarter-day hemisphere refinement,
+uniform-land spatial refinement, explicit failure cases, and two Classic
+full-array SHA-256 regressions at unchanged accepted-main source. The external
+annual FFT/independent orbital forcing comparison is not yet passed.
+
+Annual uniform-material tests exposed ~1e-10 °C longitude roundoff from
+edge-wise accumulation and Jacobi diagonal ordering. The matrix now applies
+the identical south/north/east-west direction order and diagonal sum at every
+longitude. This preserves uniform-world longitude symmetry exactly, without
+projecting temperatures or replacing the 2D solution. Dense direct comparison,
+SPD guards and actual-residual checks remain in place.
+
+Local uniform-land 18×36→36×72 annual comparison, fine cells area-aggregated
+into coarse cells: maximum 0.9277274 °C / global area-and-time RMS 0.2020277 °C;
+two solves ~1.65 s, four spin-up years each. A separate hemisphere-mask fine-grid
+trial (before that accumulation-order adjustment) reached its 60-second process
+timeout: no fine annual result or convergence pass was claimed for that trial.
+The default remains **18×36**; finer heterogeneous-grid performance is an open
+research limitation, never an implicit display-quality setting.
+
 ## Gates before UI integration
 
 1. Reproduce the harmonic convergence test and area-weighted transport sum
@@ -166,7 +207,11 @@ See data README for pinned builder/output hashes, explicit even-odd fill rule
 and preservation of self-intersecting feature 78. Source-roundoff coordinates
 are retained, with no broad geometry repair. Tests include synthetic holes,
 seam/poles/area, source locations and sampling refinement. Full 648-cell
-independent oracle audit and solver implementation are still pending.
+independent solver/orbital oracle comparison remains pending.
+CX-MSG0220 accepts source/grid/mask after exact 648-cell Python quadrature
+agreement and full comparison to independent clipped spherical area. See the
+data README for residuals. This does not certify the newly implemented annual
+solver or prototypes computed with a different exact-area mask.
 CX-MSG0219 reports an independently implemented identical quadrature vs the
 clipped-edge oracle: q64 max fraction error 0.003036 / area RMS 0.000466;
 q128 max 0.001313 / area RMS 0.000154. These are reported approximation errors,
