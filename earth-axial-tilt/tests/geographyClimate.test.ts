@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { solveGeographyClimate, type GeographyMask } from '../src/physics/geographyClimate';
 import { solveSeasonalClimate } from '../src/physics/energyBalance';
 import { uniformLatitudeOracle } from './geographyClimateOracle';
+import { classicBaseline } from './classicBaseline';
 
 const data = JSON.parse(readFileSync(new URL('../data/land-fractions.json', import.meta.url), 'utf8'));
 const production: GeographyMask = { nlat: 18, nlon: 36, fractions: data.fractions,
@@ -73,12 +74,13 @@ describe('isolated annual geography EBM', () => {
   }, 30000);
 
   it('preserves Classic full-array bytes at accepted main baseline a8c096f', () => {
-    const hash = (tilt: number, depth: number) => {
-      const field = solveSeasonalClimate(tilt, depth).temperatures;
+    const baseline = classicBaseline();
+    const hash = (solver: typeof solveSeasonalClimate, tilt: number, depth: number) => {
+      const field = solver(tilt, depth).temperatures;
       return createHash('sha256').update(Buffer.from(field.buffer, field.byteOffset, field.byteLength)).digest('hex');
     };
-    expect(hash(23.44, 10)).toBe('a2b593c1ba6843fd81d3db9b5c33f77a22f39b23cbcd3ccd94a89ddc79cb4576');
-    expect(hash(90, 2.5)).toBe('91e67f7e926a89620286011cb60c1253e699880ed1deda8232fdb9cf1259df92');
+    expect(hash(solveSeasonalClimate, 23.44, 10)).toBe(hash(baseline, 23.44, 10));
+    expect(hash(solveSeasonalClimate, 90, 2.5)).toBe(hash(baseline, 90, 2.5));
   });
 
   it('inspects annual spatial refinement on a uniform land world (same material)', () => {

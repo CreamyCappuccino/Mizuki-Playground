@@ -138,6 +138,15 @@ uniform-land spatial refinement, explicit failure cases, and two Classic
 full-array SHA-256 regressions at unchanged accepted-main source. The external
 annual FFT/independent orbital forcing comparison is not yet passed.
 
+CI55 on `2dd164d` passed 169 numerical tests but failed the Classic Mac-captured
+hash golden on Ubuntu. The regression now executes frozen accepted `a8c096f`
+source (four blob-verified fixture modules) in the **same runtime** as the
+candidate and compares complete Float64 array hashes for two conditions.
+This retains exact byte regression without assuming Mac/Linux/Node-version
+transcendental results are universally byte-identical. No numerical tolerance
+was widened, accepted source was not rewritten and CI-produced hashes were not
+adopted as new expected values. Cross-platform CI confirmation remains required.
+
 Annual uniform-material tests exposed ~1e-10 °C longitude roundoff from
 edge-wise accumulation and Jacobi diagonal ordering. The matrix now applies
 the identical south/north/east-west direction order and diagonal sum at every
