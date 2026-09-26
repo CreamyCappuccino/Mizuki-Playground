@@ -4,6 +4,9 @@
 
 ## 現在地
 
+- v1.4 alpha 1 candidate: 90-band feedback workspace, warm/cold seeds and full-state history/sweeps. [V1.4](docs/V1.4.md). 2D feedback and main-globe feedback display are not part of this first milestone.
+- v1.3 integrated geography plus reference-only recovery was accepted at `0d3fd674`, CI65 success, and fast-forwarded to main. Physical device/public release gates remain separate.
+
 - 1.3.0-alpha.1：Climate Geographyの最初の一区切りとして、Classicを保持したidealized Land/Ocean同緯度対照を実装。実在maskと2D geographyは未実装で、v1.3全体完了とはしない。版の状態は [V1.3](docs/V1.3.md) を参照。
 - 1.2.0-rc.1：Earth Orbit Mechanicsはmain `8364981`の同一HEAD CIで成功。正式な実機gateは未確認のまま維持。
 
