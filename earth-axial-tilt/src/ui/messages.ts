@@ -41,6 +41,7 @@ export const jaMessages: Readonly<Record<string, string>> = {
   "Thermal EBM · experimental": "熱収支モデル（実験用）",
   "Illustrative · v0.1–v0.4": "簡易モデル（v0.1〜v0.4）",
   "Climate geography": "気候の地理",
+  "Open real Earth geography preview ↗": "実際の海陸分布を使う試験版を開く ↗",
   "Earth Classic · uniform": "従来の地球 · 一様",
   "Idealized land · fast": "理想化した陸 · 速い応答",
   "Idealized ocean · slow": "理想化した海 · 遅い応答",
