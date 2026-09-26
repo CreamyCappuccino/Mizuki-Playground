@@ -86,8 +86,19 @@ export class OrbitOverview extends THREE.Group {
     const canvas=document.createElement('canvas'); canvas.width=512; canvas.height=112;
     const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;
     this.labels.push({key,canvas,texture}); this.labelTextures.push(texture);
-    const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,depthWrite:false,transparent:true,toneMapped:false}));
-    sprite.scale.set(5.2,1.14,1); this.refreshLabels(); return sprite;
+    const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,depthWrite:false,depthTest:false,transparent:true,toneMapped:false,sizeAttenuation:false}));
+    // Keep the actual glyph height readable in CSS pixels, including each A/B viewport.
+    // Canvas glyphs are 40px high in a 112px texture; camera zoom must not shrink them.
+    const viewport=new THREE.Vector4();
+    sprite.frustumCulled=false;
+    sprite.onBeforeRender=(renderer,_scene,camera)=>{
+      renderer.getViewport(viewport);
+      const fontPixels=document.documentElement.dataset.textSize==='large'?20:17;
+      const height=fontPixels*(112/40)*2/(Math.max(1,viewport.w)*camera.projectionMatrix.elements[5]);
+      sprite.scale.set(height*(512/112),height,1);sprite.updateMatrixWorld(true);
+      if(renderer.domElement.dataset.orbitLabelFont!==String(fontPixels))renderer.domElement.dataset.orbitLabelFont=String(fontPixels);
+    };
+    this.refreshLabels(); return sprite;
   }
   refreshLabels(): void {
     for(const {key,canvas,texture} of this.labels){
