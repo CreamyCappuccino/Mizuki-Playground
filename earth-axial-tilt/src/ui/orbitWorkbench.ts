@@ -47,9 +47,11 @@ export class OrbitWorkbench {
     const m=orbitalMoment(s.day,o);
     this.el('orbit-values').textContent=msg`${this.side} · Distance ${m.distanceAU.toFixed(4)} au · Solar ${Math.round(SOLAR_CONSTANT*m.irradianceFactor)} W/m² · Speed ${m.speedRatio.toFixed(3)} × circular`;
     this.el('orbit-values').dataset.distance=String(m.distanceAU);this.el('orbit-values').dataset.flux=String(SOLAR_CONSTANT*m.irradianceFactor);
+    this.el('orbit-values').dataset.speed=String(m.speedRatio);
     const peri=perihelionDay(o);
     this.el('orbit-degeneracy').textContent=peri===null?t('Circular orbit: no distinct perihelion. Axis direction is a static experiment, not an epoch.')
       :msg`Perihelion: ${formatModelDate(peri)} · All dates are model labels, not an ephemeris.`;
+    if((this.side==='A'?s.tiltA:s.tiltB)===0)this.el('orbit-degeneracy').textContent+=' '+t('At zero tilt, axis azimuth is undefined and the four season markers are nominal phase references.');
     this.el('orbit-quarter-dates').textContent=[0,90,180,270].map((a,i)=>`${t(['Spring reference','Northern summer reference','Autumn reference','Northern winter reference'][i])}: ${formatModelDate(dayAtSeasonalLongitude(a,o))}`).join(' · ');
   }
   dispose():void {this.events.abort();this.unsubscribe();}
