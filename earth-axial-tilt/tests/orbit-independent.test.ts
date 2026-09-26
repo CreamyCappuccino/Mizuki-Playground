@@ -1,3 +1,5 @@
+import { ThermalClient, type ClimateWorker, type ThermalReply, type ThermalRequest } from '../src/ui/thermalClient';
+import { atlasReading } from '../src/physics/atlas';
 /** Independent numerical/provenance regressions for the equinox-anchored Earth model.
  * Kepler reference: https://ssd.jpl.nasa.gov/planets/approx_pos.html
  * The oracle uses bisection, not the production solver's Newton iteration.
@@ -168,5 +170,42 @@ describe('independent thermal provenance audit',()=>{
     assert.equal(isThermalReady({...source,orbit:CLASSIC_ORBIT}),false);
     assert.equal(isThermalReady({...source,orbit:{...orbit,perihelion:270}}),false);
     assert.equal(sampleThermalTemperature(solution,25,50.5),sampleThermalTemperature(solution,25,415.5));
+  });
+});
+
+
+describe('orbit-aware asynchronous and atlas regressions',()=>{
+  it('snapshots mutable orbit requests and applies only the latest queued configuration',()=>{
+    const sent:ThermalRequest[]=[],replies:ThermalReply[]=[];
+    const worker:ClimateWorker={postMessage:r=>sent.push(r),terminate:()=>{},onmessage:null,onerror:null};
+    const client=new ThermalClient(()=>worker,r=>replies.push(r));
+    const orbit={eccentricity:.1,perihelion:20,axis:0};
+    client.request(23.44,10,false,orbit);orbit.eccentricity=.2;
+    assert.equal(sent[0].orbit?.eccentricity,.1);
+    client.request(23.44,10,false,orbit);
+    client.request(23.44,10,false,{...orbit,perihelion:270});
+    assert.equal(sent.length,1);
+    worker.onmessage!({data:{id:sent[0].id,error:'obsolete result'}} as MessageEvent<ThermalReply>);
+    assert.equal(replies.length,0);assert.equal(sent.length,2);
+    assert.deepEqual(sent[1].orbit,{eccentricity:.2,perihelion:270,axis:0});
+    worker.onmessage!({data:{id:sent[1].id,error:'latest result'}} as MessageEvent<ThermalReply>);
+    assert.deepEqual(replies,[{id:sent[1].id,error:'latest result'}]);client.dispose();
+  });
+  it('rejects a cancelled orbital reply even when the old worker completes',()=>{
+    const sent:ThermalRequest[]=[],replies:ThermalReply[]=[];
+    let stopped=false;
+    const worker:ClimateWorker={postMessage:r=>sent.push(r),terminate:()=>{stopped=true;},onmessage:null,onerror:null};
+    const client=new ThermalClient(()=>worker,r=>replies.push(r));
+    client.request(23.44,10,true,{eccentricity:.3,perihelion:90,axis:40});client.cancel();
+    worker.onmessage!({data:{id:sent[0].id,error:'cancelled result'}} as MessageEvent<ThermalReply>);
+    assert.equal(replies.length,0);client.dispose();assert.equal(stopped,true);
+  });
+  it('keeps astronomy atlas reference on A orbit rather than the B orbit',()=>{
+    const orbit={eccentricity:.2,perihelion:90,axis:35};
+    const source={model:'illustrative' as const,tilt:45,depth:10,solution:null,orbit};
+    const reference={...source,tilt:23.44,orbit:{eccentricity:.3,perihelion:270,axis:0}};
+    const result=atlasReading({metric:'insolation',view:'difference',source,reference},25,140)!;
+    assert.equal(result.reference,dailyMeanInsolation(25,140,23.44,orbit));
+    assert.equal(result.value,dailyMeanInsolation(25,140,45,orbit)-result.reference!);
   });
 });
