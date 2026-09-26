@@ -4,7 +4,7 @@
 
 ## 現在地
 
-- 1.1.0-rc.1の実験プリセット・共有URL・設定ファイルを実装。詳細は [V1.1](docs/V1.1.md)。正式な実機gateは未確認のまま維持。
+- 1.2.0-rc.1：Earth Orbit Mechanicsを実装。操作・独立数値回帰・schema 2・日英ガイドを追加。版の検証状態は [V1.2](docs/V1.2.md) と同一HEADのCIを参照。正式な実機gateは未確認のまま維持。
 
 - v0.9 Compare Lab は実装済み。
 - v1.0 は `1.0.0-rc.1`。自動検証は整っているが、**物理iPhoneのSafari確認はまだ正式版ゲートとして残す**。
@@ -101,7 +101,7 @@ presetを選ぶと、傾き・日付・地点・表示レイヤー・比較状�
 
 ---
 
-# v1.2 — Orbit Mechanics Lab
+# v1.2 — Orbit Mechanics Lab（実装済み／RC検証）
 
 ## 目的
 
