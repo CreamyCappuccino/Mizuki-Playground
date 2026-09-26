@@ -144,10 +144,18 @@ function climateError(): string {
     const status = geography.status('A');
     return state.climateProfile === 'earth-geography' ? status?.status === 'error' ? status.error : status?.status === 'canceled' ? 'Canceled' : '' : climate.error;
 }
+function geographyReferenceError(): string {
+    const status = geography.status('reference');
+    return state.climateProfile === 'earth-geography' && status?.status === 'error' ? status.error : '';
+}
 function updateThermalStatus(): void {
     const source = temperatureSource();
     renderClimateStatus({ source: temperatureSource(), profile: state.climateProfile,
         classicDepth: state.heatDepth, error: climateError(), extrema: isGeographySource(source) ? source.geography : climate.current });
+    const refError = geographyReferenceError();
+    $<HTMLElement>('#climate-reference-status').hidden = !refError;
+    $('#climate-reference-status').textContent = refError ? tr('Reference temperature unavailable. Retry the thermal model; Earth A remains usable.') : '';
+    if (refError) $<HTMLButtonElement>('#retry-climate').hidden = false;
     const status = geography.status('A');
     $<HTMLButtonElement>('#cancel-geography').hidden = state.climateProfile !== 'earth-geography' || !status || !['queued','computing'].includes(status.status);
     if (state.climateProfile === 'earth-geography' && status?.status === 'canceled') {
@@ -236,7 +244,7 @@ function updateReadouts(): void {
     atlas.update({ source: temperatureSource(), reference: isIdealizedGeography(state.climateProfile) ? geographyReferenceSource() : temperatureSource(true),
         referenceKind:isIdealizedGeography(state.climateProfile)?'geography':'tilt', revision: climate.revision + geography.revision,
         day: state.day, latitude: state.location.latitude, longitude: state.location.longitude,
-        locationName: state.location.name, error: climateError() });
+        locationName: state.location.name, error: climateError() || geographyReferenceError() });
     rotationInput.value = String(state.rotation);
     $('#rotation-readout').textContent = `${state.rotation.toFixed(1)}°`;
     dayInput.value = String(Math.floor(state.day));
@@ -284,8 +292,8 @@ function updateReadouts(): void {
             chartContainer.replaceChildren();
             chartKey = 'pending';
         }
-        $('#chart-title').textContent = tr(climateError() || (compareLab?.enabled && compareLab.failed) ? 'Temperature unavailable' : 'Thermal temperature · calculating');
-        $('#profile-summary').textContent = climateError() || (compareLab?.enabled && compareLab.failed) ? tr('Thermal model unavailable; no substitute temperatures are shown.') : tr('Solving heat storage, radiation and heat exchange between latitude bands…');
+        $('#chart-title').textContent = tr(climateError() || (compareLab?.enabled ? compareLab.failed : geographyReferenceError()) ? 'Temperature unavailable' : 'Thermal temperature · calculating');
+        $('#profile-summary').textContent = climateError() || (compareLab?.enabled ? compareLab.failed : geographyReferenceError()) ? tr('Thermal model unavailable; no substitute temperatures are shown.') : tr('Solving heat storage, radiation and heat exchange between latitude bands…');
         updateChartSelection();
         return;
     }
@@ -551,7 +559,7 @@ $('#climate-geography').addEventListener('change', event => {
     state.playback='paused';profileKey='';referenceKey='';chartKey='';update();
 }, { signal: applicationEvents.signal });
 $('#play-coupled').addEventListener('click', () => { state.playback = togglePlayback(state.playback, 'coupled'); update(); }, { signal: applicationEvents.signal });
-$('#retry-climate').addEventListener('click', () => { if(state.climateProfile === 'earth-geography')geography.resume('A');else climate.retry(); update(); }, { signal: applicationEvents.signal });
+$('#retry-climate').addEventListener('click', () => { if(state.climateProfile === 'earth-geography'){geography.resume('A');geography.resume('reference');}else climate.retry(); update(); }, { signal: applicationEvents.signal });
 $('#cancel-geography').addEventListener('click', () => {geography.cancel('A');update();}, {signal:applicationEvents.signal});
 window.addEventListener('pagehide', event => {
     if (event.persisted)
