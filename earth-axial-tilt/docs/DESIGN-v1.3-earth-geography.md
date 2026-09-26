@@ -1,19 +1,20 @@
 # Earth geography — isolated physics/data design candidate
 
 Updated: 2026-09-26. Decision sources: Chat-side science designer's
-CX-MSG0211 and CX-MSG0212; the latter supersedes the former's grid reuse.
-Status: **proposal for review, not an implemented or validated release**.
-Display follow-up has separate code/CI evidence at `a8c096f`, CI #53;
-Chat-side acceptance is still pending.
+CX-MSG0211–0213 and CX-MSG0216; 0212 supersedes the original grid reuse.
+Status: **physics/data implementation authorized; no solver or UI release yet**.
+Display follow-up at `a8c096f` was accepted and FF-integrated into main and
+the existing serving clone. Same-head CI #53 / run 36246368748 and main CI #54 /
+run 36247125673 passed both jobs; physical iPhone acceptance remains unverified.
 
 ## Ownership and sequence
 
-Close the alpha-1 display review first. Then build an isolated physics/data
+The alpha-1 display review is closed. CX-MSG0213 authorizes an isolated physics/data
 milestone; Chat-side Mizuki reviews its independent evidence **before** any UI
 connection. Main integration has an explicitly assigned owner after review.
-This document authorizes no solver implementation, deployment or new network
-configuration. The scientist is independently checking the numerical design;
-the local implementer must reproduce and inspect the delivered evidence.
+The scientist's Relay GO, not this document alone, authorizes implementation.
+No deployment or new network configuration is authorized. The local implementer
+must reproduce and inspect numerical/data evidence before claiming validation.
 
 ## Invariants and declared approximations
 
@@ -29,7 +30,9 @@ the local implementer must reproduce and inspect the delivered evidence.
   A coarse cell temperature is not a precise city weather estimate.
 - Start with 18 latitude × 36 longitude cells (10° angular spacing, 648
   cells), prominently labelled. Resolution is a scientific condition, never
-  coupled to visual quality. UI/schema/cache design is not finalized here.
+  coupled to visual quality. Order is south-to-north, then west-to-east within
+  each row; centres are latitude −85, −75, …, 85 and longitude −175, −165, …, 175.
+  A=210, B=2, D=0.55; UI/schema/cache integration is not finalized here.
 
 ## Geography-specific spherical finite volume
 
@@ -54,6 +57,14 @@ adds equal/opposite weighted flux. Backward Euler gives a symmetric positive
 definite system for positive storage/radiation damping; candidate solver is
 Jacobi-preconditioned CG. Finite values, solver residual, energy residual and
 nonconvergence must be explicit outputs, not silently clipped or hidden.
+Use half-day steps with forcing at the step end, inherited daily-mean orbital
+forcing and fixed latitude albedo. PCG has a finite iteration bound, guards
+nonfinite/abnormal denominators and verifies the actual residual. Spin-up is
+bounded at 80 years and requires same-phase maximum difference <1e-6 °C.
+Nonconvergence is an error: no clipping or fallback to Classic. A 1D initial
+guess may accelerate convergence but cannot replace any final 2D values.
+Store all 365×648 daily values; a later runtime cache must have a byte bound
+(initial target at most 2–3 configurations), including retained copies.
 
 ### Why the earlier grid proposal is withdrawn
 
@@ -71,10 +82,12 @@ normalization, scripts and tolerances must accompany the reproducible test.
 
 1. Reproduce the harmonic convergence test and area-weighted transport sum
    for arbitrary fields, including polar caps and the longitude seam.
-2. Compare the **new geometry** PCG solve against independent SciPy sparse
-   direct solves. The reported `<=2.2e-10` solver difference and `<=8e-13`
-   global transport residual were obtained with the **old geometry** and must
-   not certify the replacement.
+2. Compare the **new geometry** local PCG solve against independent sparse
+   direct solutions. CX-MSG0213 reports a new pairwise-edge / time-FFT SciPy
+   direct implementation, independent of PCG and spin-up: full-year maxima
+   5.4e-8 °C (uniform land), 2.93e-6 °C (uniform ocean), 2.80e-6 °C
+   (longitude >0 land). These remain designer-reported, not local fixtures.
+   The old-geometry `<=2.2e-10` comparison must not certify the replacement.
 3. Uniform land/ocean must reduce to an independently implemented 1D finite
    volume solve on the **same new grid**, not byte-match an old 18-band
    x-center discretization. Independently retain Classic byte regressions.
@@ -86,23 +99,34 @@ normalization, scripts and tolerances must accompany the reproducible test.
    1,892,160 bytes; references, worker copies and working arrays add memory.
    Prototype timings are not device performance guarantees.
 
+CX-MSG0213 also reports global energy residual <=4.6e-6 W/m² in five cases,
+periodic error <1e-6, finite polar/seam values, and convergence at tilt 60°
+and tilt 90° / e=0.3 / perihelion 90°. Uniform worlds have exactly zero
+longitude differences. Local reproduction is required for all these gates.
+CX-MSG0216 reports half-day → quarter-day hemisphere-mask differences of
+maximum 0.0274 °C / ordinary (not area-weighted) RMS 0.0100 °C, and
+18×36 → 36×72 FFT periodic solutions area-aggregated to coarse cells differ
+by maximum 1.75 °C / global area RMS 0.240 °C. This is numerical inspection,
+not evidence of climate accuracy. Some fine-grid PCG prototypes exceeded
+60 seconds: do not silently increase the science grid with display quality.
+
 ## Mask and reproducible data milestone
 
-Candidate: Natural Earth 1:110m land archive, supplied official CDN address:
+Pinned source: Natural Earth 1:110m land archive, official CDN address:
 https://naturalearth.s3.amazonaws.com/110m_physical/ne_110m_land.zip
 
-Before bundling, record the actual source URL, acquisition/version metadata,
-archive SHA-256, included VERSION and component hashes. Do not equate the
-landing-page version with either archive contents or the latest Git repo.
-The designer reports public-domain/WGS84 checks; license and CRS evidence must
-be retained with the actual acquired source. Do not infer geography from
-imagery colours.
+Acquired 2026-09-26: archive VERSION is **4.1.0**, despite the landing page's
+4.0.0 label. The 69,700-byte archive and component hashes are recorded in
+[data provenance](../data/README.md). Its `.prj` specifies WGS84 angular degrees;
+the official Terms of Use states public domain. Do not infer geography from
+imagery colours or equate this archive with the current upstream Git repo.
 
 Build fractional coverage reproducibly from polygons. Cell subsampling must
 be uniform in `sin(phi)` and longitude for area weighting, with refinement
 checks. Test major continents, Pacific ocean, antimeridian wrapping, polar
 caps, holes and small-island resolution limits. Pin the builder, parameters
-and output checksum. No data has been acquired by this document change.
+and output checksum. Source is acquired; fractional mask generation and its
+tests, output hash and solver implementation are still pending.
 
 ## UI contract to review later
 
