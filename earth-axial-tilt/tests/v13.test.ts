@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { atlasReading, atlasReady, buildAtlasField, type AtlasConfig } from '../src/physics/atlas';
-import { effectiveHeatDepth, geographyCounterpart } from '../src/physics/climateGeography';
+import { climateProfileKey, effectiveHeatDepth, geographyCounterpart } from '../src/physics/climateGeography';
 import { sampleThermalTemperature, solveSeasonalClimate } from '../src/physics/energyBalance';
 import { isThermalReady, profileFromSource, type TemperatureSource } from '../src/physics/temperatureModel';
 import { DEFAULT_EXPERIMENT, decodeExperiment, decodeExperimentFile, encodeExperiment, experimentFile, validateExperiment } from '../src/experiments/state';
@@ -42,6 +42,7 @@ describe('v1.3 idealized climate geography', () => {
     expect(isThermalReady(source(land))).toBe(true);
     expect(isThermalReady({ ...source(land), climateProfile: 'idealized-ocean' })).toBe(false);
     expect(profileFromSource({ ...source(land), climateProfile: 'idealized-ocean' }, 45)).toBeNull();
+    expect(climateProfileKey('idealized-land', 10)).not.toBe(climateProfileKey('idealized-land', 50));
   });
 
   it('uses the other material at the same tilt and orbit for Atlas differences', () => {

@@ -204,7 +204,9 @@ function update(): void {
     $('#play-coupled').setAttribute('aria-pressed', String(state.playback === 'coupled'));
     $('#play-coupled').classList.toggle('active', state.playback === 'coupled');
     $('#chart-buttons').toggleAttribute('hidden', state.period === 'day');
-    document.querySelector<HTMLElement>('.compare-control')!.hidden = state.period === 'day' || !!compareLab?.enabled;
+    const geographyReference=isIdealizedGeography(state.climateProfile);
+    $<HTMLElement>('#profile-reference-control').hidden = state.period === 'day' || !!compareLab?.enabled || geographyReference;
+    $<HTMLElement>('#profile-reference-note').hidden = state.period === 'day' || !!compareLab?.enabled || !geographyReference;
     $('#profile-period').textContent = state.period === 'year' ? tr('ANNUAL PROFILE') : tr('ONE SOLAR DAY');
     scene.setState({ orbit:state.orbitA, radiationMax:radiationMaximum(), tilt: state.tilt, day: state.day, mode: state.surfaceMode, location: state.location, guides: state.guides, rotation: state.rotation, temperatureModel: state.temperatureModel, climateProfile:state.climateProfile, heatDepth: state.heatDepth, thermal: climate.current });
     updateSurfaceLegend();

@@ -187,8 +187,8 @@ export class SeasonAtlas {
         const status = this.el('atlas-status');
         status.hidden = ready;
         status.textContent = snapshot.error ? tr('Temperature unavailable. Solar and Daylight remain usable. Close to retry the thermal model.') : tr('Calculating the matching thermal year…');
-        const key = `${getLanguage()}:${config.metric}:${config.view}:${snapshot.source.tilt}:${orbitKey(snapshot.source.orbit)}:${config.metric === 'temperature'
-            ? `${snapshot.source.model}:${snapshot.source.climateProfile}:${snapshot.reference.climateProfile}:${snapshot.source.depth}:${snapshot.revision}:${ready}` : 'astronomy'}`;
+        const key = `${getLanguage()}:${config.metric}:${config.view}:${snapshot.referenceKind}:${snapshot.source.climateProfile}:${snapshot.reference.climateProfile}:${snapshot.source.tilt}:${orbitKey(snapshot.source.orbit)}:${config.metric === 'temperature'
+            ? `${snapshot.source.model}:${snapshot.source.depth}:${snapshot.revision}:${ready}` : 'astronomy'}`;
         const box = this.plot.getBoundingClientRect();
         const font = parseFloat(getComputedStyle(this.plot).fontSize) || 14;
         const layoutKey = `${box.width}:${box.height}:${font}:${window.devicePixelRatio}`;

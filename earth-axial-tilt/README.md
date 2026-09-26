@@ -8,7 +8,7 @@ An interactive, bilingual science toy: tilt Earth, follow a day or year, and com
 
 ## New in the 1.3 alpha
 
-Open **Climate geography** to compare two deliberately idealized materials at the same latitude and under the same orbit: **Idealized land** reuses the existing Fast 2.5 m-equivalent heat capacity, while **Idealized ocean** reuses Slow 50 m-equivalent storage. The solid annual curve is the selected material; the dashed curve is its counterpart. The Season atlas difference layer uses the same pairing, so seasonal amplitude and lag can be inspected without changing sunlight.
+Open **Climate geography** to compare two deliberately idealized materials at the same latitude and under the same orbit: **Idealized land** reuses the existing Fast 2.5 m-equivalent heat capacity, while **Idealized ocean** reuses Slow 50 m-equivalent storage. With A/B Compare closed, the solid annual curve is the selected material and the dashed curve is its counterpart; while comparing, the dashed annual curve is world B. The Season atlas difference layer always uses the land/ocean pairing, so seasonal amplitude and lag can be inspected without changing sunlight.
 
 This is a completed first slice, not a geographic Earth model. Each profile covers the whole model world; there are no coastlines, longitude-dependent climate cells, altitude, ocean circulation, latent heat or nonlinear feedbacks. The existing **Classic latitude bands** and global Fast/Mixed/Slow control remain unchanged and separate. A real land mask is deferred until the latitude-band solver has an honest spatial design. See [v1.3](docs/V1.3.md).
 

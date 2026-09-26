@@ -56,7 +56,7 @@ No temperature value is clipped by this solver. The thermal map has a labelled f
 
 A module Web Worker solves the seasonal fields away from rendering. It caches at most six configurations and processes at most one active request plus the latest desired request. Superseded replies cannot overwrite the current model. Changing date, spin, camera or selected location reuses the solved year. While a changed thermal configuration is unresolved, temperature numbers/curves are withheld and the temperature-colour overlay is hidden; astronomical controls remain usable. Errors offer retry or an explicit switch to Illustrative, never a silent model substitution.
 
-In Classic, the Earth-reference curve uses the same selected temperature model and heat capacity at 23.44 degrees. In an idealized geography profile, the reference instead uses the counterpart material at the same tilt and orbit. Neither is observed climate or Earth B.
+In Classic, with A/B Compare closed, the optional Earth-reference annual curve uses the same selected temperature model and heat capacity at 23.44 degrees. In an idealized geography profile, that annual reference instead uses the counterpart material at the same tilt and orbit. While A/B Compare is open, the annual reference is B. The Atlas reference is independent of that switch: it uses 23.44 degrees in Classic and the counterpart material in an idealized profile. None of these references is observed climate.
 
 ## v1.3 alpha 1: idealized land/ocean seasonal response
 
@@ -72,7 +72,7 @@ Each idealized profile covers the **entire model world**. There is no longitude 
 
 Natural Earth 1:110m land/ocean vectors are a future mask candidate: Natural Earth states the data are public domain and supplies geographic WGS84 vectors. They are not bundled or used in alpha 1. A real mask requires a longitude-aware grid, area weighting, transport boundary design, solver validation and a truthful two-dimensional Atlas before it can affect temperature. Sources: [Natural Earth terms](https://www.naturalearthdata.com/about/terms-of-use/), [1:110m physical vectors](https://www.naturalearthdata.com/downloads/110m-physical-vectors/), [feature coordinate system](https://www.naturalearthdata.com/features/).
 
-The thermal request, worker cache, solution provenance and comparison reuse checks include the climate profile and effective depth. A pending or mismatched profile cannot display a previous material's temperatures. Schema 1 and 2 experiments migrate to Classic; schema 3 owns the profile. Illustrative mode accepts Classic only.
+The thermal request, worker cache, solution provenance and comparison reuse checks include the climate profile, the retained Classic depth and the effective depth. Keeping both depths in provenance prevents a restored idealized experiment from reusing a solution computed while a different Classic control value was retained. A pending or mismatched profile cannot display a previous material's temperatures. Schema 1 and 2 experiments migrate to Classic; schema 3 owns the profile. Illustrative mode accepts Classic only.
 
 ### Primary references
 
@@ -129,7 +129,7 @@ Background references (definitions / implementation conventions, not a claim to 
 
 ## Comparison and colour scales
 
-In Classic, the optional dashed annual curve runs the **same** model at Earth's 23.44 degrees. In an idealized geography profile, it runs the counterpart material at the same tilt and orbit. It is not a measured-climate curve and does not become Earth B. Both curves use the same chart scale.
+With A/B Compare closed, Classic's optional dashed annual curve runs the **same** model at Earth's 23.44 degrees; an idealized geography profile instead runs the counterpart material at the same tilt and orbit. With A/B Compare open, the dashed annual curve is B in every profile. These are not measured-climate curves, and both curves use the same chart scale. The Atlas has its own labelled reference and never switches to B.
 
 Surface legends use the same numerical ranges as the geometry: daily and instantaneous solar 0–1361/(1-e)^2 W/m2 (1361 for the circle, maximum of A/B in comparison), daylight 0–24 h, and temperature -65–55 C in Illustrative mode or -100–180 C in Thermal EBM mode (colour limits, not temperature clipping). The solar scale therefore does not saturate prematurely near 90-degree obliquity.
 
@@ -205,6 +205,6 @@ Independent checks follow from Kepler's relations: perihelion/aphelion r=1−e a
 
 The Earth-like button (e=0.0167, ϖs=282.94°, ψ=0) is a rounded example consistent with the order of the J2000 Earth/Moon-barycentre elements, not current geocentric ephemeris data. No remote ephemeris is fetched.
 
-All daily, instantaneous, annual, comparison, illustrative and EBM paths use the same orbit. Every orbital change invalidates full-year thermal forcing and the solution provenance. Worker request/solution/cache keys include eccentricity, perihelion and axis azimuth; requests are copied rather than retaining a mutable UI object. A and B reuse a solution only with identical tilt and orbit. The Atlas reference changes tilt to 23.44° but retains A's orbit and heat storage.
+All daily, instantaneous, annual, comparison, illustrative and EBM paths use the same orbit. Every orbital change invalidates full-year thermal forcing and the solution provenance. Worker request/solution/cache keys include eccentricity, perihelion and axis azimuth; requests are copied rather than retaining a mutable UI object. A and B reuse a solution only with identical tilt and orbit. In Classic, the Atlas reference changes tilt to 23.44° but retains A's orbit and heat storage. In an idealized profile, it retains A's tilt and orbit and changes only to the counterpart material.
 
 The dry fixed-albedo linear EBM is not reliable at very large excursions (an extreme e=0.3, ε=90°, H=2.5 m experiment can exceed 300°C). Numerical values are not clipped; visible extrapolation warnings explain missing ice, evaporation and nonlinear radiation. This is not a prediction of water states, habitability or real climate. Coupled playback retains 366 uniform inertial rotations per fixed model year; apparent solar time need not progress uniformly, including at ε=0 on an ellipse.

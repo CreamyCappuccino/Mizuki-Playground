@@ -36,12 +36,12 @@ v0.8の日英・?・公転俯瞰・大文字・Atlas・EBMを保持。A/B別傾�
 
 - AとBは**傾きと軌道条件が別**。各世界の春の基準からの経過日数・自転角・地点・気温モデル・蓄熱・視点・凡例は共有。同じ天文暦の日時や同じ季節角度とは限らない。同期解除は未実装で意図的に保留。
 - A−Bは日平均系だけ。同じ自転位相でも、傾きが異なれば視太陽時まで同じとは限らない。瞬間差を無説明で追加しない。
-- 地点パネルはA。比較中の年間破線はB。一日のグラフはA。AtlasはAと同じ軌道・蓄熱の23.44°が基準で、Bとの差ではない。
+- 地点パネルはA。比較中の年間破線はB。一日のグラフはA。AtlasはBとの差ではない。ClassicではAと同じ軌道・蓄熱の23.44°、Idealized profileではAと同じ傾き・軌道の反対素材が基準。
 - Play day＝日付固定、Play year＝自転角固定。Coupled＝共通モデル時計。365平均太陽日で366慣性回転、×1で0.1モデル日／実秒。日付ラップで回転をリセットしない。
 - **v1.2の座標系。** 太陽方向は `[cosλ,0,-sinλ]`、地球は `Ry(axis)*Rx(-tilt)*Ry(spin)`、公転中心位置は太陽方向の負×距離au×14。季節角はλ−axis、day80でゼロ。近日点方向は地球の太陽中心黄経ではなく太陽の見える方向。公転と東向き自転は+Y回りの順行。過去版の正負をコピーしない。
 - 傾き・表示方向の修正に合わせ初期カメラも反対側へ移し、夏至付近の初期画面を昼側から見る。緯度別の日射・昼時間・気候方程式は変えていない。
 - 一つのWebGLRenderer／sceneを二つのscissor viewportへ描画。Bパスの後は必ずA状態を復元。別々の太陽系を比べる画面であって、同じ軌道に惑星を二つ置いた物理モデルではない。
-- Bの熱計算は独立したrequest管理。傾きとorbitKeyが一致するA=BならAの解を再利用。全軌道パラメータをcache key・worker request/solutionに含め、一年全体のforcingを更新する。待機・失敗時に古い温度を新条件の値にしない。
+- Bの熱計算は独立したrequest管理。傾きとorbitKeyが一致するA=BならAの解を再利用。全軌道パラメータ、profile、保持中のClassic depth、effective depthをcache key・worker request/solutionに含め、一年全体のforcingを更新する。待機・失敗時に古い温度を新条件の値にしない。
 - ClassicのFast/Mixed/Slowは世界全体のglobal knob。Idealized Land/Oceanは固定2.5 m/50 mの対照profileで、両者を混同しない。profileもrequest/cache/solution provenanceに含める。Illustrative modeはClassicだけ。
 - Idealized profileは全球一様で、実在の海岸線・経度差・標高・海流を表さない。Natural Earthは将来候補だが、現在のzonal solverへ見た目だけのmaskを貼らない。
 - 言語・画質・Basic/All・Focusは表示だけ。小さい画面で文字を縮めず、並び替えやスクロールを使う。比較時に旧Singleのmargin-top/translateXが復活しないよう確認。

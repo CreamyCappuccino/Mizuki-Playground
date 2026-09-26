@@ -180,6 +180,7 @@ export const jaMessages: Readonly<Record<string, string>> = {
   "Day length": "昼の長さ",
   "Annual mean {0} {1} · Daily-curve range {2}–{3} {4}{5}{6}": "年間平均 {0} {1} · 日平均値の範囲 {2}〜{3} {4}{5}{6}",
   " · Dashed: Earth reference": " · 破線：23.44°の地球",
+  "Idealized geography always uses the other surface as the annual dashed reference. Open Compare Lab to use Earth B instead.": "理想化した気候地理では、年間グラフの破線は常にもう一方の地表です。地球Bを破線にするには比較ラボを開きます。",
   " · Thermal EBM / {0} m": " · 熱収支モデル／{0} m 相当",
   " · Warmest: {0}": " · 最も暖かい日：{0}",
   "Temperature calculating / unavailable": "気温は計算中／利用不可",

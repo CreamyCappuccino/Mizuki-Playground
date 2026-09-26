@@ -22,5 +22,8 @@ export function isIdealizedGeography(profile: ClimateProfile): boolean {
 }
 
 export function climateProfileKey(profile: ClimateProfile, classicDepth: number): string {
-  return `${profile}:${effectiveHeatDepth(profile, classicDepth)}`;
+  // Keep the retained Classic control in provenance even when an idealized
+  // profile uses a fixed effective depth. Portable state can change it while
+  // the material remains selected, and ThermalSolution.depth owns that value.
+  return `${profile}:retained-${classicDepth}:effective-${effectiveHeatDepth(profile, classicDepth)}`;
 }

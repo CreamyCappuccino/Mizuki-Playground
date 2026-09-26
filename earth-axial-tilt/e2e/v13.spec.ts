@@ -24,8 +24,12 @@ test('idealized land and ocean expose a same-forcing amplitude and lag contrast'
   await page.locator('#climate-geography').selectOption('idealized-land');
   await expect(page.locator('#climate-status')).toHaveAttribute('data-status', 'ready');
   await expect(page.locator('#heat-storage')).toBeDisabled();
+  await expect(page.locator('#profile-reference-control')).toBeHidden();
+  await expect(page.locator('#profile-reference-note')).toBeVisible();
   await expect(page.locator('#temperature-model-note')).toContainText('not a real Earth map');
   await expect(page.locator('#profile-summary')).toContainText('Dashed: other idealized surface');
+  await page.locator('#profile-reference-note').scrollIntoViewIfNeeded();
+  await page.screenshot({ path: info.outputPath('v13-idealized-reference-routing.png') });
   const land = await page.locator('#metric-temp').textContent();
   await page.locator('#climate-geography').selectOption('idealized-ocean');
   await expect(page.locator('#climate-status')).toHaveAttribute('data-status', 'ready');
@@ -45,6 +49,18 @@ test('schema 3 keeps geography while schema 2 migrates to Classic', async ({ pag
   await expect(page.locator('#climate-geography')).toHaveValue('classic');
 });
 
+test('schema restore changes retained Classic depth without reusing stale A or B provenance', async ({ page }) => {
+  const first = { ...DEFAULT_EXPERIMENT, climateProfile: 'idealized-land' as const, heatDepth: 10 as const, dual: true };
+  await open(page, first);
+  await expect(page.locator('#compare-status')).toHaveAttribute('data-status', 'ready');
+  const second = { ...first, heatDepth: 50 as const };
+  await page.evaluate(hash => { location.hash = hash; }, encodeExperiment(second));
+  await expect(page.locator('#experiment-notice')).toHaveAttribute('data-status', 'ready');
+  await expect(page.locator('#climate-status')).toHaveAttribute('data-status', 'ready');
+  await expect(page.locator('#compare-status')).toHaveAttribute('data-status', 'ready');
+  expect(decodeExperiment(await page.evaluate(() => location.hash))).toEqual({ status: 'ok', state: second });
+});
+
 test('Atlas geography difference uses the other surface, not Earth B or 23.44 degrees', async ({ page }, info) => {
   await open(page, { ...DEFAULT_EXPERIMENT, climateProfile: 'idealized-land' });
   await page.locator('#open-atlas').click();
@@ -56,6 +72,28 @@ test('Atlas geography difference uses the other surface, not Earth B or 23.44 de
   await expect(page.locator('#atlas-plot')).toHaveAttribute('aria-busy', 'false');
   await expect(page.locator('#atlas-scale-note')).toContainText('Selected surface');
   await page.screenshot({ path: info.outputPath('v13-land-ocean-atlas.png'), fullPage: true });
+});
+
+test('Atlas repaints astronomy differences when the reference meaning changes', async ({ page }) => {
+  await open(page, { ...DEFAULT_EXPERIMENT, tilt: 60 });
+  await page.locator('#open-atlas').click();
+  await page.locator('#atlas-metric').selectOption('insolation');
+  await page.locator('#atlas-view').selectOption('difference');
+  const canvas = page.locator('#atlas-field');
+  const classicRevision = Number(await canvas.getAttribute('data-field-revision'));
+  const classicScale = await page.locator('#atlas-scale-labels').textContent();
+  expect(classicScale).not.toBe('-1 W/m²0 W/m²1 W/m²');
+  await page.locator('#atlas-close').click();
+  await page.locator('#climate-geography').selectOption('idealized-land');
+  await expect(page.locator('#climate-status')).toHaveAttribute('data-status', 'ready');
+  await page.locator('#open-atlas').click();
+  await expect(canvas).toHaveAttribute('data-field-revision', String(classicRevision + 1));
+  await expect(page.locator('#atlas-scale-labels')).toHaveText('-1 W/m²0 W/m²1 W/m²');
+  await page.locator('#atlas-close').click();
+  await page.locator('#climate-geography').selectOption('classic');
+  await page.locator('#open-atlas').click();
+  await expect(canvas).toHaveAttribute('data-field-revision', String(classicRevision + 2));
+  await expect(page.locator('#atlas-scale-labels')).not.toHaveText('-1 W/m²0 W/m²1 W/m²');
 });
 
 test('Japanese Large mobile, Compare, Orbit and Focus preserve the selected material', async ({ page }, info) => {

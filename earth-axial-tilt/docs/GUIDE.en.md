@@ -49,7 +49,7 @@ Changing orbit recalculates the whole repeating thermal year. While it is pendin
 
 ## Climate geography contrast (v1.3 alpha 1)
 
-Choose Idealized Land or Idealized Ocean under **Climate geography**. Both use the same latitude, tilt, orbit and sunlight; only effective heat capacity changes. Land is numerically the existing Fast 2.5 m-equivalent case, while Ocean is the existing Slow 50 m-equivalent case. The solid annual curve is the selected material and the dashed curve is its counterpart. The atlas difference layer uses the same pair, exposing seasonal amplitude and lag without changing the forcing.
+Choose Idealized Land or Idealized Ocean under **Climate geography**. Both use the same latitude, tilt, orbit and sunlight; only effective heat capacity changes. Land is numerically the existing Fast 2.5 m-equivalent case, while Ocean is the existing Slow 50 m-equivalent case. With A/B Compare closed, the solid annual curve is the selected material and the dashed curve is its counterpart; while comparing, the dashed annual curve is B. The atlas difference layer always uses the land/ocean pair, exposing seasonal amplitude and lag without changing the forcing. The obsolete 23.44-degree annual-reference checkbox is hidden in these profiles because the counterpart reference is automatic.
 
 This is not a real Earth map. The chosen material covers the whole model world. The solver has no coastline, longitude-dependent climate cells, altitude, circulation, evaporation or melting ice, and it never classifies the globe texture by colour. Returning to Classic re-enables the unchanged global Fast/Mixed/Slow control. Illustrative mode accepts Classic only.
 
