@@ -1,4 +1,5 @@
 import { clamp, dailyMeanInsolation } from './solar';
+import { CLASSIC_ORBIT, type OrbitParameters } from './orbit';
 
 /** A dry, zonally averaged seasonal EBM. Parameters are illustrative, not a city fit. */
 export const EBM = Object.freeze({
@@ -21,6 +22,7 @@ export interface ClimateGrid {
 export interface ThermalSolution {
   tilt: number;
   depth: number;
+  orbit: OrbitParameters;
   x: Float64Array;
   /** Day-major: day 1 through 365, at each latitude-band centre. */
   temperatures: Float64Array;
@@ -94,7 +96,8 @@ function factor(grid: ClimateGrid, timeFactor: number, identity: number) {
  * Spin-up stops only when the same phase agrees between consecutive years.
  * No temperature clamp and no artificial 28-day lag are used in this model.
  */
-export function solveSeasonalClimate(tilt: number, depth: number, options: SolverOptions = {}): ThermalSolution {
+export function solveSeasonalClimate(tilt: number, depth: number, options: SolverOptions = {},
+  orbit: OrbitParameters = CLASSIC_ORBIT): ThermalSolution {
   finiteRange(tilt, 0, 90, 'Obliquity');
   finiteRange(depth, 2.5, 50, 'Equivalent water depth');
   const grid = buildClimateGrid(options.bands ?? EBM.bands);
@@ -107,7 +110,7 @@ export function solveSeasonalClimate(tilt: number, depth: number, options: Solve
   for (let s = 0; s < count; s += 1) {
     const day = 1 + (s + 1) / steps;
     for (let i = 0; i < n; i += 1) {
-      const absorbed = (1 - planetaryAlbedo(grid.x[i])) * dailyMeanInsolation(grid.latitude[i], day, tilt);
+      const absorbed = (1 - planetaryAlbedo(grid.x[i])) * dailyMeanInsolation(grid.latitude[i], day, tilt, orbit);
       forcing[s * n + i] = absorbed - EBM.A;
       mean[i] += (absorbed - EBM.A) / count;
     }
@@ -142,7 +145,7 @@ export function solveSeasonalClimate(tilt: number, depth: number, options: Solve
     if (!Number.isFinite(t)) throw new Error('Thermal model produced a non-finite temperature.');
     minimum = Math.min(minimum, t); maximum = Math.max(maximum, t);
   }
-  return { tilt, depth, x: grid.x, temperatures, years, periodicError, energyResidual, minimum, maximum };
+  return { tilt, depth, orbit: { ...orbit }, x: grid.x, temperatures, years, periodicError, energyResidual, minimum, maximum };
 }
 
 /** Interpolate the periodic daily field, linearly in equal-area coordinate x. */

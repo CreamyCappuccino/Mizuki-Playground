@@ -101,7 +101,7 @@ presetを選ぶと、傾き・日付・地点・表示レイヤー・比較状�
 
 ---
 
-# v1.2 — Orbit Mechanics Lab
+# v1.2 — Orbit Mechanics Lab（実装済み／RC検証）
 
 ## 目的
 

@@ -12,7 +12,7 @@
 <canvas aria-label="Interactive 3D Earth" data-i18n-aria-label="Interactive 3D Earth" id="earth-canvas"></canvas>
 <header class="topbar glass">
 <div>
-<p class="eyebrow"><span data-i18n="MIZUKI PLAYGROUND / PLANET LAB · v1.1 RC">MIZUKI PLAYGROUND / PLANET LAB · v1.1 RC</span></p>
+<p class="eyebrow"><span data-i18n="MIZUKI PLAYGROUND / PLANET LAB · v1.2 RC">MIZUKI PLAYGROUND / PLANET LAB · v1.2 RC</span></p>
 <h1><span data-i18n="Earth Axial Tilt">Earth Axial Tilt</span></h1>
 </div>
 <div aria-live="polite" class="topbar__readout">
@@ -35,8 +35,16 @@
   <div class="compare-settings">
     <label for="compare-tilt-a"><span data-i18n="Earth A tilt">Earth A tilt</span> <input id="compare-tilt-a" type="number" min="0" max="90" step="0.01" value="23.44" inputmode="decimal"/> °</label>
     <label for="compare-tilt-b"><span data-i18n="Earth B tilt">Earth B tilt</span> <input id="compare-tilt-b" type="number" min="0" max="90" step="0.01" value="90" inputmode="decimal"/> °</label>
-    <label for="compare-preset"><span data-i18n="Comparison preset">Comparison preset</span><select id="compare-preset"><option value="0">23.44° / 0°</option><option value="45">23.44° / 45°</option><option value="90" selected>23.44° / 90°</option><option value="custom" data-i18n="Custom / Custom">Custom / Custom</option></select></label>
+    <label for="compare-preset"><span data-i18n="Comparison preset">Comparison preset</span><select id="compare-preset"><option value="0">23.44° / 0°</option><option value="45">23.44° / 45°</option><option value="90" selected>23.44° / 90°</option><option value="eccentricity" data-i18n="Same tilt · circular / high e">Same tilt · circular / high e</option><option value="axis" data-i18n="Same orbit · opposite axis">Same orbit · opposite axis</option><option value="perihelion" data-i18n="Opposite perihelion seasons">Opposite perihelion seasons</option><option value="custom" data-i18n="Custom / Custom">Custom / Custom</option></select></label>
     <label for="compare-layer"><span data-i18n="Surface layer">Surface layer</span><select id="compare-layer"><option value="normal" data-i18n="Earth">Earth</option><option value="instant" data-i18n="Sun now">Sun now</option><option value="insolation" data-i18n="Daily solar">Daily solar</option><option value="daylight" data-i18n="Daylight">Daylight</option><option value="temperature" data-i18n="Temperature">Temperature</option></select></label>
+  </div>
+  <div class="compare-settings compare-orbit-settings">
+    <label>A e <input id="compare-a-eccentricity" type="number" min="0" max="0.6" step="0.001" value="0"/></label>
+    <label>B e <input id="compare-b-eccentricity" type="number" min="0" max="0.6" step="0.001" value="0"/></label>
+    <label><span data-i18n="A perihelion">A perihelion</span> <input id="compare-a-perihelion" type="number" min="0" max="359" step="1" value="0"/>°</label>
+    <label><span data-i18n="B perihelion">B perihelion</span> <input id="compare-b-perihelion" type="number" min="0" max="359" step="1" value="0"/>°</label>
+    <label><span data-i18n="A axis orientation">A axis orientation</span> <input id="compare-a-axis" type="number" min="0" max="359" step="1" value="0"/>°</label>
+    <label><span data-i18n="B axis orientation">B axis orientation</span> <input id="compare-b-axis" type="number" min="0" max="359" step="1" value="0"/>°</label>
   </div>
   <p id="compare-input-status" role="status" class="input-help"></p>
   <div class="compare-transport"><label for="compare-day"><span data-i18n="Shared model day">Shared model day</span> <output id="compare-date"></output><input id="compare-day" type="range" min="1" max="365" value="172"/></label><button id="compare-play-year" data-i18n="Play year">Play year</button><button id="compare-play-day" data-i18n="Play day">Play day</button><button id="compare-play-coupled" data-i18n="Coupled motion">Coupled motion</button><button id="compare-exit" data-i18n="Back to single Earth">Back to single Earth</button></div>
@@ -98,6 +106,19 @@
 <button class="speed" data-speed="4">×4</button>
 <button class="speed" data-speed="12">×12</button>
 </div>
+</section>
+<section class="orbit-mechanics advanced-only" aria-label="Orbit mechanics" data-i18n-aria-label="Orbit mechanics">
+<p class="eyebrow"><span data-i18n="ORBIT MECHANICS">ORBIT MECHANICS</span></p>
+<div class="help-heading"><h2 data-help="orbit-mechanics"><span data-i18n="Kepler orbit">Kepler orbit</span></h2></div>
+<label for="orbit-eccentricity"><span data-i18n="Eccentricity">Eccentricity</span> <output id="orbit-eccentricity-readout">0.000</output></label>
+<input id="orbit-eccentricity" type="range" min="0" max="0.6" step="0.001" value="0"/>
+<div class="presets"><button class="active" data-orbit-e="0" data-i18n="Circular">Circular</button><button data-orbit-e="0.0167" data-i18n="Earth-like e">Earth-like e</button><button data-orbit-e="0.3" data-i18n="High e">High e</button></div>
+<label for="orbit-perihelion"><span data-i18n="Perihelion direction">Perihelion direction</span> <output id="orbit-perihelion-readout">0°</output></label>
+<input id="orbit-perihelion" type="range" min="0" max="359" step="1" value="0"/>
+<label for="orbit-axis"><span data-i18n="Axis orientation / precession">Axis orientation / precession</span> <output id="orbit-axis-readout">0°</output></label>
+<input id="orbit-axis" type="range" min="0" max="359" step="1" value="0"/>
+<p class="input-help" id="orbit-degenerate"></p>
+<p class="input-help"><span data-i18n="Angles share one inertial orbital frame. Tilt magnitude remains a separate control.">Angles share one inertial orbital frame. Tilt magnitude remains a separate control.</span></p>
 </section>
 <section class="coupled-controls"><div class="help-heading"><h2 data-help="coupled"><span data-i18n="Rotation + orbit">Rotation + orbit</span></h2></div><button id="play-coupled" aria-pressed="false" data-i18n="Coupled motion">Coupled motion</button><p class="input-help" data-i18n="At ×1, one model day takes 10 seconds. The 365-day model makes 366 turns relative to space per orbit.">At ×1, one model day takes 10 seconds. The 365-day model makes 366 turns relative to space per orbit.</p></section><section class="rotation-controls">
 <div class="control-heading">
@@ -164,7 +185,7 @@
 <section aria-label="Selected location details" class="location-panel glass" data-i18n-aria-label="Selected location details">
 <section id="quick-start" class="quick-start" aria-labelledby="quick-start-title">
 <h2 id="quick-start-title" data-i18n="Three ways to explore">Three ways to explore</h2>
-<p data-i18n="Seasons: choose 90°, then Play year in Orbit overview. Day and night: choose Sun now, then Play day. Compare: open Earth A/B and change only B.">Seasons: choose 90°, then Play year in Orbit overview. Day and night: choose Sun now, then Play day. Compare: open Earth A/B and change only B.</p>
+<p data-i18n="Seasons: choose 90°, then Play year in Orbit overview. Day and night: choose Sun now, then Play day. Compare: open Earth A/B and try a tilt or orbit preset.">Seasons: choose 90°, then Play year in Orbit overview. Day and night: choose Sun now, then Play day. Compare: open Earth A/B and try a tilt or orbit preset.</p>
 <p data-i18n="Use ? for an experiment guide. Basic hides optional appearance and diagnostic panels, never your settings.">Use ? for an experiment guide. Basic hides optional appearance and diagnostic panels, never your settings.</p>
 <button id="intro-basic" data-i18n="Use Basic tools">Use Basic tools</button><button id="intro-dismiss" data-i18n="Got it">Got it</button>
 </section>
@@ -203,7 +224,11 @@
 <article><span><span data-i18n="Daily solar (TOA)">Daily solar (TOA)</span></span><strong id="metric-solar">—</strong></article>
 <article><span><span data-i18n="Mean temp (est.)">Mean temp (est.)</span></span><strong id="metric-temp">—</strong></article>
 <article><span><span data-i18n="Declination">Declination</span></span><strong id="metric-declination">—</strong></article>
+<article class="advanced-only"><span><span data-i18n="Sun distance">Sun distance</span></span><strong id="metric-distance">—</strong></article>
+<article class="advanced-only"><span><span data-i18n="Relative flux">Relative flux</span></span><strong id="metric-relative-flux">—</strong></article>
+<article class="advanced-only"><span><span data-i18n="Orbital speed">Orbital speed</span></span><strong id="metric-orbital-speed">—</strong></article>
 </div>
+<p class="input-help advanced-only"><span data-i18n="Perihelion season">Perihelion season</span>: <strong id="perihelion-season">—</strong>. <span id="orbit-diagnostic-note"></span></p>
 <div aria-label="Graph timescale" class="segmented period-buttons" data-i18n-aria-label="Graph timescale" id="profile-section">
 <button aria-pressed="true" class="active" data-period="year"><span data-i18n="Year">Year</span></button>
 <button aria-pressed="false" data-period="day"><span data-i18n="Day">Day</span></button>
@@ -231,7 +256,7 @@
 <p><span data-i18n="The annual summary averages all 365 model days. The comparison line uses the same simplified model at 23.44°, not observed climate normals. Thermal EBM compares the same heat-storage setting at both tilts. Illustrative mode retains v0.1's coefficients. The selected model is not calibrated to Taipei or Singapore.">The annual summary averages all 365 model days. The comparison line uses the same simplified model at 23.44°, not observed climate normals. Thermal EBM compares the same heat-storage setting at both tilts. Illustrative mode retains v0.1's coefficients. The selected model is not calibrated to Taipei or Singapore.</span></p>
 <p><span data-i18n="Changing tilt or heat storage solves a new repeating annual climate, not the first year after a sudden change. Thermal EBM uses 90 latitude bands and a half-day numerical timestep; temperatures are interpolated from the converged year. Heat capacity is uniform, albedo is fixed by latitude, and outgoing radiation is linear in temperature. Extreme results are model extrapolations, not habitability or weather predictions. Display colours saturate at the legend limits; numerical temperatures are not clipped.">Changing tilt or heat storage solves a new repeating annual climate, not the first year after a sudden change. Thermal EBM uses 90 latitude bands and a half-day numerical timestep; temperatures are interpolated from the converged year. Heat capacity is uniform, albedo is fixed by latitude, and outgoing radiation is linear in temperature. Extreme results are model extrapolations, not habitability or weather predictions. Display colours saturate at the legend limits; numerical temperatures are not clipped.</span></p>
 <p><span data-i18n="Solar is daily-mean incoming energy at the top of the atmosphere (TOA), not ground-level sunlight. Daylight uses a point Sun without refraction. At an exact all-day horizon, 12 h is a reporting convention and incoming energy is zero.">Solar is daily-mean incoming energy at the top of the atmosphere (TOA), not ground-level sunlight. Daylight uses a point Sun without refraction. At an exact all-day horizon, 12 h is a reporting convention and incoming energy is zero.</span></p>
-<p><span data-i18n="The globe is Earth-centred: the moving Sun indicates direction, not a scale orbit. The circular 365-day model does not reproduce exact calendar dates of the equinoxes. Rotation is an independently controlled phase around the tilted axis. A day experiment holds the orbital date fixed; a year experiment holds the rotational phase fixed. Neither is a civil-time calendar or a sidereal clock.">The globe is Earth-centred: the moving Sun indicates direction, not a scale orbit. The circular 365-day model does not reproduce exact calendar dates of the equinoxes. Rotation is an independently controlled phase around the tilted axis. A day experiment holds the orbital date fixed; a year experiment holds the rotational phase fixed. Neither is a civil-time calendar or a sidereal clock.</span></p>
+<p><span data-i18n="The globe is Earth-centred: the moving Sun indicates direction. Orbit overview shows relative model distance but sizes are not to scale. The 365-day model phase is not a calendar ephemeris. Rotation is independently controlled around the tilted axis. A day experiment holds orbital phase fixed; a year experiment holds rotational phase fixed.">The globe is Earth-centred: the moving Sun indicates direction. Orbit overview shows relative model distance but sizes are not to scale. The 365-day model phase is not a calendar ephemeris. Rotation is independently controlled around the tilted axis. A day experiment holds orbital phase fixed; a year experiment holds rotational phase fixed.</span></p>
 <p><span data-i18n="Sun now is instantaneous incoming flux on a horizontal surface at TOA, not weather-dependent sunlight at the ground. The Day graph holds declination fixed; its dashed line is the 24-hour mean used by Daily solar. Spinning the globe cannot change the daily-mean temperature or the annual profile.">Sun now is instantaneous incoming flux on a horizontal surface at TOA, not weather-dependent sunlight at the ground. The Day graph holds declination fixed; its dashed line is the 24-hour mean used by Daily solar. Spinning the globe cannot change the daily-mean temperature or the annual profile.</span></p>
 <p><span data-i18n="Local solar noon is 12:00 on a Sun-based clock, not necessarily 12:00 in a time zone. At a geographic pole, or when the Sun is exactly above a pole, that solar meridian is undefined. The Day graph then uses nominal rotation hours. A geometric horizon has zero direct horizontal flux.">Local solar noon is 12:00 on a Sun-based clock, not necessarily 12:00 in a time zone. At a geographic pole, or when the Sun is exactly above a pole, that solar meridian is undefined. The Day graph then uses nominal rotation hours. A geometric horizon has zero direct horizontal flux.</span></p>
 </details>
@@ -241,7 +266,7 @@
 <span><span data-i18n="Rotation axis">Rotation axis</span></span>
 </div>
 <section aria-label="Season positions" class="orbit-toolbar" data-i18n-aria-label="Season positions" hidden="" id="orbit-toolbar">
-<div class="help-heading"><p data-help="view"><span data-i18n="Orbit view · sizes and distances are illustrative, not to scale.">Orbit view · sizes and distances are illustrative, not to scale.</span></p></div>
+<div class="help-heading"><p data-help="view"><span data-i18n="Orbit view · relative orbit shape shown; body sizes are not to scale.">Orbit view · relative orbit shape shown; body sizes are not to scale.</span></p></div>
 <div class="orbit-season-buttons"><button id="fit-orbit" type="button"><span data-i18n="Fit orbit">Fit orbit</span></button><button data-season-day="80" type="button"><span data-i18n="March">March</span></button><button data-season-day="171.25" type="button"><span data-i18n="June">June</span></button><button data-season-day="262.5" type="button"><span data-i18n="September">September</span></button><button data-season-day="353.75" type="button"><span data-i18n="December">December</span></button></div>
 </section></div>
 <dialog aria-describedby="atlas-intro" aria-labelledby="atlas-title" class="season-atlas" id="season-atlas">

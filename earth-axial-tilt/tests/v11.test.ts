@@ -20,7 +20,7 @@ describe('v1.1 reproducible bounded experiment data',()=>{
     expect(decodeExperiment('')).toEqual({status:'none'});
   });
   it('rejects unsupported versions rather than partially applying familiar keys',()=>{
-    for(const version of ['0','2','01','9999','NaN'])expect(decodeExperiment(`#lab=${version}&a=45`)).toEqual({status:'error',reason:'version'});
+    for(const version of ['0','3','01','9999','NaN'])expect(decodeExperiment(`#lab=${version}&a=45`)).toEqual({status:'error',reason:'version'});
   });
   it('rejects duplicate owned keys',()=>{
     expect(decodeExperiment('#lab=1&a=0&a=90').status).toBe('error');

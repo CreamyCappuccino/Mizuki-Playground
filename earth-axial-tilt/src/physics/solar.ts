@@ -1,3 +1,5 @@
+import { CLASSIC_ORBIT, modelDayAtTrueLongitude, orbitalState, type OrbitParameters } from './orbit';
+
 export const SOLAR_CONSTANT = 1361;
 
 const DEG = Math.PI / 180;
@@ -15,14 +17,14 @@ export function radToDeg(value: number): number {
   return value * RAD;
 }
 
-export function orbitalLongitudeRad(dayOfYear: number): number {
-  // Circular-orbit approximation with the March equinox near day 80.
-  return (2 * Math.PI * (dayOfYear - 80)) / 365;
+export function orbitalLongitudeRad(dayOfYear: number, orbit: OrbitParameters = CLASSIC_ORBIT): number {
+  return orbitalState(dayOfYear, orbit).trueLongitudeRad;
 }
 
-export function solarDeclinationDeg(dayOfYear: number, obliquityDeg: number): number {
+export function solarDeclinationDeg(dayOfYear: number, obliquityDeg: number,
+  orbit: OrbitParameters = CLASSIC_ORBIT): number {
   const epsilon = degToRad(obliquityDeg);
-  const lambda = orbitalLongitudeRad(dayOfYear);
+  const lambda = orbitalLongitudeRad(dayOfYear, orbit) - degToRad(orbit.axisLongitude);
   return radToDeg(Math.asin(clamp(Math.sin(epsilon) * Math.sin(lambda), -1, 1)));
 }
 
@@ -50,8 +52,9 @@ export function dayLengthHours(
   latitudeDeg: number,
   dayOfYear: number,
   obliquityDeg: number,
+  orbit: OrbitParameters = CLASSIC_ORBIT,
 ): number {
-  const declination = solarDeclinationDeg(dayOfYear, obliquityDeg);
+  const declination = solarDeclinationDeg(dayOfYear, obliquityDeg, orbit);
   const hourAngle = sunsetHourAngleRad(latitudeDeg, declination);
   return clamp((24 * hourAngle) / Math.PI, 0, 24);
 }
@@ -60,29 +63,32 @@ export function dailyMeanInsolation(
   latitudeDeg: number,
   dayOfYear: number,
   obliquityDeg: number,
+  orbit: OrbitParameters = CLASSIC_ORBIT,
 ): number {
   const phi = degToRad(latitudeDeg);
-  const delta = degToRad(solarDeclinationDeg(dayOfYear, obliquityDeg));
+  const delta = degToRad(solarDeclinationDeg(dayOfYear, obliquityDeg, orbit));
   const h0 = sunsetHourAngleRad(latitudeDeg, radToDeg(delta));
 
   const q =
-    (SOLAR_CONSTANT / Math.PI) *
+    (SOLAR_CONSTANT * orbitalState(dayOfYear, orbit).relativeFlux / Math.PI) *
     (h0 * Math.sin(phi) * Math.sin(delta) +
       Math.cos(phi) * Math.cos(delta) * Math.sin(h0));
 
   return Math.max(0, q);
 }
 
-export function subsolarLatitudeDeg(dayOfYear: number, obliquityDeg: number): number {
-  return solarDeclinationDeg(dayOfYear, obliquityDeg);
+export function subsolarLatitudeDeg(dayOfYear: number, obliquityDeg: number,
+  orbit: OrbitParameters = CLASSIC_ORBIT): number {
+  return solarDeclinationDeg(dayOfYear, obliquityDeg, orbit);
 }
 
-export function seasonLabel(dayOfYear: number): string {
+export function seasonLabel(dayOfYear: number, orbit: OrbitParameters = CLASSIC_ORBIT): string {
+  const axis = degToRad(orbit.axisLongitude);
   const anchors = [
-    { day: 80, label: 'Near March equinox (model)' },
-    { day: 171.25, label: 'Near June solstice (model)' },
-    { day: 262.5, label: 'Near September equinox (model)' },
-    { day: 353.75, label: 'Near December solstice (model)' },
+    { day: modelDayAtTrueLongitude(axis, orbit), label: 'Near March equinox (model)' },
+    { day: modelDayAtTrueLongitude(axis + Math.PI / 2, orbit), label: 'Near June solstice (model)' },
+    { day: modelDayAtTrueLongitude(axis + Math.PI, orbit), label: 'Near September equinox (model)' },
+    { day: modelDayAtTrueLongitude(axis + Math.PI * 1.5, orbit), label: 'Near December solstice (model)' },
   ];
 
   let best = anchors[0];

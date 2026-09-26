@@ -247,7 +247,7 @@ export class SeasonAtlas {
         const lines = [90, 60, 30, 0, -30, -60, -90].map(lat => `<line class="atlas-grid" x1="${l.left}" x2="${l.right}" y1="${y(lat)}" y2="${y(lat)}"/><text x="${l.left - 10}" y="${y(lat) + l.fontSize * .34}" text-anchor="end" class="atlas-axis">${lat === 0 ? '0°' : `${Math.abs(lat)}°${lat > 0 ? 'N' : 'S'}`}</text>`).join('');
         const stride = [1, 2, 3, 4, 6, 12].find(s => (l.right - l.left) * s / 12 >= l.fontSize * 2.5) ?? 12;
         const months = MONTHS.map((name, i) => i % stride ? '' : `<text x="${x((STARTS[i] + STARTS[i + 1] - 1) / 2)}" y="${l.height - 10}" text-anchor="middle" class="atlas-axis">${tr(name)}</text>`).join('');
-        const trace = Array.from({ length: 365 }, (_, i) => `${i ? 'L' : 'M'}${x(i + 1).toFixed(2)},${y(solarDeclinationDeg(i + 1, config.source.tilt)).toFixed(2)}`).join(' ');
+        const trace = Array.from({ length: 365 }, (_, i) => `${i ? 'L' : 'M'}${x(i + 1).toFixed(2)},${y(solarDeclinationDeg(i + 1, config.source.tilt, config.source.orbit)).toFixed(2)}`).join(' ');
         this.overlay.setAttribute('viewBox', `0 0 ${l.width} ${l.height}`);
         this.overlay.innerHTML = `${lines}${months}<rect class="atlas-border" x="${l.left}" y="${l.top}" width="${l.right - l.left}" height="${l.bottom - l.top}"/><path class="atlas-trace" d="${trace}" ${this.el<HTMLInputElement>('atlas-trace').checked ? '' : 'hidden'}/><line class="atlas-day-cursor" y1="${l.top}" y2="${l.bottom}"/><line class="atlas-lat-cursor" x1="${l.left}" x2="${l.right}"/><circle class="atlas-crosshair" r="5"/>`;
     }

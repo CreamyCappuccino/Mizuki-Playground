@@ -1,12 +1,13 @@
 import { dailyMeanInsolation, dayLengthHours } from './solar';
 import { temperatureFromSource, type TemperatureSource } from './temperatureModel';
+import { CLASSIC_ORBIT } from './orbit';
 export interface ComparisonRow { key: 'daylight' | 'solar' | 'temperature'; a: number | null; b: number | null; difference: number | null }
 export function compareMeasurements(a: TemperatureSource, b: TemperatureSource, latitude: number, day: number): ComparisonRow[] {
   if (a.model !== b.model || a.depth !== b.depth) throw new RangeError('Comparison requires the same model and heat storage.');
   const row = (key: ComparisonRow['key'], x: number | null, y: number | null): ComparisonRow => ({ key, a: x, b: y,
     difference: x === null || y === null ? null : x - y });
-  return [row('daylight', dayLengthHours(latitude,day,a.tilt),dayLengthHours(latitude,day,b.tilt)),
-    row('solar', dailyMeanInsolation(latitude,day,a.tilt),dailyMeanInsolation(latitude,day,b.tilt)),
+  return [row('daylight', dayLengthHours(latitude,day,a.tilt,a.orbit??CLASSIC_ORBIT),dayLengthHours(latitude,day,b.tilt,b.orbit??CLASSIC_ORBIT)),
+    row('solar', dailyMeanInsolation(latitude,day,a.tilt,a.orbit??CLASSIC_ORBIT),dailyMeanInsolation(latitude,day,b.tilt,b.orbit??CLASSIC_ORBIT)),
     row('temperature',temperatureFromSource(a,latitude,day),temperatureFromSource(b,latitude,day))];
 }
 export interface ComparisonViewport { x: number; y: number; width: number; height: number; side: 'A' | 'B' }

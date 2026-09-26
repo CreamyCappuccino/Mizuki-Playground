@@ -6,6 +6,12 @@ Choose English or Japanese in the header. Large text is available in the locatio
 
 Orbit overview → 90° → June/December season buttons, then Play year. The axis stays fixed in inertial space while Earth travels. Sizes and distances are illustrative.
 
+## Orbit mechanics
+
+Choose All tools, then change Eccentricity. Distance, relative flux and relative speed move together; the annual and daily calculations use the same 1/r² forcing. Perihelion direction rotates the nearest point, while Axis orientation / precession rotates the seasonal frame without changing tilt magnitude.
+
+Try Compare Earth A/B → Same tilt · circular / high e, then Opposite perihelion seasons. A/B keep one model phase and location but may have different distance and forcing. At e=0, perihelion direction is undefined and has no physical effect. Dates are 365-day model phases, not calendar ephemeris dates.
+
 ## Day and night
 
 Taipei → Sun now → Noon here → View location → Play day. Instantaneous light changes while daily means stay fixed. The Day graph uses a frozen date and apparent solar time, not a time zone. Undefined polar meridians are labelled.
@@ -16,7 +22,7 @@ Coupled motion advances one mean-model clock. At ×1 a day takes ten seconds; ×
 
 ## Compare Lab
 
-Open Earth A/B, then 23.44° / 90°. Only tilt differs. Date, rotational phase, location, model, heat storage, camera and colour scales are shared. A/B are separate hypothetical worlds, not planets occupying a shared orbit. Narrow screens stack them. Focus hides controls while keeping both worlds available.
+Open Earth A/B, then 23.44° / 90°. Tilt and orbit parameters may differ. Date, rotational phase, location, model, heat storage, camera and colour scales are shared. A/B are separate hypothetical worlds, not planets occupying a shared orbit. Narrow screens stack them. Focus hides controls while keeping both worlds available.
 
 The table is A, B, A−B. A=B gives zero. Pending temperatures are not replaced by old results. Astronomy comparisons remain available if B's thermal worker fails. The main location panel and Day graph describe A; the annual dashed curve becomes B during comparison.
 
@@ -30,8 +36,8 @@ The atlas shows latitude across a model year. Its difference layer always compar
 
 Hover over ? for a preview or click/tap for an experiment guide. Optional module-load failure offers an explicit page reload; thermal-worker failure has a recalculation action. Quality changes do not change numerical results. [Release checks](RELEASE_CHECKLIST.md) distinguish automated engines from physical iPhone/Safari observations.
 
-## Reproduce an experiment (v1.1)
+## Reproduce an experiment (v1.2)
 
 Open **Experiments & sharing**, choose a question, and press **Prepare experiment**. Playback stays paused. Read what to watch, then choose day/year/coupled playback yourself. **Undo experiment** is a one-step return to the previous conditions.
 
-Copy a link for a snapshot of the current conditions, or save/load a settings JSON file across app installations. A localhost URL is local to the receiving device; it is not remote access to the sender's Mac. Files carry conditions, not solved temperatures or screenshots. Restoring retains the recipient's display language, font size and quality, and never autoplays. Fast/Slow heat storage presets are successive experiments, not independent A/B capacities.
+Copy a link for a snapshot of the current conditions, or save/load a settings JSON file across app installations. Schema 2 includes both worlds' orbit parameters; schema 1 migrates to the circular Earth Classic orbit. A localhost URL is local to the receiving device; it is not remote access to the sender's Mac. Files carry conditions, not solved temperatures or screenshots. Restoring retains the recipient's display language, font size and quality, and never autoplays.

@@ -1,5 +1,6 @@
 import { dailyMeanInsolation, dayLengthHours, SOLAR_CONSTANT } from './solar';
 import { isThermalReady, temperatureFromSource, type TemperatureSource } from './temperatureModel';
+import { CLASSIC_ORBIT } from './orbit';
 
 export type AtlasMetric = 'temperature' | 'insolation' | 'daylight';
 export type AtlasView = 'absolute' | 'difference';
@@ -39,8 +40,8 @@ export function atlasReading(config: AtlasConfig, latitude: number, day: number)
   if (!atlasReady(config)) return null;
   const sample = (source: TemperatureSource): number => config.metric === 'temperature'
     ? temperatureFromSource(source, latitude, day)!
-    : config.metric === 'insolation' ? dailyMeanInsolation(latitude, day, source.tilt)
-      : dayLengthHours(latitude, day, source.tilt);
+    : config.metric === 'insolation' ? dailyMeanInsolation(latitude, day, source.tilt, source.orbit ?? CLASSIC_ORBIT)
+      : dayLengthHours(latitude, day, source.tilt, source.orbit ?? CLASSIC_ORBIT);
   const current = sample(config.source);
   // Astronomy always uses exactly 23.44 degrees even while the thermal worker is unavailable.
   const reference = config.view === 'difference' ? sample({ ...config.reference, tilt: 23.44 }) : null;

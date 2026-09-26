@@ -11,6 +11,13 @@ interface Help {
     limit: Bilingual;
 }
 export const HELP: Readonly<Record<string, Help>> = {
+    'orbit-mechanics': {
+        title: ['Orbit mechanics', '軌道力学'],
+        meaning: ['Eccentricity changes Sun distance through the year. Perihelion and axis orientation rotate independently in one inertial orbital frame.', '離心率は一年の太陽距離を変えます。近日点と地軸の向きは、一つの慣性系の公転座標で独立に回転します。'],
+        experiment: ['Compare a circular orbit with high eccentricity, then move perihelion between the northern warm and cold seasons.', '円軌道と離心率の大きい軌道を比べ、近日点を北半球の暖かい季節と寒い季節の間で動かしてみましょう。'],
+        observe: ['Distance, orbital speed and 1/r² sunlight vary together. Changing only axis orientation shifts the seasons without changing tilt magnitude.', '距離・公転速度・1/r²の日射が連動します。地軸の向きだけを変えると、傾きの大きさを保ったまま季節が移動します。'],
+        limit: ['This is a 365-day model phase, not a calendar ephemeris. At e = 0 perihelion direction is physically undefined.', '365日のモデル位相で、実際の天文暦ではありません。e = 0 では近日点の方向は物理的に定まりません。'],
+    },
     experiments: {
         title: ['Experiments and sharing', '実験の再現と共有'],
         meaning: ['Presets prepare a question; links and settings files record scientific conditions. They never start playback.', 'プリセットは問いを準備し、リンクと設定ファイルは実験条件を記録します。自動再生はしません。'],
@@ -27,7 +34,7 @@ export const HELP: Readonly<Record<string, Help>> = {
     },
     coupled: {
         title: ['Coupled motion', '自転と公転の同時再生'],
-        meaning: ['Advance one shared model clock. A 365-mean-solar-day circular year contains 366 prograde rotations relative to space.', '一つのモデル時計で進めます。365平均太陽日の円軌道の一年には、宇宙空間に対する順行の自転が366回含まれます。'],
+        meaning: ['Advance one shared model clock. A 365-mean-solar-day model year contains 366 prograde rotations relative to space.', '一つのモデル時計で進めます。365平均太陽日のモデル一年には、宇宙空間に対する順行の自転が366回含まれます。'],
         experiment: ['Choose Orbit overview, then Coupled motion. At x1 a model day takes ten seconds; use Play year for a faster tour of seasons.', '公転俯瞰で同時再生を選びます。×1でモデルの一日が10秒。季節を素早く一周するには「一年を再生」を使います。'],
         observe: ['The surface spins and the planet travels, but the axis does not chase the Sun. Speed changes preserve the spin/orbit ratio.', '地表が自転し、地球も移動しますが、軸は太陽を追いかけません。速度を変えても自転と公転の比率は保ちます。'],
         limit: ['This is mean model time, not a civil calendar. At nonzero tilt apparent solar time is nonuniform; polar meridians can be undefined. No hourly temperature model is added.', '平均的なモデル時刻で、標準時のカレンダーではありません。傾きがあると視太陽時の進みは一様でなく、極では未定義になることもあります。毎時の気温モデルは追加していません。'],
@@ -41,7 +48,7 @@ export const HELP: Readonly<Record<string, Help>> = {
     },
     year: {
         title: ['Day of year', '一年の中の日付'],
-        meaning: ['Move along a repeating 365-day circular orbit to inspect the seasons.', '365日の円軌道の中で位置を変え、季節を観察します。'],
+        meaning: ['Move along a repeating 365-day model orbit to inspect the seasons.', '365日のモデル軌道の中で位置を変え、季節を観察します。'],
         experiment: ['Select Orbit overview, then Play year. Compare the four season buttons.', '「公転を俯瞰」に切り替え「一年を再生」。四季のボタンでも位置を比べてみましょう。'],
         observe: ['Earth moves around the Sun while the rotation axis keeps the same direction in space.', '地球が太陽の周りを動いても、自転軸の向きは宇宙空間で同じ方向を保ちます。'],
         limit: ['Dates are model phases, not exact astronomical calendar dates. Year playback holds rotational phase fixed.', '日付はモデル上の位置で、実際の天文暦とはずれます。一年の再生では自転角を固定しています。'],
@@ -100,7 +107,7 @@ export const HELP: Readonly<Record<string, Help>> = {
         meaning: ['Earth close-up examines local effects. Orbit overview puts the Sun at the centre.', '地球の拡大表示は地点の観察、公転の俯瞰は太陽を中心にした関係の観察に使います。'],
         experiment: ['Switch to Orbit overview, press Fit orbit, choose 90° and step through the seasons.', '公転の俯瞰に切り替え「公転全体を収める」を押し、90°で季節の位置を切り替えます。'],
         observe: ['The illuminated side always faces the Sun. The north-axis direction stays fixed as Earth travels.', '明るい側は常に太陽へ向きます。公転しても北側の軸は同じ方向を保ちます。'],
-        limit: ['Planet size, Sun size and orbit distance are intentionally not to scale. Camera controls never change the climate.', '地球・太陽の大きさと距離は意図的に実寸比にしていません。視点操作で気候の値は変わりません。'],
+        limit: ['The relative orbit shape is shown, but planet and Sun sizes are intentionally not to scale. Camera controls never change the climate.', '軌道の相対形状は表示しますが、地球と太陽の大きさは実寸比ではありません。視点操作で気候の値は変わりません。'],
     },
     guides: {
         title: ['Science guides', '科学ガイド'],

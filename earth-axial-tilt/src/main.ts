@@ -20,6 +20,8 @@ import { dailyMeanInsolation, dayLengthHours, seasonLabel, solarDeclinationDeg, 
 import { renderAnnualChart, updateChartDay, formatModelDate, type ChartMetric } from './ui/chart';
 import { parseTiltInput } from './ui/tiltInput';
 import { bindChartScrubber, LAST_SOLAR_MINUTE } from './ui/chartScrubber';
+import { CLASSIC_ORBIT, modelDayAtTrueLongitude, orbitKey, type OrbitParameters } from './physics/orbit';
+import { OrbitControls } from './ui/orbitControls';
 const applicationEvents = new AbortController();
 let applicationDisposed = false;
 let tickFrame = 0;
@@ -37,11 +39,13 @@ interface AppState {
     compare: boolean;
     temperatureModel: TemperatureModel;
     heatDepth: number;
+    orbit: OrbitParameters;
 }
 const state: AppState = {
     tilt: 23.44, day: 172, speed: 1, playback: 'paused', rotation: 0, period: 'year',
     surfaceMode: 'normal', chartMetric: 'temperature', location: DEFAULT_LOCATION,
     guides: true, compare: false, temperatureModel: 'energy-balance', heatDepth: 10,
+    orbit: { ...CLASSIC_ORBIT },
 };
 const $ = <T extends Element>(selector: string): T => {
     const element = document.querySelector<T>(selector);
@@ -73,6 +77,7 @@ const TILT_HELP = '0–90° · Enter or leave the field to apply.';
 let compareLab: CompareLab | null = null;
 let comparePromise: Promise<CompareLab> | null = null;
 let dormantTiltB=90;
+let dormantOrbitB: OrbitParameters={...CLASSIC_ORBIT};
 let experimentRequest=0;
 let workbench: ExperimentWorkbench | null = null;
 const scene = new EarthScene(canvas, {
@@ -84,6 +89,7 @@ const scene = new EarthScene(canvas, {
 });
 const disposeView = bindViewControls({ quality: value => scene.setQuality(value), lights: value => scene.setNightLights(value), refresh: () => scene.refreshView() });
 const disposeRelease = bindReleaseControls(() => scene.refreshView());
+const orbitControls = new OrbitControls(orbit => { state.orbit=orbit;state.playback='paused';update(); });
 const sceneView = $<HTMLSelectElement>('#scene-view');
 const syncSceneView = () => {
     sceneView.value = canvas.dataset.sceneView ?? 'earth';
@@ -122,12 +128,12 @@ const thermalClient = new ThermalClient(() => new Worker(new URL('./physics/clim
     update();
 });
 function temperatureSource(reference = false): TemperatureSource {
-    return { model: state.temperatureModel, tilt: reference ? 23.44 : state.tilt, depth: state.heatDepth,
+    return { model: state.temperatureModel, tilt: reference ? 23.44 : state.tilt, depth: state.heatDepth, orbit:state.orbit,
         solution: reference ? thermalReference : thermalSolution };
 }
 function syncThermalModel(): void {
     const compare = state.compare || atlas.needsReference;
-    const key = `${state.temperatureModel}:${state.tilt}:${state.heatDepth}:${compare}`;
+    const key = `${state.temperatureModel}:${state.tilt}:${state.heatDepth}:${orbitKey(state.orbit)}:${compare}`;
     if (key === thermalKey)
         return;
     thermalKey = key;
@@ -136,7 +142,7 @@ function syncThermalModel(): void {
     thermalSolution = null;
     thermalReference = null;
     if (state.temperatureModel === 'energy-balance')
-        thermalClient.request(state.tilt, state.heatDepth, compare);
+        thermalClient.request(state.tilt, state.heatDepth, compare, state.orbit);
     else
         thermalClient.cancel();
 }
@@ -212,7 +218,7 @@ function update(): void {
     $('#chart-buttons').toggleAttribute('hidden', state.period === 'day');
     document.querySelector<HTMLElement>('.compare-control')!.hidden = state.period === 'day' || !!compareLab?.enabled;
     $('#profile-period').textContent = state.period === 'year' ? tr('ANNUAL PROFILE') : tr('ONE SOLAR DAY');
-    scene.setState({ tilt: state.tilt, day: state.day, mode: state.surfaceMode, location: state.location, guides: state.guides, rotation: state.rotation, temperatureModel: state.temperatureModel, heatDepth: state.heatDepth, thermal: thermalSolution });
+    scene.setState({ tilt: state.tilt, day: state.day, mode: state.surfaceMode, location: state.location, guides: state.guides, rotation: state.rotation, temperatureModel: state.temperatureModel, heatDepth: state.heatDepth, thermal: thermalSolution, orbit:state.orbit });
     updateSurfaceLegend();
     updateReadouts();
 }
@@ -233,23 +239,24 @@ function updateReadouts(): void {
     dayInput.value = String(Math.floor(state.day));
     $('#day-readout').textContent = String(Math.floor(state.day));
     $('#date-readout').textContent = msg `${formatModelDate(state.day)} · Day ${Math.floor(state.day)}`;
-    $('#season-label').textContent = tr(seasonLabel(state.day));
+    $('#season-label').textContent = tr(seasonLabel(state.day,state.orbit));
+    orbitControls.sync(state.orbit,state.day);
     const { latitude, longitude } = state.location;
     $('#location-name').textContent = tr(state.location.name);
     $('#location-coords').textContent = `${formatCoordinate(latitude, 'N', 'S')} · ${formatCoordinate(longitude, 'E', 'W')}`;
-    const daylight = dayLengthHours(latitude, state.day, state.tilt);
+    const daylight = dayLengthHours(latitude, state.day, state.tilt,state.orbit);
     $('#metric-daylight').textContent = `${daylight.toFixed(1)} h`;
     $('#metric-daylight').setAttribute('title', daylight === 24 ? tr('Polar day') : daylight === 0 ? tr('Polar night') : tr('Geometric day length'));
-    $('#metric-solar').textContent = `${Math.round(dailyMeanInsolation(latitude, state.day, state.tilt))} W/m²`;
+    $('#metric-solar').textContent = `${Math.round(dailyMeanInsolation(latitude, state.day, state.tilt,state.orbit))} W/m²`;
     const temperature = temperatureAt(latitude, state.day);
     $('#metric-temp').textContent = temperature === null ? (thermalError ? tr('Unavailable') : tr('Calculating…')) : `${temperature.toFixed(1)} °C`;
     $('#metric-temp').setAttribute('data-model', state.temperatureModel);
-    const declination = solarDeclinationDeg(state.day, state.tilt);
+    const declination = solarDeclinationDeg(state.day, state.tilt,state.orbit);
     $('#metric-declination').textContent = `${declination >= 0 ? '+' : ''}${declination.toFixed(1)}°`;
     $('#subsolar-readout').textContent = formatCoordinate(declination, 'N', 'S');
-    const sunLongitude = subsolarLongitude(state.day, state.tilt, state.rotation);
+    const sunLongitude = subsolarLongitude(state.day, state.tilt, state.rotation,state.orbit);
     $('#subsolar-longitude').textContent = sunLongitude === null ? tr('Undefined at solar pole') : formatCoordinate(sunLongitude, 'E', 'W');
-    const moment = solarMoment(latitude, longitude, state.day, state.tilt, state.rotation);
+    const moment = solarMoment(latitude, longitude, state.day, state.tilt, state.rotation,state.orbit);
     $('#metric-solar-time').textContent = solarClockLabel(formatSolarClock(moment.solarHours));
     $('#metric-elevation').textContent = `${moment.elevationDeg.toFixed(1)}°`;
     $('#metric-instant').textContent = `${Math.round(moment.insolation)} W/m²`;
@@ -276,11 +283,11 @@ function updateReadouts(): void {
         return;
     }
     if (state.period === 'day') {
-        const key = `day:${latitude}:${state.day}:${state.tilt}:${moment.solarHours === null}`;
+        const key = `day:${latitude}:${state.day}:${state.tilt}:${orbitKey(state.orbit)}:${moment.solarHours === null}`;
         const hour = moment.solarHours ?? state.rotation / 15;
         if (key !== chartKey) {
-            const daily = diurnalProfile(latitude, state.day, state.tilt);
-            const mean = dailyMeanInsolation(latitude, state.day, state.tilt);
+            const daily = diurnalProfile(latitude, state.day, state.tilt,state.orbit);
+            const mean = dailyMeanInsolation(latitude, state.day, state.tilt,state.orbit);
             renderDayChart(chartContainer, daily, mean, hour, moment.solarHours !== null);
             $('#chart-title').textContent = tr('Instantaneous solar (TOA)');
             $('#profile-summary').textContent = msg `Dashed: daily mean ${mean.toFixed(1)} W/m² · Peak ${Math.max(...daily.map(p => p.insolation)).toFixed(1)} W/m² · ${moment.solarHours === null ? tr('Nominal rotation hours; no defined solar meridian.') : tr('Local solar time, not civil time.')}`;
@@ -292,14 +299,14 @@ function updateReadouts(): void {
         return;
     }
     const thermalChart = state.chartMetric === 'temperature' && state.temperatureModel === 'energy-balance';
-    const nextKey = `${latitude}:${state.tilt}:${thermalChart ? `${state.heatDepth}:${thermalRevision}` : 'original'}`;
+    const nextKey = `${latitude}:${state.tilt}:${orbitKey(state.orbit)}:${thermalChart ? `${state.heatDepth}:${thermalRevision}` : 'original'}`;
     if (nextKey !== profileKey) {
-        profile = thermalChart ? profileFromSource(temperatureSource(), latitude)! : annualProfile(latitude, state.tilt);
+        profile = thermalChart ? profileFromSource(temperatureSource(), latitude)! : annualProfile(latitude, state.tilt,state.orbit);
         profileKey = nextKey;
     }
     const nextReferenceKey = `${latitude}:${chartReferenceSource().tilt}:${compareLab?.revision}:${thermalChart ? `${state.heatDepth}:${thermalRevision}` : 'original'}`;
     if (chartComparison() && referenceKey !== nextReferenceKey) {
-        reference = thermalChart ? profileFromSource(chartReferenceSource(), latitude)! : annualProfile(latitude, chartReferenceSource().tilt);
+        reference = thermalChart ? profileFromSource(chartReferenceSource(), latitude)! : annualProfile(latitude, chartReferenceSource().tilt,chartReferenceSource().orbit??CLASSIC_ORBIT);
         referenceKey = nextReferenceKey;
     }
     const nextChartKey = `year:${profileKey}:${state.chartMetric}:${chartComparison()}:${nextReferenceKey}`;
@@ -328,7 +335,7 @@ function updateReadouts(): void {
 function selectedChartValue(): number {
     if (state.period === 'year')
         return Math.min(365, Math.max(1, state.day));
-    return solarMoment(state.location.latitude, state.location.longitude, state.day, state.tilt, state.rotation).solarHours
+    return solarMoment(state.location.latitude, state.location.longitude, state.day, state.tilt, state.rotation,state.orbit).solarHours
         ?? state.rotation / 15;
 }
 function updateChartSelection(): void {
@@ -340,15 +347,15 @@ function updateChartSelection(): void {
                 const t = temperatureAt(state.location.latitude, state.day);
                 return t === null ? tr('Temperature calculating / unavailable') : `${t.toFixed(1)} °C · ${state.temperatureModel === 'energy-balance' ? tr('thermal EBM') : tr('daily-mean estimate')}`;
             },
-            insolation: () => msg `${dailyMeanInsolation(state.location.latitude, state.day, state.tilt).toFixed(1)} W/m² · daily mean`,
-            daylight: () => msg `${dayLengthHours(state.location.latitude, state.day, state.tilt).toFixed(1)} h · daylight`,
+            insolation: () => msg `${dailyMeanInsolation(state.location.latitude, state.day, state.tilt,state.orbit).toFixed(1)} W/m² · daily mean`,
+            daylight: () => msg `${dayLengthHours(state.location.latitude, state.day, state.tilt,state.orbit).toFixed(1)} h · daylight`,
         }[state.chartMetric]();
         description = msg `${formatModelDate(state.day)} · Day ${Math.floor(state.day)} · ${selected}`;
         chartContainer.setAttribute('aria-label', tr('Annual profile: select model day'));
         $('#chart-help').textContent = tr('Click or drag to choose a day. Arrow keys: 1 day; Page keys: 30 days; Home / End: first / last day.');
     }
     else {
-        const moment = solarMoment(state.location.latitude, state.location.longitude, state.day, state.tilt, state.rotation);
+        const moment = solarMoment(state.location.latitude, state.location.longitude, state.day, state.tilt, state.rotation,state.orbit);
         const nominal = moment.solarHours === null;
         description = msg `${formatSolarClock(value)} · ${nominal ? tr('nominal rotation time') : tr('local solar time')} · ${moment.insolation.toFixed(1)} W/m² now`;
         chartContainer.setAttribute('aria-label', nominal ? tr('Daily profile: select nominal rotation time') : tr('Daily profile: select local solar time'));
@@ -368,9 +375,9 @@ const disposeScrubber = bindChartScrubber(chartContainer, {
         if (state.period === 'year')
             state.day = value;
         else {
-            const moment = solarMoment(state.location.latitude, state.location.longitude, state.day, state.tilt, state.rotation);
+            const moment = solarMoment(state.location.latitude, state.location.longitude, state.day, state.tilt, state.rotation,state.orbit);
             state.rotation = moment.solarHours === null ? wrapRotation(value * 15)
-                : rotationAtSolarHour(state.location.longitude, state.day, state.tilt, value) ?? state.rotation;
+                : rotationAtSolarHour(state.location.longitude, state.day, state.tilt, value,state.orbit) ?? state.rotation;
         }
         update();
     },
@@ -503,7 +510,7 @@ rotationInput.addEventListener('input', () => {
 }, { signal: applicationEvents.signal });
 for (const [id, hour] of [['noon-here', 12], ['midnight-here', 0]] as const) {
     $<HTMLButtonElement>(`#${id}`).addEventListener('click', () => {
-        const rotation = rotationAtSolarHour(state.location.longitude, state.day, state.tilt, hour);
+        const rotation = rotationAtSolarHour(state.location.longitude, state.day, state.tilt, hour,state.orbit);
         if (rotation === null)
             return;
         state.rotation = rotation;
@@ -539,6 +546,7 @@ window.addEventListener('pagehide', event => {
     disposeHelp();
     disposeView();
     disposeRelease();
+    orbitControls.dispose();
     disposeLanguage();
     disposeLanguageControl();
     thermalClient.dispose();
@@ -568,8 +576,12 @@ function tick(now: number): void {
     }
     tickFrame = requestAnimationFrame(tick);
 }
-document.querySelectorAll<HTMLButtonElement>('[data-season-day]').forEach(button => {
-    button.addEventListener('click', () => { state.day = Number(button.dataset.seasonDay); state.playback = 'paused'; update(); }, { signal: applicationEvents.signal });
+document.querySelectorAll<HTMLButtonElement>('[data-season-day]').forEach((button, index) => {
+    button.addEventListener('click', () => {
+        const trueLongitude = (state.orbit.axisLongitude + index * 90) * Math.PI / 180;
+        state.day = modelDayAtTrueLongitude(trueLongitude, state.orbit);
+        state.playback = 'paused'; update();
+    }, { signal: applicationEvents.signal });
 });
 async function ensureComparison(): Promise<CompareLab> {
     if(compareLab)return compareLab;
@@ -582,12 +594,14 @@ async function ensureComparison(): Promise<CompareLab> {
             compareLab=new Comparison({
                 change:()=>update(),
                 tiltA:tilt=>{state.tilt=tilt;state.playback='paused';update();},
+                orbitA:orbit=>{state.orbit=orbit;state.playback='paused';update();},
                 day:day=>{state.day=day;state.playback='paused';update();},
                 mode:mode=>{state.surfaceMode=mode;update();},
                 playback:mode=>{state.playback=togglePlayback(state.playback,mode);update();},
                 scene:value=>scene.setComparison(value),
             });
             compareLab.tiltB=dormantTiltB;
+            compareLab.orbitB={...dormantOrbitB};
             compareLab.update(compareSnapshot());return compareLab;
         } catch(error) {
             button.dataset.loadError='true';button.textContent=tr('Reload to retry comparison');throw error;
@@ -608,6 +622,9 @@ $('#compare-toggle').addEventListener('click',async()=>{
 
 function captureExperiment(): ExperimentState {
     return {tilt:state.tilt,tiltB:compareLab?.tiltB??dormantTiltB,day:state.day,rotation:state.rotation,
+        eccentricityA:state.orbit.eccentricity,eccentricityB:compareLab?.orbitB.eccentricity??dormantOrbitB.eccentricity,
+        perihelionLongitudeA:state.orbit.perihelionLongitude,perihelionLongitudeB:compareLab?.orbitB.perihelionLongitude??dormantOrbitB.perihelionLongitude,
+        axisLongitudeA:state.orbit.axisLongitude,axisLongitudeB:compareLab?.orbitB.axisLongitude??dormantOrbitB.axisLongitude,
         latitude:state.location.latitude,longitude:state.location.longitude,dual:!!compareLab?.enabled,
         surfaceMode:state.surfaceMode,temperatureModel:state.temperatureModel,heatDepth:state.heatDepth as ExperimentState['heatDepth'],
         sceneView:canvas.dataset.sceneView==='orbit'?'orbit':'earth',period:state.period,chartMetric:state.chartMetric,
@@ -621,8 +638,10 @@ async function applyExperiment(next:ExperimentState):Promise<boolean> {
     state.tilt=next.tilt; state.day=next.day; state.rotation=next.rotation;state.speed=next.speed;
     state.playback='paused';state.location=experimentLocation(next);state.surfaceMode=next.surfaceMode;
     state.temperatureModel=next.temperatureModel;state.heatDepth=next.heatDepth;
+    state.orbit={eccentricity:next.eccentricityA,perihelionLongitude:next.perihelionLongitudeA,axisLongitude:next.axisLongitudeA};
     state.period=next.period;state.chartMetric=next.chartMetric;state.compare=next.reference;state.guides=next.guides;
-    dormantTiltB=next.tiltB;compareLab?.configure(next.dual,next.tiltB);
+    dormantTiltB=next.tiltB;dormantOrbitB={eccentricity:next.eccentricityB,perihelionLongitude:next.perihelionLongitudeB,axisLongitude:next.axisLongitudeB};
+    compareLab?.configure(next.dual,next.tiltB,dormantOrbitB);
     locationSelect.value=state.location.id;
     $<HTMLSelectElement>('#temperature-model').value=state.temperatureModel;
     $<HTMLSelectElement>('#heat-storage').value=String(state.heatDepth);

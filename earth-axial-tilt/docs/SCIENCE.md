@@ -75,7 +75,7 @@ These historical normals are not current weather observations and do not validat
 
 ## Astronomy and the Earth-centred scene
 
-- The model uses a 365-day circular orbit, with the March-equinox phase anchored at model day 80. Exact model quarter-cycle positions are 80, 171.25, 262.5 and 353.75. Calendar labels are approximate, not an ephemeris.
+- Earth Classic uses a 365-day circular orbit, with the March-equinox phase anchored at model day 80. Its exact quarter-cycle positions are 80, 171.25, 262.5 and 353.75. v1.2 eccentric orbits retain a 365-day model period but place the seasonal quarters through Kepler time. Calendar labels are approximate, not an ephemeris.
 - Solar declination is `asin(sin(tilt) * sin(orbital longitude))`.
 - Daily mean incoming solar energy is top-of-atmosphere (TOA), not surface irradiance. The solar constant is 1361 W/m2. The globe-wide area-weighted daily mean is 1361/4 W/m2 for this circular-orbit model.
 - Daylight uses an ideal point Sun without atmospheric refraction. The sunset calculation uses `cos(zenith) = a + b*cos(hour angle)` rather than singular tangents. When the Sun is exactly on the horizon all day, 12 h is an explicit reporting convention; effective incoming energy is zero. This occurs at the equator at an exact 90-degree-obliquity solstice, and at a pole at an exact equinox.
@@ -115,7 +115,7 @@ Background references (definitions / implementation conventions, not a claim to 
 
 The optional dashed annual curve runs the **same** model at Earth's 23.44 degrees. It is not a measured-climate curve. Both curves use the same chart scale.
 
-Surface legends use the same numerical ranges as the geometry: daily and instantaneous solar 0–1361 W/m2, daylight 0–24 h, and temperature -65–55 C in Illustrative mode or -100–180 C in Thermal EBM mode (colour limits, not temperature clipping). The solar scale therefore does not saturate prematurely near 90-degree obliquity.
+Surface legends use fixed educational colour ranges: daily and instantaneous solar 0–1361 W/m2, daylight 0–24 h, and temperature -65–55 C in Illustrative mode or -100–180 C in Thermal EBM mode. These are colour limits, not numerical clipping. High-e perihelion flux can exceed the solar colour limit and saturate visually; diagnostics, graphs and climate forcing retain the calculated value.
 
 ## Visual resources and remaining limits
 
@@ -150,8 +150,38 @@ A visibility transition resets the animation timestamp, and frame increments are
 
 ## A/B comparison semantics
 
-A/B have the same day, longitude/latitude, rotational phase, model and heat depth. Only tilt differs. Differences are A−B for geometric daylight, TOA daily solar, and the same temperature model. Equal configurations give exact zero differences. Missing or configuration-mismatched thermal solutions give null differences, not substituted earlier temperatures.
+A/B have the same day, longitude/latitude, rotational phase, model and heat depth. Tilt and orbit parameters may differ. Differences are A−B for geometric daylight, TOA daily solar, and the same temperature model. Equal configurations give exact zero differences. Missing or configuration-mismatched thermal solutions give null differences, not substituted earlier temperatures.
 
 The annual graph uses B as its reference while comparing. The daily graph remains A's instantaneous profile at the current date. Atlas remains A versus 23.44°. Those references are labelled separately. Sharing rotational phase is not the same as forcing equal apparent solar time at two obliquities, which is why instantaneous A−B solar metrics are not included without further controls.
 
 Rendering reuses one scene/context with isolated scissor passes and restores primary state after B. Identical colours denote identical numerical scales. Display geometry and quality never enter the energy-balance solver. See [Three.js multiple scenes](https://threejs.org/manual/pages/multiple-scenes.html) for the shared-renderer pattern.
+
+## v1.2: eccentric orbit and axis orientation
+
+v1.2 keeps model day 80 at inertial mean longitude zero. Uniform model time advances mean longitude and mean anomaly; it does not advance true longitude uniformly. For eccentricity `e` and perihelion longitude `varpi`:
+
+```
+L = 2*pi*(day-80)/365
+M = L - varpi
+M = E - e*sin(E)
+nu = atan2(sqrt(1-e^2)*sin(E), cos(E)-e)
+lambda = nu + varpi
+r/a = 1 - e*cos(E)
+relative TOA flux = 1/(r/a)^2
+relative orbital speed = sqrt(2/(r/a) - 1)
+```
+
+The implementation solves Kepler's equation by bounded Newton iteration. The UI accepts `0 <= e <= 0.6`; this educational limit is not a claim about Earth-like climates at large eccentricity. Semi-major axis and year length remain fixed.
+
+Perihelion longitude, true longitude and axis orientation `alpha` share the same inertial +Y-prograde frame:
+
+```
+s_world = [cos(lambda), 0, -sin(lambda)]
+n_axis = [-sin(epsilon)*sin(alpha), cos(epsilon), -sin(epsilon)*cos(alpha)]
+M_surface = Ry(alpha) * Rx(-epsilon) * Ry(theta)
+declination = asin(sin(epsilon) * sin(lambda-alpha))
+```
+
+Quarter-season markers occur at true longitudes `alpha + k*pi/2`, then are converted back to model days through Kepler's equation. Perihelion and aphelion occur at `varpi` and `varpi+pi`. At `e=0`, every orbital point has the same distance: changing `varpi` must have no effect, and the UI labels perihelion direction as undefined.
+
+All solar, daily, annual, Atlas, A/B and thermal calculations consume the same orbit object. Thermal cache/readiness keys include eccentricity, perihelion longitude and axis orientation; a solution calculated for a different orbit is not displayed. This remains a repeating 365-day model phase, not a civil calendar or astronomical ephemeris.

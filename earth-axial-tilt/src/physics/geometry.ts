@@ -1,4 +1,5 @@
-import { clamp, degToRad, orbitalLongitudeRad, radToDeg } from './solar';
+import { clamp, degToRad, radToDeg } from './solar';
+import { CLASSIC_ORBIT, orbitalSunDirection, type OrbitParameters } from './orbit';
 
 export type Vector3Tuple = [number, number, number];
 
@@ -18,16 +19,17 @@ export function cartesianToGeographic([x, y, z]: Vector3Tuple): { latitude: numb
     longitude: radToDeg(Math.atan2(-z, x)) };
 }
 
-export function sunDirection(day: number): Vector3Tuple {
-  const lambda = orbitalLongitudeRad(day);
-  // Prograde orbit about +Y; same handedness as positive eastward Ry spin.
-  return [Math.cos(lambda), 0, -Math.sin(lambda)];
+export function sunDirection(day: number, orbit: OrbitParameters = CLASSIC_ORBIT): Vector3Tuple {
+  return orbitalSunDirection(day, orbit);
 }
 
-export function subsolarDirectionLocal(day: number, tilt: number): Vector3Tuple {
-  const [x, , z] = sunDirection(day);
+export function subsolarDirectionLocal(day: number, tilt: number,
+  orbit: OrbitParameters = CLASSIC_ORBIT): Vector3Tuple {
+  const [x, , z] = sunDirection(day, orbit);
   const epsilon = degToRad(tilt);
-  // Inverse of the globe's X-axis obliquity rotation.
-  // Inverse of Rx(-obliquity). Annual declination is unchanged.
-  return [x, -z * Math.sin(epsilon), z * Math.cos(epsilon)];
+  const axis = degToRad(orbit.axisLongitude);
+  // Inverse of Ry(axis) * Rx(-obliquity), before inverse surface spin.
+  const untiltedX = x * Math.cos(axis) - z * Math.sin(axis);
+  const untiltedZ = x * Math.sin(axis) + z * Math.cos(axis);
+  return [untiltedX, -untiltedZ * Math.sin(epsilon), untiltedZ * Math.cos(epsilon)];
 }
