@@ -2,7 +2,8 @@
  * No copied solver, no candidate-generated golden. Outputs go to a caller directory. */
 import fs from 'node:fs';import path from 'node:path';import {createHash} from 'node:crypto';import * as ts from 'typescript';
 const root=path.resolve(import.meta.dirname,'../..'),out=path.resolve(process.argv[2]??'');
-if(!process.argv[2]||out.startsWith(root+path.sep))throw new Error('Supply a generated-output directory outside the repository.');
+const repository=path.dirname(root);
+if(!process.argv[2]||out===repository||out.startsWith(repository+path.sep))throw new Error('Supply a generated-output directory outside the repository.');
 fs.mkdirSync(out,{recursive:true});const cache=new Map(),sources={};
 function load(file){
  const full=path.resolve(file);if(!full.startsWith(root+'/src/'))throw new Error('Only trusted project modules are allowed');
