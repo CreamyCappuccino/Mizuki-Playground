@@ -131,3 +131,18 @@ describe('feedback workspace static contract',()=>{
    for(const key of [...html.matchAll(/data-fb="([^"]+)"/g)].map(m=>m[1]))expect(Object.hasOwn(en,key),key).toBe(true);
  });
 });
+
+describe('feedback numerical edge cases',()=>{
+ it('zero sunlight has an exact damped response even while the proxy changes branch',()=>{
+   const grid=buildClimateGrid(12,0),advance=feedbackStepper(grid,10,2,true),initial=20;
+   let old:Float64Array=new Float64Array(12).fill(initial),next:Float64Array=new Float64Array(12);const q=new Float64Array(12);
+   for(let i=0;i<1000;i++){expect(advance(old,q,next).energyError).toBeLessThan(1e-9);[old,next]=[next,old];}
+   const expected=-105+(initial+105)/(1+2*43200/4e7)**1000;
+   expect(old.every(t=>Math.abs(t-expected)<1e-10)).toBe(true);expect(old[0]).toBeLessThan(-10);
+ });
+ it('does not accept a mismatched path end-state or changed science reply',()=>{
+   const value={...e(),mode:'path' as const,multipliers:[1,1]},r=runFeedbackExperiment(value),request=feedbackRequest(1,value);
+   expect(matchingFeedbackResult(r,request)).toBe(true);r.items[1].initialState[0]+=.1;expect(matchingFeedbackResult(r,request)).toBe(false);
+   expect(matchingFeedbackResult(null,request)).toBe(false);
+ });
+});
