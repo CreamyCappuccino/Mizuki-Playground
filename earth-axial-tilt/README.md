@@ -1,5 +1,14 @@
 # Earth Axial Tilt Lab
 
+## v1.4 alpha 1 — Feedbacks workspace
+
+Open **`feedback-lab.html`** from the main lab's Climate section for the 90-band
+warm/cold and continued-history ice–albedo experiment. This is a production-built
+workspace with a real cancellable worker, day/latitude plots, proxy map, diagnostics
+and portable history settings. It is not 2D geography feedback; the main Earth
+Classic/geography models and schema 4 remain unchanged. [Scope and science](docs/V1.4.md).
+
+
 **1.3.0-alpha.2 review candidate — Real Earth coarse-cell geography**
 
 An interactive, bilingual science toy: tilt Earth, follow a day or year, and compare two hypothetical worlds. Static Vite + TypeScript + Three.js; no backend or runtime remote imagery required.
