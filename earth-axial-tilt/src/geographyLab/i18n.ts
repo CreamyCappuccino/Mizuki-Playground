@@ -36,6 +36,7 @@ const ja: Record<string, string> = {
   'Cell centre': 'セルの中心',
   'Polar-cap sector. Longitude is not unique at the geometric pole.': '極域セル。幾何学的な極点では経度は一意ではありません。',
   '10° × 10° · 18 × 36 cells. Not city-scale weather.': '10°×10°・18×36セル。都市の天気ではありません。',
+  'Land fraction describes the surrounding 10° cell, not whether the exact selected point is land or ocean.': '陸の割合は周囲10°セルの面積比で、選択した一点そのものが陸か海かを判定する値ではありません。',
   'Geographic field': '緯度・経度の地図',
   'Click a cell. Arrow keys move between cells.': 'セルをクリック。矢印キーでも移動できます。',
   'Annual response at the selected cell': '選択セルの一年の応答',
