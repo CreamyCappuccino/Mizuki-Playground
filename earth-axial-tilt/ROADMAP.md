@@ -7,7 +7,7 @@
 - v1.4 alpha 1 candidate: 90-band feedback workspace, warm/cold seeds and full-state history/sweeps. [V1.4](docs/V1.4.md). 2D feedback and main-globe feedback display are not part of this first milestone.
 - v1.3 integrated geography plus reference-only recovery was accepted at `0d3fd674`, CI65 success, and fast-forwarded to main. Physical device/public release gates remain separate.
 
-- 1.3.0-alpha.1：Climate Geographyの最初の一区切りとして、Classicを保持したidealized Land/Ocean同緯度対照を実装。実在maskと2D geographyは未実装で、v1.3全体完了とはしない。版の状態は [V1.3](docs/V1.3.md) を参照。
+- 履歴：1.3.0-alpha.1でidealized Land/Ocean対照、alpha.2で実海陸2D／本画面統合を実装。版ごとの範囲と検証は [V1.3](docs/V1.3.md) を参照。
 - 1.2.0-rc.1：Earth Orbit Mechanicsはmain `8364981`の同一HEAD CIで成功。正式な実機gateは未確認のまま維持。
 
 - v0.9 Compare Lab は実装済み。
@@ -166,7 +166,7 @@ A/Bで
 
 ---
 
-# v1.3 — Climate Geography Lab（alpha 1：idealized対照を実装）
+# v1.3 — Climate Geography Lab（alpha 2：実海陸の本画面統合を受入）
 
 ## 目的
 
@@ -178,8 +178,8 @@ A/Bで
 ## 1. Land / ocean heat capacity
 
 - **alpha 1完了:** 同緯度・同じforcingで、全球一様なLand 2.5 m相当／Ocean 50 m相当を切り替え、年間曲線とAtlas差分で振幅・lagを見る。
-- **alpha 2 review候補:** Natural Earth 4.1.0を固定し、18×36のlongitude-aware grid、面積fraction、可変熱容量、周期EBM、bounded PCGを独立coreとして実装。別ページの実Worker previewで地点・年間曲線・選択経度sectionまで接続。
-- **残り:** 既存3D Earth profile、A/B Compare、本体Season Atlas、共有state/schemaへ同じsampler/provenanceを安全に統合する。
+- **alpha 2実装済み:** Natural Earth 4.1.0を固定し、18×36のlongitude-aware grid、面積fraction、可変熱容量、周期EBM、bounded PCGを独立coreとして実装。別ページの実Worker previewで地点・年間曲線・選択経度sectionまで接続。
+- **本統合受入:** 既存3D Earth profile、A/B Compare、本体Season Atlas、共有state/schema 4へ同じsampler/provenanceを接続済み。reference-only失敗回復もCI65で受入。
 - latitude-band EBMを2D GCMへ一気に変えず、どの解像度で扱うか設計レビューを先に行う。
 - alpha 1では既存Fast/Slowの係数を再利用し、根拠のない新定数を追加しない。
 - 「Mixed 10m」というglobal knobと地理分布modeの意味を混同しない。
