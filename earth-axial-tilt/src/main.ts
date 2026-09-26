@@ -439,7 +439,9 @@ function updateSurfaceLegend(): void {
     $<HTMLElement>('#surface-legend-ramp').style.background = `linear-gradient(90deg, ${stops.join(',')})`;
     $('#surface-legend-ticks').replaceChildren(...[scale.min, (scale.min + scale.max) / 2, scale.max].map((value) => {
         const span = document.createElement('span');
-        span.textContent = `${state.surfaceMode === 'temperature' ? (value === scale.min ? '≤ ' : value === scale.max ? '≥ ' : '') : ''}${value}`;
+        // Label precision is presentation-only; keep the underlying orbital scale exact.
+        const label = Number(value.toFixed(1));
+        span.textContent = `${state.surfaceMode === 'temperature' ? (value === scale.min ? '≤ ' : value === scale.max ? '≥ ' : '') : ''}${label}`;
         return span;
     }));
 }
