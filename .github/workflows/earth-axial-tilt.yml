@@ -88,3 +88,33 @@ jobs:
           path: earth-axial-tilt/test-results/
           if-no-files-found: ignore
           retention-days: 7
+
+  review-snapshot:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci && npm run build
+        working-directory: earth-axial-tilt
+      - name: Package source and build for isolated offline review
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/earth-review/earth-axial-tilt
+          git archive HEAD earth-axial-tilt | tar -x -C /tmp/earth-review
+          cp -a earth-axial-tilt/node_modules /tmp/earth-review/earth-axial-tilt/
+          cp -a earth-axial-tilt/dist /tmp/earth-review/earth-axial-tilt/
+          printf '%s\n' "$GITHUB_SHA" > /tmp/earth-review/REVIEWED_SHA.txt
+          tar -czf /tmp/earth-review-snapshot.tar.gz -C /tmp/earth-review .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: earth-review-snapshot
+          path: /tmp/earth-review-snapshot.tar.gz
+          retention-days: 1
+          compression-level: 0
