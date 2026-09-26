@@ -12,6 +12,9 @@ async function open(page:Page,state:Partial<ExperimentState>={}){
   if(state.dual)await expect(page.locator('#compare-status')).toHaveAttribute('data-status','ready');
   await page.locator('#orbit-workbench > summary').click();
 }
+async function expand(page:Page,id:string){
+  if(!await page.locator(id).evaluate(el=>(el as HTMLDetailsElement).open))await page.locator(id+' > summary').click();
+}
 async function change(page:Page,id:string,value:string){await page.locator(id).fill(value);await page.locator(id).press('Enter');}
 const distance=(page:Page)=>page.locator('#orbit-values').getAttribute('data-distance').then(Number);
 const flux=(page:Page)=>page.locator('#orbit-values').getAttribute('data-flux').then(Number);
@@ -35,6 +38,7 @@ test('same tilt with different orbits differs, then copying orbit makes all A/B 
   await open(page,{dual:true,tiltB:23.44,eccentricity:.2,perihelion:90,eccentricityB:.2,perihelionB:270,sceneView:'orbit',surfaceMode:'insolation'});
   expect(Number(await page.locator('#compare-solar [data-column="diff"]').getAttribute('data-value'))).not.toBe(0);
   await expect(page.locator('#compare-context')).toContainText('elapsed model day');
+  await expect(page.locator('#surface-legend-ticks > span').last()).toHaveText('2126.6');
   await page.screenshot({path:info.outputPath('v12-perihelion-comparison.png'),fullPage:true});
   await page.locator('#orbit-copy-a').click();await expect(page.locator('#compare-status')).toHaveAttribute('data-status','ready');
   for(const metric of ['solar','daylight','temperature'])await expect(page.locator(`#compare-${metric} [data-column="diff"]`)).toHaveAttribute('data-value','0');
@@ -59,7 +63,7 @@ test('rapid orbit edits clear old temperature immediately and compute only the f
 test('old links remain circular, while schema2 files restore independent A/B orbits',async({page})=>{
   await page.goto('/#lab=1&a=45&dual=1&b=0&day=172');await expect(page.locator('#experiment-notice')).toHaveAttribute('data-status','ready');
   await page.locator('#orbit-workbench > summary').click();await expect(page.locator('#orbit-e')).toHaveValue('0');
-  await page.locator('#experiment-workbench > summary').click();
+  await expand(page,'#experiment-workbench');
   const state={...DEFAULT_EXPERIMENT,dual:true,eccentricity:.3,perihelion:90,axisAzimuth:30,eccentricityB:.1,perihelionB:270,axisAzimuthB:120};
   await page.locator('#experiment-file').setInputFiles({name:'orbit.json',mimeType:'application/json',buffer:Buffer.from(experimentFile(state))});
   await expect(page.locator('#experiment-notice')).toHaveAttribute('data-status','ready');await expect(page.locator('#orbit-e')).toHaveValue('0.3');
@@ -86,7 +90,7 @@ test('language, Basic and Focus switches preserve A/B orbital parameters',async(
   await page.setViewportSize({width:1440,height:1000});
   await open(page,{dual:true,tiltB:45,eccentricity:.2,perihelion:90,eccentricityB:.1,perihelionB:270,sceneView:'orbit'});
   // Numeric state is compared through settings serialization, not translated labels.
-  await page.locator('#experiment-workbench > summary').click();await page.locator('#experiment-copy').click();const before=new URL(await page.locator('#experiment-link').inputValue()).hash;
+  await expand(page,'#experiment-workbench');await page.locator('#experiment-copy').click();const before=new URL(await page.locator('#experiment-link').inputValue()).hash;
   await page.locator('#language').selectOption('ja');await page.locator('#text-size').selectOption('large');
   await page.locator('#tools-mode').selectOption('basic');await page.locator('#focus-view').click();
   await expect(page.locator('#earth-canvas')).toHaveAttribute('data-view-b',/"eccentricity":0.1/);
