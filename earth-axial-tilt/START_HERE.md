@@ -2,12 +2,12 @@
 
 ## 現在地
 
-**1.4.0-alpha.1：地球フィードバック実験の候補。** v1.3の実海陸3D/Compare/Atlas/schema4はmainへ統合済み。`feedback-lab.html` は緯度90帯・一様蓄熱の独立した実験ワークスペースで、暖冷初期状態、温度依存反射率、実状態を引き継ぐ履歴／sweep、年間曲線、温度／代理雪氷マップと保存設定を扱う。2D geographyへのfeedbackや本3D地球へのfeedback着色はこのalphaには含まない。`docs/V1.4.md`を最初に読む。mainの既存schema 1–4と物理結果は維持。候補CI/配信更新は別確認、物理iPhone正式受入と公開承認は未完了。
+**1.5.0-rc.1：sweep-first Earth Synthesis候補。** `synthesis-lab.html`で地軸傾斜・離心率・近日点季節を走査し、日射強度・夏半期長・時間平均・積算量を区別。選択A/Bを既存3D Earth/Atlasへ、Aの軌道を明示的90帯Feedbackへ渡す。7つの問い、日英Large、設定JSON/URLと指標CSV。実年代史・2D geography feedback・高度補正は追加していない。既存物理/保存形式は維持。まず `docs/V1.5.md` と `docs/VERIFICATION-1.5-rc.1.md`、その後最新CI/HEAD。公開と実機iPhone正式受入は別。
 
 
 `CreamyCappuccino/Mizuki-Playground/earth-axial-tilt/`。独立した静的フロントエンド。**v0.9の比較・同時再生とv1.0の仕上げを実装。v1.0.0-rc.1はChromium／macOS WebKitの自動検証が成功。** 正式版の実機iPhone確認は未完了。公開はしていない。
 
-最短の復帰は **この文書 → docs/V1.4.md → ROADMAP.md → 変更分野のコード**。確認済みのコード・CI・画像は版ごとの検証記録を参照し、着手時はさらに最新HEADのCIを確認する。MCP索引は **Mizuki MM410**。メモリは道案内、最新コード・CI・文書が正本。
+最短の復帰は **この文書 → docs/V1.5.md → ROADMAP.md → 変更分野のコード**。確認済みのコード・CI・画像は版ごとの検証記録を参照し、着手時はさらに最新HEADのCIを確認する。MCP索引は **Mizuki MM410**。メモリは道案内、最新コード・CI・文書が正本。
 
 ## 今できること
 
@@ -31,6 +31,7 @@ v0.8の日英・?・公転俯瞰・大文字・Atlas・EBMを保持。A/B別傾�
 | 表示設定・導入 | `src/ui/releaseControls.ts`、`viewControls.ts`、`src/style.css` |
 | 気候地理・天文の仕様 | `docs/V1.3.md`、`docs/SCIENCE.md`、`src/physics/climateGeography.ts` と `src/physics/` |
 | 実海陸2Dモデル | `geography-lab.html`、`src/geographyLab/`、`src/physics/geography*.ts`、`data/land-fractions.json` |
+| Earth synthesis | `synthesis-lab.html`、`src/synthesis/`、`audits/synthesis/`、`docs/V1.5.md` |
 | Feedback専用実験 | `feedback-lab.html`、`src/feedback/`、`docs/V1.4.md`、`audits/feedback/` |
 | 自動検証 | `tests/`、`e2e/`、`scripts/check-docs.mjs`、ルート `.github/workflows/earth-axial-tilt.yml` |
 
