@@ -1,4 +1,5 @@
 export const en={
+ synthesis:"Earth synthesis →",
  layer:'Map layer',temperatureLayer:'Temperature',proxyLayer:'Snow/ice proxy',proxyMap:'Daily threshold proxy: pale cells below −10°C. No melt mass or latent heat.',
  warmCurve:'Warm · +20°C',coldCurve:'Cold · −60°C',solarAxis:'Solar multiplier',bytes:'Retained array bytes (not peak heap)',
  title:'Earth Feedbacks Lab',eyebrow:'MIZUKI PLAYGROUND / EARTH · 1.4',back:'← Earth laboratory',
@@ -31,6 +32,7 @@ export const en={
 };
 type Key=keyof typeof en;
 const ja:Record<Key,string>={
+ synthesis:"地球の総合案内 →",
  layer:'地図の表示',temperatureLayer:'気温',proxyLayer:'雪氷の代理分布',proxyMap:'日ごとの閾値判定：淡いセルが−10℃未満。融解質量や潜熱ではありません。',
  warmCurve:'暖側 · ＋20℃',coldCurve:'冷側 · −60℃',solarAxis:'日射倍率',bytes:'保持配列のバイト数（最大メモリではない）',
  title:'地球フィードバック・ラボ',eyebrow:'MIZUKI PLAYGROUND / 地球 · 1.4',back:'← 地球ラボへ',
