@@ -240,3 +240,13 @@ replace the 18×36 real-geography solver. See [V1.4](V1.4.md) for the complete
 coefficient, phase, nonconvergence, proxy-ice, source and validation contract.
 The proxy threshold −10°C is not seawater's freezing point; no latent heat or
 ice mass is modeled. Main Earth profiles and share schemas retain v1.3 semantics.
+
+## v1.5: conceptual orbital sweeps
+
+[The synthesis contract](V1.5.md) fixes angle/time conventions and numerical
+quadrature. Seasonal-angle bins are not equal-time samples. Summer-half mean
+is integrated Q(dt/dtheta) divided by exact Kepler duration; integrated MJ/m²
+is not instantaneous W/m². Local annual mean uses half-day midpoint quadrature;
+global mean is S0/(4 sqrt(1-e²)), fixed a=1 au and P=365 model days.
+No dated Milankovitch series is fabricated. Cross-lab links retain existing
+climate meanings and do not combine zonal feedback with real-geography physics.
