@@ -4,7 +4,9 @@
 
 ## 現在地
 
-- v1.4 alpha 1 candidate: 90-band feedback workspace, warm/cold seeds and full-state history/sweeps. [V1.4](docs/V1.4.md). 2D feedback and main-globe feedback display are not part of this first milestone.
+- v1.5.0-rc.1: sweep-first Milankovitch Explorerと7問のEarth総合案内。既存3D/Atlas/Feedbackへ検証済み形式の設定リンクで接続。実年代データは含めず、実機/公開gateは別。[V1.5](docs/V1.5.md)・[検証](docs/VERIFICATION-1.5-rc.1.md)。候補の最終CIは最新HEADで確認。
+
+- v1.4 alpha 1 accepted at `3861d5a1`, main CI72 and existing M4 source/HTTP checked: 90-band feedback workspace, warm/cold seeds and full-state history/sweeps. [V1.4](docs/V1.4.md). 2D feedback and main-globe feedback display are not part of this first milestone.
 - v1.3 integrated geography plus reference-only recovery was accepted at `0d3fd674`, CI65 success, and fast-forwarded to main. Physical device/public release gates remain separate.
 
 - 履歴：1.3.0-alpha.1でidealized Land/Ocean対照、alpha.2で実海陸2D／本画面統合を実装。版ごとの範囲と検証は [V1.3](docs/V1.3.md) を参照。
@@ -256,7 +258,7 @@ Earthの気候を「受け身の温度応答」から、
 
 ---
 
-# v1.5 — Milankovitch & Earth Synthesis
+# v1.5 — Milankovitch & Earth Synthesis（sweep-first RC候補）
 
 ## 目的
 
@@ -273,6 +275,8 @@ v1.2の軌道力学、v1.3の地理、v1.4のfeedbackをまとめ、
 - optional ice-albedo feedback
 
 ## 1. Milankovitch Explorer
+
+初版scopeはparameter sweep。実年代のtimeline/epochは信頼できるdatasetを導入する別工程で、今回の完了条件にはしない。v1.4のfeedbackは明示的zonal workspaceとして連携し、2D feedbackの完成とはしない。
 
 - orbital parameter timeline
 - selected epoch
