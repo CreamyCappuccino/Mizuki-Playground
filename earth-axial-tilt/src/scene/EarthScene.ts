@@ -1,6 +1,7 @@
 import { CLASSIC_ORBIT, orbitKey, orbitalMoment, normalizeOrbit, type OrbitParameters } from '../physics/orbit';
 import { comparisonViewports } from '../physics/comparison';
 import { OrbitOverview } from './orbitOverview';
+import { createSunAppearance, SUN_APPEARANCE } from './sunAppearance';
 import { orbitLayout, ORBIT_EARTH_SCALE } from './orbitLayout';
 import { compactOrbitViewport, orbitViewportFov } from './orbitPresentation';
 import * as THREE from 'three';
@@ -78,7 +79,7 @@ export class EarthScene {
   private readonly instantMesh: THREE.Mesh<THREE.SphereGeometry, THREE.ShaderMaterial>;
   private readonly marker = this.createLocationMarker();
   private readonly sunLight = new THREE.DirectionalLight(0xffffff, 3.4);
-  private readonly sunMesh = this.createSunMarker();
+  private readonly sunMesh = createSunAppearance(0.38);
   private readonly guidesGroup = new THREE.Group();
   private readonly subsolarMarker = this.createSubsolarMarker();
   private readonly terminator = new THREE.LineLoop(
@@ -116,6 +117,7 @@ export class EarthScene {
   constructor(canvas: HTMLCanvasElement, options: EarthSceneOptions = {}) {
     this.canvas = canvas;
     this.canvas.dataset.locationMarker = 'pin';
+    this.canvas.dataset.sunAppearance = SUN_APPEARANCE;
     this.canvas.dataset.subsolarMarker = 'sun-target';
     this.onLocationPick = options.onLocationPick;
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
@@ -463,157 +465,6 @@ export class EarthScene {
       geometry,
       new THREE.PointsMaterial({ color: 0xcbdcff, size: 0.035, sizeAttenuation: true }),
     );
-  }
-
-  private createSunMarker(): THREE.Group {
-    const group = new THREE.Group();
-    group.name = 'sun-direction-marker';
-
-    const coreTexture = this.createSunCoreTexture();
-    const glowTexture = this.createSunGlowTexture();
-    const haloTexture = this.createSunHaloTexture();
-
-    const core = new THREE.Mesh(
-      new THREE.SphereGeometry(0.38, 40, 40),
-      new THREE.MeshBasicMaterial({
-        color: 0xfff1b8,
-        map: coreTexture,
-        toneMapped: false,
-      }),
-    );
-    core.renderOrder = 2;
-    group.add(core);
-
-    const innerGlow = new THREE.Sprite(new THREE.SpriteMaterial({
-      map: glowTexture,
-      color: 0xffc85c,
-      transparent: true,
-      opacity: 0.72,
-      depthWrite: false,
-      depthTest: false,
-      toneMapped: false,
-      blending: THREE.AdditiveBlending,
-    }));
-    innerGlow.scale.set(1.1, 1.1, 1);
-    innerGlow.renderOrder = 1;
-    group.add(innerGlow);
-
-    const halo = new THREE.Sprite(new THREE.SpriteMaterial({
-      map: haloTexture,
-      color: 0xff9d30,
-      transparent: true,
-      opacity: 0.34,
-      depthWrite: false,
-      depthTest: false,
-      toneMapped: false,
-      blending: THREE.AdditiveBlending,
-    }));
-    halo.scale.set(1.7, 1.7, 1);
-    halo.renderOrder = 0;
-    group.add(halo);
-
-    return group;
-  }
-
-  private createSunCoreTexture(): THREE.CanvasTexture {
-    const canvas = document.createElement('canvas');
-    canvas.width = canvas.height = 256;
-    const context = canvas.getContext('2d');
-    if (context) {
-      const gradient = context.createRadialGradient(128, 118, 18, 128, 128, 112);
-      gradient.addColorStop(0, '#fffdf4');
-      gradient.addColorStop(0.28, '#fff3bf');
-      gradient.addColorStop(0.62, '#ffd766');
-      gradient.addColorStop(0.86, '#ffb03a');
-      gradient.addColorStop(1, '#f37a18');
-      context.fillStyle = gradient;
-      context.fillRect(0, 0, 256, 256);
-
-      let seed = 20260927;
-      const random = () => {
-        seed = (1664525 * seed + 1013904223) >>> 0;
-        return seed / 4294967296;
-      };
-      context.globalCompositeOperation = 'overlay';
-      for (let i = 0; i < 180; i += 1) {
-        const x = random() * 256;
-        const y = random() * 256;
-        const radius = 8 + random() * 24;
-        const alpha = 0.018 + random() * 0.028;
-        const warm = context.createRadialGradient(x, y, 0, x, y, radius);
-        warm.addColorStop(0, `rgba(255,255,240,${alpha * 1.35})`);
-        warm.addColorStop(0.55, `rgba(255,215,120,${alpha})`);
-        warm.addColorStop(1, 'rgba(255,160,60,0)');
-        context.fillStyle = warm;
-        context.beginPath();
-        context.arc(x, y, radius, 0, Math.PI * 2);
-        context.fill();
-      }
-
-      context.globalCompositeOperation = 'multiply';
-      for (let i = 0; i < 48; i += 1) {
-        const x = random() * 256;
-        const y = random() * 256;
-        const radius = 10 + random() * 18;
-        const alpha = 0.018 + random() * 0.02;
-        const shadow = context.createRadialGradient(x, y, 0, x, y, radius);
-        shadow.addColorStop(0, `rgba(170,85,18,${alpha})`);
-        shadow.addColorStop(0.7, `rgba(110,48,0,${alpha * 0.55})`);
-        shadow.addColorStop(1, 'rgba(90,35,0,0)');
-        context.fillStyle = shadow;
-        context.beginPath();
-        context.arc(x, y, radius, 0, Math.PI * 2);
-        context.fill();
-      }
-
-      context.globalCompositeOperation = 'screen';
-      const centerGlow = context.createRadialGradient(128, 118, 0, 128, 118, 78);
-      centerGlow.addColorStop(0, 'rgba(255,255,255,0.28)');
-      centerGlow.addColorStop(0.55, 'rgba(255,248,210,0.11)');
-      centerGlow.addColorStop(1, 'rgba(255,248,210,0)');
-      context.fillStyle = centerGlow;
-      context.fillRect(0, 0, 256, 256);
-      context.globalCompositeOperation = 'source-over';
-    }
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.colorSpace = THREE.SRGBColorSpace;
-    return texture;
-  }
-
-  private createSunGlowTexture(): THREE.CanvasTexture {
-    const canvas = document.createElement('canvas');
-    canvas.width = canvas.height = 256;
-    const context = canvas.getContext('2d');
-    if (context) {
-      const gradient = context.createRadialGradient(128, 128, 20, 128, 128, 126);
-      gradient.addColorStop(0, 'rgba(255,250,225,0.95)');
-      gradient.addColorStop(0.34, 'rgba(255,215,112,0.38)');
-      gradient.addColorStop(0.68, 'rgba(255,173,58,0.12)');
-      gradient.addColorStop(1, 'rgba(255,150,40,0)');
-      context.fillStyle = gradient;
-      context.fillRect(0, 0, 256, 256);
-    }
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.colorSpace = THREE.SRGBColorSpace;
-    return texture;
-  }
-
-  private createSunHaloTexture(): THREE.CanvasTexture {
-    const canvas = document.createElement('canvas');
-    canvas.width = canvas.height = 256;
-    const context = canvas.getContext('2d');
-    if (context) {
-      const gradient = context.createRadialGradient(128, 128, 48, 128, 128, 128);
-      gradient.addColorStop(0, 'rgba(255,213,110,0.24)');
-      gradient.addColorStop(0.42, 'rgba(255,180,72,0.14)');
-      gradient.addColorStop(0.78, 'rgba(255,138,46,0.05)');
-      gradient.addColorStop(1, 'rgba(255,138,46,0)');
-      context.fillStyle = gradient;
-      context.fillRect(0, 0, 256, 256);
-    }
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.colorSpace = THREE.SRGBColorSpace;
-    return texture;
   }
 
   private createOrbitRing(): THREE.LineLoop {
