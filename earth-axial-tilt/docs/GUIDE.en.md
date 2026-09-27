@@ -67,3 +67,14 @@ not start a calculation. Latitude and day only resample accepted results.
 This first workspace uses 90 latitude bands and uniform storage, not the main
 Earth's real-geography grid or 3D feedback colours. The −10°C threshold is a
 snow/ice proxy, not seawater's freezing point or melting mass. See [V1.4](V1.4.md).
+
+## Earth synthesis / Milankovitch Explorer
+
+Open the synthesis link in Climate Lab. Vary one parameter, set the range and
+3–41 samples, choose latitude and a hemisphere's summer reference, then Run.
+Select A/B to compare daily intensity, time-weighted summer-half mean, duration
+and energy separately. The seasonal-angle map is not a time axis. Save settings
+as JSON/link or export full-precision metrics CSV. Links transfer exact orbital
+conditions to main Earth/Atlas; the feedback destination remains zonal90 with
+its storage explicitly shown. No calculation or playback starts on restoration.
+Seven question cards provide a route across the existing Earth experiments.
