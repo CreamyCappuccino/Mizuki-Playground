@@ -12,6 +12,9 @@ test('real orbital sweep measures stronger shorter seasons and distinct energy, 
  await expect(page.locator('#sy-annual .sy-curve')).toHaveCount(2);await expect(page.locator('#sy-map')).toHaveAttribute('data-rows','13');
  expect(Number(await page.locator('#sy-status').getAttribute('data-retained-bytes'))).toBeLessThan(200000);
  await page.locator('#sy-trend').scrollIntoViewIfNeeded();await page.screenshot({path:info.outputPath('v15-orbital-sweep.png')});
+ await page.locator('#sy-map').screenshot({path:info.outputPath('v15-seasonal-angle-map.png')});
+ await page.locator('#sy-recipes').screenshot({path:info.outputPath('v15-earth-story-recipes.png')});
+ await page.screenshot({path:info.outputPath('v15-workspace-full.png'),fullPage:true});
  await page.locator('summary[data-sy="share"]').click();
  const [download]=await Promise.all([page.waitForEvent('download'),page.locator('#sy-csv').click()]);expect(download.suggestedFilename()).toBe('earth-orbital-sweep.csv');
  await page.locator('#sy-link').click();await expect(page.locator('#sy-url')).toHaveValue(/synthesis=1/);
