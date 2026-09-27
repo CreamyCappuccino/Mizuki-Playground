@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-export const SUN_APPEARANCE = 'soft-granulation-v1';
+export const SUN_APPEARANCE = 'radiant-granulation-v2';
 const HALO_SIZE = 128;
 
 /** Artistic presentation only: no time, sunlight, orbit or climate input.
@@ -14,8 +14,8 @@ export function createSunAppearance(radius: number): THREE.Group {
   group.userData.appearance = SUN_APPEARANCE;
   const material = new THREE.ShaderMaterial({
     uniforms: {
-      centerColor: { value: new THREE.Color('#fffbe8') },
-      rimColor: { value: new THREE.Color('#ffae33') },
+      centerColor: { value: new THREE.Color('#fffef7') },
+      rimColor: { value: new THREE.Color('#ff9f28') },
     },
     vertexShader: `
       varying vec3 spherePoint;
@@ -53,11 +53,14 @@ export function createSunAppearance(radius: number): THREE.Group {
         float mu = max(0.0, dot(normalize(viewNormal), normalize(-viewPosition)));
         // Fade unresolved grains on the small marker instead of shimmering.
         float footprint = max(length(dFdx(p * 65.0)), length(dFdy(p * 65.0)));
-        float resolved = 1.0 - smoothstep(0.3, 1.2, footprint);
-        float grain = noise3(p * 65.0) - 0.5;
-        float broad = noise3(p * 9.0) - 0.5;
-        vec3 color = mix(rimColor, centerColor, pow(mu, 0.38));
-        color *= 1.0 + 0.035 * broad + 0.08 * grain * resolved;
+        float resolved = 1.0 - smoothstep(0.26, 1.15, footprint);
+        float grain = noise3(p * 58.0) - 0.5;
+        float broad = noise3(p * 8.0) - 0.5;
+        float hot = noise3(p * 19.0) - 0.5;
+        vec3 color = mix(rimColor, centerColor, pow(mu, 0.30));
+        color *= 1.0 + 0.09 * broad + 0.15 * grain * resolved + 0.055 * hot;
+        float whiteCore = smoothstep(0.28, 0.98, mu);
+        color = mix(color, vec3(1.0, 0.985, 0.92), 0.20 * whiteCore);
         gl_FragColor = vec4(color, 1.0);
         #include <colorspace_fragment>
       }`,
@@ -66,8 +69,9 @@ export function createSunAppearance(radius: number): THREE.Group {
   const core = new THREE.Mesh(new THREE.SphereGeometry(radius, 64, 48), material);
   core.name = 'sun-core';
   group.add(core);
-  group.add(halo(radius, 1.4, 0.24, '#ffd85a', 'sun-inner-glow'));
-  group.add(halo(radius, 1.85, 0.085, '#f7a23c', 'sun-outer-halo'));
+  group.add(halo(radius, 1.55, 0.44, '#ffe36b', 'sun-inner-glow'));
+  group.add(halo(radius, 2.3, 0.20, '#ffad3d', 'sun-outer-halo'));
+  group.add(halo(radius, 3.15, 0.075, '#ff7a24', 'sun-corona'));
   return group;
 }
 
