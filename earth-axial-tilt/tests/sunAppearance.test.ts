@@ -20,13 +20,14 @@ describe('shared static Sun presentation', () => {
     for (const radius of [0.38, 2]) {
       const sun = createSunAppearance(radius);
       expect(sun.userData.appearance).toBe(SUN_APPEARANCE);
-      expect(sun.children.map(child => child.name)).toEqual(['sun-core', 'sun-inner-glow', 'sun-outer-halo']);
+      expect(sun.children.map(child => child.name)).toEqual(['sun-core', 'sun-inner-glow', 'sun-outer-halo', 'sun-corona']);
       const core = sun.children[0] as THREE.Mesh<THREE.SphereGeometry, THREE.ShaderMaterial>;
       expect(core.geometry.parameters.radius).toBe(radius);
       expect(core.material.toneMapped).toBe(false);
       expect(Object.keys(core.material.uniforms).sort()).toEqual(['centerColor', 'rimColor']);
-      expect(sun.children[1].scale.x).toBeCloseTo(radius * 2.8);
-      expect(sun.children[2].scale.x).toBeCloseTo(radius * 3.7);
+      expect(sun.children[1].scale.x).toBeCloseTo(radius * 3.1);
+      expect(sun.children[2].scale.x).toBeCloseTo(radius * 4.6);
+      expect(sun.children[3].scale.x).toBeCloseTo(radius * 6.3);
       dispose(sun);
     }
   });
@@ -43,7 +44,7 @@ describe('shared static Sun presentation', () => {
   it('generates finite deterministic soft transparent textures with bounded allocation', () => {
     const a = createSunAppearance(2), b = createSunAppearance(0.38);
     let bytes = 0;
-    for (let i = 1; i < 3; i++) {
+    for (let i = 1; i < 4; i++) {
       const map = (a.children[i] as THREE.Sprite).material.map as THREE.DataTexture;
       const other = (b.children[i] as THREE.Sprite).material.map as THREE.DataTexture;
       const pixels = map.image.data as Uint8Array;
@@ -56,7 +57,7 @@ describe('shared static Sun presentation', () => {
       expect(map.magFilter).toBe(THREE.LinearFilter);
       bytes += pixels.byteLength;
     }
-    expect(bytes).toBe(131072);
+    expect(bytes).toBe(196608);
     dispose(a); dispose(b);
   });
 });
