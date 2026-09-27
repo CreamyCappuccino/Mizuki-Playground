@@ -1,40 +1,9 @@
 import { CLASSIC_ORBIT, orbitKey, dayAtSeasonalLongitude, normalizeOrbit, type OrbitParameters } from '../physics/orbit';
 import * as THREE from 'three';
+import { createSunAppearance } from './sunAppearance';
 import { orbitLayout, ORBIT_RADIUS } from './orbitLayout';
 import { t } from '../ui/i18n';
 import { compactOrbitViewport, orbitLabelKey } from './orbitPresentation';
-
-/** Static artistic Sun. No continuous animation, irradiance or climate inputs. */
-function createSun(): THREE.Group {
-  const group = new THREE.Group();
-  const material = new THREE.ShaderMaterial({
-    vertexShader: `varying vec3 spherePoint; varying vec3 vn; varying vec3 vp;
-      void main() { spherePoint=normalize(position); vn=normalize(normalMatrix*normal);
-        vec4 p=modelViewMatrix*vec4(position,1.0); vp=p.xyz; gl_Position=projectionMatrix*p; }`,
-    fragmentShader: `varying vec3 spherePoint; varying vec3 vn; varying vec3 vp;
-      void main() {
-        vec3 p=spherePoint;
-        float cells=sin(p.x*93.0+sin(p.y*24.0))*sin(p.y*85.0+sin(p.z*19.0))*sin(p.z*101.0+p.x*13.0);
-        float bands=sin(p.x*17.0+p.y*13.0+sin(p.z*22.0))*0.5+0.5;
-        float center=max(0.0,dot(normalize(vn),normalize(-vp)));
-        vec3 c=mix(vec3(1.0,0.19,0.015),vec3(1.0,0.78,0.23),0.52+0.16*cells+0.25*bands);
-        c*=0.65+0.55*pow(center,0.3);
-        gl_FragColor=vec4(c,1.0);
-        #include <colorspace_fragment>
-      }`, toneMapped: false,
-  });
-  group.add(new THREE.Mesh(new THREE.SphereGeometry(2.0, 64, 48), material));
-  const canvas = document.createElement('canvas'); canvas.width = canvas.height = 256;
-  const ctx = canvas.getContext('2d')!;
-  const gradient = ctx.createRadialGradient(128,128,42,128,128,128);
-  gradient.addColorStop(0, 'rgba(255,175,58,.65)'); gradient.addColorStop(.22, 'rgba(255,116,20,.28)');
-  gradient.addColorStop(.55, 'rgba(255,78,9,.06)'); gradient.addColorStop(1, 'rgba(255,45,0,0)');
-  ctx.fillStyle=gradient; ctx.fillRect(0,0,256,256);
-  const texture=new THREE.CanvasTexture(canvas); texture.colorSpace=THREE.SRGBColorSpace;
-  const glow=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,toneMapped:false}));
-  glow.scale.set(10,10,1); group.add(glow);
-  return group;
-}
 
 export class OrbitOverview extends THREE.Group {
   private readonly labelTextures: THREE.CanvasTexture[] = [];
@@ -47,7 +16,7 @@ export class OrbitOverview extends THREE.Group {
   private readonly paths = new Map<string,Float32Array>();
   private currentKey='';
   private compactLabels = false;
-  private readonly sun = createSun();
+  private readonly sun = createSunAppearance(2.0);
   private readonly sunLabel: THREE.Sprite;
   constructor() {
     super(); this.name = 'orbit-overview'; this.visible = false;
