@@ -58,3 +58,20 @@ pending. Final acceptance must reference the exact tested commit. The old
 Chromium/macOS WebKit suites remain enabled; the WebKit list includes v15.
 Physical iPhone portrait/landscape/touch/back-forward and a public release
 remain separate. No claim that a standalone solar atlas is a 2D feedback model.
+
+## First same-source browser acceptance
+
+CI74 / run36301049042 at `922802400f9b709e753984cd3882c27b87a259a5`
+passed both full jobs: 281 unit tests, strict typecheck, documentation, build,
+101 Chromium tests and the complete configured macOS WebKit suites. All seven
+new v15 scenarios passed in each engine, including real Earth/Atlas handoff
+and paused zonal Feedback navigation. Chromium desktop, Japanese Large mobile
+and the actual Earth Atlas destination PNGs were inspected: readable labels,
+no mobile horizontal overflow, correct named geographic profile and longitude.
+A subsequent evidence-only change captures the seasonal-angle raster, recipe
+collection and full workspace; it changes no production source or expectation.
+The next same-HEAD run covers that final test/documentation revision.
+
+Twenty-four existing scientific/state source files were also compared byte for
+byte with the accepted starting snapshot. All are unchanged, including the
+Classic/geography/feedback solvers and main state validator.
