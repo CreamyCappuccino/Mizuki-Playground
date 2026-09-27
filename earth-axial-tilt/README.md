@@ -107,3 +107,17 @@ Since v0.9 the orbital frame and eastward spin use the same prograde handedness.
 [Development handoff](START_HERE.md) is current state; [roadmap](ROADMAP.md) is future work; version notes describe what actually changed. Older material is [history](docs/HISTORY.md), not a current backlog. Update the affected documents with code changes.
 
 Earth imagery: Solar System Scope / INOVE, CC BY 4.0, redistributed via three.js. [Sources and hashes](src/assets/ATTRIBUTION.md). The Sun is procedural decoration. Runtime fonts are system fonts.
+
+## v1.5 — Milankovitch Explorer & Earth Synthesis
+
+Open [Earth Synthesis](synthesis-lab.html) from the main climate controls or
+Feedback page. Compare bounded obliquity/eccentricity/perihelion-season sweeps,
+time-weighted summer-half energy, season length and daily solar intensity.
+Select two cases and open their exact conditions in the existing 3D Earth/Atlas
+or the explicitly zonal Feedback workspace. Seven bilingual questions connect
+the Earth curriculum. Settings/CSV export, Japanese Large and accessible exact
+values accompany the plots. This is a conceptual sweep, not dated orbital history.
+
+The release candidate keeps existing climate mathematics and main schema1–4.
+See [v1.5 contract](docs/V1.5.md) and [evidence](docs/VERIFICATION-1.5-rc.1.md);
+physical-device/public-release gates remain separate.
