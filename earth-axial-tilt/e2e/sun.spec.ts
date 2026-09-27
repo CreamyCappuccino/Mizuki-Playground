@@ -10,7 +10,7 @@ test.beforeEach(({ page }) => {
 test.afterEach(({ page }) => expect(errors.get(page)).toEqual([]));
 
 for (const mobile of [false, true]) {
-  test(`soft Sun compiles in actual orbit and close-up views ${mobile ? 'Japanese mobile' : 'desktop'}`, async ({ page }, info) => {
+  test(`radiant Sun compiles in actual orbit and close-up views ${mobile ? 'Japanese mobile' : 'desktop'}`, async ({ page }, info) => {
     await page.setViewportSize(mobile ? { width: 390, height: 844 } : { width: 1440, height: 1000 });
     if (mobile) await page.addInitScript(() => {
       localStorage.setItem('earth-lab:language', 'ja'); localStorage.setItem('earth-lab:text-size', 'large');
@@ -18,7 +18,7 @@ for (const mobile of [false, true]) {
     await page.goto('/' + encodeExperiment({ ...DEFAULT_EXPERIMENT, sceneView: 'orbit', surfaceMode: 'normal', day: 172 }));
     const canvas = page.locator('#earth-canvas');
     await expect(page.locator('#experiment-notice')).toHaveAttribute('data-status', 'ready');
-    await expect(canvas).toHaveAttribute('data-sun-appearance', 'soft-granulation-v1');
+    await expect(canvas).toHaveAttribute('data-sun-appearance', 'radiant-granulation-v2');
     await expect(canvas).toHaveAttribute('data-scene-view', 'orbit');
     await expect.poll(async () => Number(await canvas.getAttribute('data-render-count'))).toBeGreaterThan(1);
     const solar = await page.locator('#metric-solar').textContent();
