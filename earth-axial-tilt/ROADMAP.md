@@ -317,7 +317,7 @@ first versionではparameter sweepと概念実験を優先してもよい。
 
 ---
 
-# v2.0 — Planet Lab Foundation
+# v2.0 — Planet Lab Foundation（2.1 alpha内で基盤実装済み）
 
 ## 目的
 
@@ -365,7 +365,7 @@ Earthが一般化された内部構造の上で、v1.xと同じ実験を再現�
 
 ---
 
-# v2.1 — Mars
+# v2.1 — Mars（alpha 1候補）
 
 ## 目的
 
