@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Planet Lab · Earth ↔ Mars</title>
+</head>
+<body>
+  <div class="pl-shell" id="pl-shell">
+    <header>
+      <a href="./index.html" data-pl="back"></a>
+      <div class="pl-tools">
+        <label><span data-pl="language"></span><select id="pl-language"><option value="en">English</option><option value="ja">日本語</option></select></label>
+        <label><input id="pl-large" type="checkbox"><span data-pl="large"></span></label>
+      </div>
+    </header>
+
+    <section class="pl-hero">
+      <p class="pl-eyebrow" data-pl="eyebrow"></p>
+      <h1 data-pl="title"></h1>
+      <h2 data-pl="lead"></h2>
+      <p data-pl="intro"></p>
+      <p class="pl-scope" data-pl="scope"></p>
+    </section>
+
+    <section class="pl-card pl-controls">
+      <label><span data-pl="worldA"></span><select id="pl-world-a"><option value="earth">Earth</option><option value="mars">Mars</option></select></label>
+      <label><span data-pl="worldB"></span><select id="pl-world-b"><option value="earth">Earth</option><option value="mars">Mars</option></select></label>
+      <label><span data-pl="season"></span><input id="pl-season" type="number" min="0" max="359.999" step="1"></label>
+      <label><span data-pl="latitude"></span><input id="pl-latitude" type="number" min="-90" max="90" step="1"></label>
+      <div class="pl-presets">
+        <button type="button" data-season="0" data-pl="northSpring"></button>
+        <button type="button" data-season="90" data-pl="northSummer"></button>
+        <button type="button" data-season="180" data-pl="autumn"></button>
+        <button type="button" data-season="270" data-pl="northWinter"></button>
+      </div>
+    </section>
+
+    <div class="pl-grid">
+      <section class="pl-card" id="pl-card-a"><h2></h2><div class="pl-metrics"></div><div class="pl-capability"></div></section>
+      <section class="pl-card" id="pl-card-b"><h2></h2><div class="pl-metrics"></div><div class="pl-capability"></div></section>
+    </div>
+
+    <p class="pl-note" data-pl="note"></p>
+
+    <section class="pl-card pl-share">
+      <strong data-pl="share"></strong>
+      <div class="pl-share-row">
+        <input id="pl-url" type="text" readonly aria-label="Planet Lab share URL">
+        <button id="pl-copy" type="button" data-pl="copy"></button>
+      </div>
+      <div id="pl-status" class="pl-status" role="status" aria-live="polite"></div>
+    </section>
+  </div>
+  <script type="module" src="/src/planet/page.ts"></script>
+</body>
+</html>
