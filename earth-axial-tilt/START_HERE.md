@@ -2,6 +2,8 @@
 
 ## 現在地
 
+**2.1.0-alpha.1：Planet Lab Foundation + Mars astronomy候補。** `planet-lab.html`でEarth/Marsを同じ季節黄経Lsに揃え、距離・TOA日射・太陽直下緯度・昼時間・公転年・速度を共通interfaceで比較する。v2.0の共通層は既存Earth solverを移動せず薄いadapterで接続。Mars temperature modelは未提供で、Earth EBMを流用しない。まず `docs/V2.0.md` → `docs/V2.1.md` → 最新CI/HEADを確認する。Earth v1.5の完成状態・検証記録はそのまま保持する。
+
 **1.5.0-rc.1：sweep-first Earth Synthesis候補。** `synthesis-lab.html`で地軸傾斜・離心率・近日点季節を走査し、日射強度・夏半期長・時間平均・積算量を区別。選択A/Bを既存3D Earth/Atlasへ、Aの軌道を明示的90帯Feedbackへ渡す。7つの問い、日英Large、設定JSON/URLと指標CSV。実年代史・2D geography feedback・高度補正は追加していない。既存物理/保存形式は維持。まず `docs/V1.5.md` と `docs/VERIFICATION-1.5-rc.1.md`、その後最新CI/HEAD。公開と実機iPhone正式受入は別。
 
 

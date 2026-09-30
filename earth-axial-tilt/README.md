@@ -1,5 +1,15 @@
 # Earth Axial Tilt Lab
 
+## v2.1 alpha 1 — Planet Lab: Earth ↔ Mars
+
+Open **`planet-lab.html`** for the first planet-generic workspace. v2.0 adds thin
+`PlanetDefinition / OrbitDefinition / RotationDefinition / ClimateModel capability`
+boundaries without moving the accepted Earth v1.x solvers; v2.1 places Mars on that
+astronomy layer. Earth and Mars can be compared at the same seasonal longitude Ls
+for Sun distance, TOA flux, declination, daylight, year length and orbital speed.
+Mars temperature is deliberately **not provided**: Earth climate coefficients are
+not reused as a fake Mars model. See [v2.0](docs/V2.0.md) and [v2.1](docs/V2.1.md).
+
 ## v1.4 alpha 1 — Feedbacks workspace
 
 Open **`feedback-lab.html`** from the main lab's Climate section for the 90-band
