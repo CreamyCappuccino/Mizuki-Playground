@@ -250,3 +250,54 @@ is not instantaneous W/m². Local annual mean uses half-day midpoint quadrature;
 global mean is S0/(4 sqrt(1-e²)), fixed a=1 au and P=365 model days.
 No dated Milankovitch series is fabricated. Cross-lab links retain existing
 climate meanings and do not combine zonal feedback with real-geography physics.
+
+
+---
+
+## Planet Lab v2.0/v2.1 — planet-generic astronomy boundary
+
+The Planet Lab adds a separate astronomy abstraction; it does not replace Earth v1.x formulas.
+
+For a planet with semimajor axis (a), eccentricity (e), and seasonal longitude of perihelion (L_{s,p}),
+the true anomaly at a requested seasonal longitude (L_s) is
+
+[
+\nu = L_s - L_{s,p}.
+]
+
+The heliocentric distance is
+
+[
+r = a\frac{1-e^2}{1+e\cos\nu},
+]
+
+and the ray-normal top-of-atmosphere solar flux is
+
+[
+S = \frac{1361}{r^2}\;\mathrm{W\,m^{-2}},
+]
+
+with (r) in au. No per-planet annual renormalization is applied.
+
+Elapsed time since northern spring is obtained by converting the requested and spring-reference true
+anomalies to eccentric anomaly and mean anomaly, then taking the wrapped mean-anomaly difference as a
+fraction of that planet's model orbital period.
+
+Solar declination remains the geometric teaching relation
+
+[
+\delta = \arcsin(\sin\varepsilon\,\sin L_s),
+]
+
+while reported daylight duration scales the hour angle by that planet's **mean solar day**, not by an
+Earth-fixed 24 hours.
+
+The v2.0 Earth adapter translates legacy Earth orbit state by
+(L_{s,p}=\text{perihelion}-\text{axis}). Regression tests compare the generic result against the untouched
+v1.x Earth orbit, declination and daylight functions.
+
+### Mars v2.1 boundary
+
+Mars uses fixed educational orbital/rotation constants documented in [V2.1](V2.1.md). The model is
+two-body Kepler astronomy, not a dated ephemeris. Mars has no temperature capability in v2.1; Earth EBM
+coefficients, geography and feedback parameters are not reused.
