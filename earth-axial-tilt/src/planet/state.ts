@@ -26,15 +26,16 @@ export function validatePlanetState(value: unknown): PlanetLabState | null {
   if (!value || typeof value !== 'object') return null;
   const state = value as Partial<PlanetLabState>;
   if (state.version !== 1 || !isPlanet(state.worldA) || !isPlanet(state.worldB)) return null;
-  if (!Number.isFinite(state.seasonalLongitudeDeg) || state.seasonalLongitudeDeg! < 0 || state.seasonalLongitudeDeg! >= 360)
-    return null;
-  if (!Number.isFinite(state.latitudeDeg) || state.latitudeDeg! < -90 || state.latitudeDeg! > 90) return null;
+  if (typeof state.seasonalLongitudeDeg !== 'number' || !Number.isFinite(state.seasonalLongitudeDeg) ||
+      state.seasonalLongitudeDeg < 0 || state.seasonalLongitudeDeg >= 360) return null;
+  if (typeof state.latitudeDeg !== 'number' || !Number.isFinite(state.latitudeDeg) ||
+      state.latitudeDeg < -90 || state.latitudeDeg > 90) return null;
   return {
     version: 1,
     worldA: state.worldA,
     worldB: state.worldB,
-    seasonalLongitudeDeg: state.seasonalLongitudeDeg!,
-    latitudeDeg: state.latitudeDeg!,
+    seasonalLongitudeDeg: state.seasonalLongitudeDeg,
+    latitudeDeg: state.latitudeDeg,
   };
 }
 
