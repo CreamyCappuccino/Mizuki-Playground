@@ -81,10 +81,10 @@ function applyState(next: PlanetLabState): void {
 
 function translate(): void {
   document.documentElement.lang = lang;
-  for (const node of document.querySelectorAll<HTMLElement>('[data-pl]')) {
+  document.querySelectorAll<HTMLElement>('[data-pl]').forEach((node) => {
     const key = node.dataset.pl as PlanetMessageKey | undefined;
     if (key) node.textContent = planetMessage(lang, key);
-  }
+  });
 }
 
 function render(): void {
@@ -106,11 +106,12 @@ function safeRender(): void {
 }
 
 for (const input of [worldA, worldB, season, latitude]) input.addEventListener('input', safeRender);
-for (const button of document.querySelectorAll<HTMLButtonElement>('[data-season]'))
+document.querySelectorAll<HTMLButtonElement>('[data-season]').forEach((button) => {
   button.addEventListener('click', () => {
     season.value = button.dataset.season ?? '0';
     safeRender();
   });
+});
 
 language.value = lang;
 language.addEventListener('change', () => {
