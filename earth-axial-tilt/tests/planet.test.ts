@@ -5,7 +5,7 @@ import { daylightHours, planetaryMomentAtSeason, solarDeclinationDeg, yearSolarD
 import { earthDefinitionFromLegacy } from '../src/planet/earthAdapter';
 import { decodePlanetState, DEFAULT_PLANET_STATE, encodePlanetState, planetShareURL } from '../src/planet/state';
 import { dayAtSeasonalLongitude, orbitalMoment, type OrbitParameters } from '../src/physics/orbit';
-import { dailyMeanInsolation, dayLengthHours, solarDeclinationDeg as legacyDeclination } from '../src/physics/solar';
+import { dayLengthHours, solarDeclinationDeg as legacyDeclination } from '../src/physics/solar';
 
 function near(a: number, b: number, tolerance: number): void {
   assert.ok(Number.isFinite(a) && Number.isFinite(b) && Math.abs(a - b) <= tolerance,
