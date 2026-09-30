@@ -8,6 +8,7 @@ export default defineConfig({
     geography: resolve(import.meta.dirname, 'geography-lab.html'),
     feedback: resolve(import.meta.dirname, 'feedback-lab.html'),
     synthesis: resolve(import.meta.dirname, 'synthesis-lab.html'),
+    planet: resolve(import.meta.dirname, 'planet-lab.html'),
   },
   build: { modulePreload: {
     // WebKit can retain a failed modulepreload across reload. Let this optional
