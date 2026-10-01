@@ -1,5 +1,9 @@
 # Earth Axial Tilt Lab
 
+## v2.2 Uranus candidate
+
+`planet-explorer.html` adds directed-spin 0–180° geometry, Earth90/Uranus, two explicit clocks, schematic spheres and illumination curves. See [v2.2 scope](docs/V2.2.md). Acceptance is the latest same-HEAD CI, not this heading.
+
 ## v2.1 alpha 1 — Planet Lab: Earth ↔ Mars
 
 Open **`planet-lab.html`** for the first planet-generic workspace. v2.0 adds thin
