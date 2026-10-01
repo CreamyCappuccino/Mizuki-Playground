@@ -43,7 +43,8 @@
   <p class="input-help" data-i18n="Shared camera and clock. Drag either view to rotate both. A and B are separate experiments, not two planets in one orbit.">Shared camera and clock. Drag either view to rotate both. A and B are separate experiments, not two planets in one orbit.</p>
 </section>
 <div id="comparison-labels" hidden aria-hidden="true"><strong id="comparison-label-a"></strong><strong id="comparison-label-b"></strong></div>
-<aside aria-label="Simulation controls" class="controls glass" data-i18n-aria-label="Simulation controls">
+<button id="toggle-controls-panel" class="panel-toggle panel-toggle-left" type="button" aria-controls="controls-panel" aria-expanded="true" aria-label="Hide controls / 設定パネルを隠す" title="Controls / 設定"><span aria-hidden="true">◀</span></button>
+<aside id="controls-panel" aria-label="Simulation controls" class="controls glass" data-i18n-aria-label="Simulation controls">
 <section class="experiment-tools">
   
 <section class="orbit-lab">
@@ -195,7 +196,8 @@
 </section>
   <p class="input-help"><a id="open-planet-lab" href="./planet-lab.html">Planet Lab · Earth ↔ Mars</a></p>
 </aside>
-<section aria-label="Selected location details" class="location-panel glass" data-i18n-aria-label="Selected location details">
+<button id="toggle-location-panel" class="panel-toggle panel-toggle-right" type="button" aria-controls="location-panel" aria-expanded="true" aria-label="Hide details / 詳細パネルを隠す" title="Details / 詳細"><span aria-hidden="true">▶</span></button>
+<section id="location-panel" aria-label="Selected location details" class="location-panel glass" data-i18n-aria-label="Selected location details">
 <section id="quick-start" class="quick-start" aria-labelledby="quick-start-title">
 <h2 id="quick-start-title" data-i18n="Three ways to explore">Three ways to explore</h2>
 <p data-i18n="Seasons: choose 90°, then Play year in Orbit overview. Day and night: choose Sun now, then Play day. Compare: open Earth A/B and change only B.">Seasons: choose 90°, then Play year in Orbit overview. Day and night: choose Sun now, then Play day. Compare: open Earth A/B and change only B.</p>
