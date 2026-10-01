@@ -10,6 +10,7 @@ export default defineConfig({
     synthesis: resolve(import.meta.dirname, 'synthesis-lab.html'),
     planet: resolve(import.meta.dirname, 'planet-lab.html'),
     explorer: resolve(import.meta.dirname, 'planet-explorer.html'),
+    mercury: resolve(import.meta.dirname, 'mercury-lab.html'),
   },
   build: { modulePreload: {
     // WebKit can retain a failed modulepreload across reload. Let this optional
