@@ -954,13 +954,13 @@ select { min-height: 44px; }
 
 @media (max-width: 680px) {
   .panel-toggle {
-    position: sticky;
+    position: fixed;
     top: 72px;
     z-index: 20;
     width: 44px;
     height: 44px;
-    margin-top: 8px;
+    margin: 0;
   }
-  .panel-toggle-left { left: 10px; margin-left: 10px; }
-  .panel-toggle-right { float: right; right: 10px; bottom: auto; transform: none; margin-right: 10px; }
+  .panel-toggle-left { left: 10px; }
+  .panel-toggle-right { left: auto; right: 10px; bottom: auto; transform: none; }
 }
