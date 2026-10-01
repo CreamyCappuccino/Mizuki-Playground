@@ -21,4 +21,4 @@ def reference(ra, dec, inclination, node, peri, sign):
     return dict(tilt=math.acos(dot(n,k))/D, perihelionLs=math.atan2(-dot(n,p),-dot(n,q))/D%360)
 
 if __name__ == '__main__':
-    print(json.dumps({'uranus': reference(257.311,-15.175,.77263783,74.01692503,170.95427630,-1)},indent=2))
+    print(json.dumps({'uranus': reference(257.311,-15.175,.77263783,74.01692503,170.95427630,-1), 'mercury': reference(281.0103,61.4155,7.00497902,48.33076593,77.45779628,1)},indent=2))
