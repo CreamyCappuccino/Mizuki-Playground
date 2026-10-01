@@ -1,7 +1,7 @@
 import './lab.css';
 import { getPlanetDefinition, type PlanetId } from './definitions';
 import { daylightHours, planetaryMomentAtSeason, solarDeclinationDeg, yearSolarDays } from './astronomy';
-import { DEFAULT_PLANET_STATE, decodePlanetState, encodePlanetState, planetShareURL, type PlanetLabState } from './state';
+import { DEFAULT_PLANET_STATE, decodePlanetState, encodePlanetState, planetShareURL, validatePlanetState, type PlanetLabState } from './state';
 import { planetMessage, type PlanetLanguage, type PlanetMessageKey } from './i18n';
 
 const q = <T extends HTMLElement>(selector: string): T => {
@@ -21,11 +21,17 @@ const copy = q<HTMLButtonElement>('#pl-copy');
 const status = q<HTMLDivElement>('#pl-status');
 const shell = q<HTMLDivElement>('#pl-shell');
 
-let lang: PlanetLanguage = localStorage.getItem('planet-lab-language') === 'ja' ? 'ja' : 'en';
-let state: PlanetLabState = DEFAULT_PLANET_STATE;
-
-const decoded = decodePlanetState(location.hash);
-if (decoded.status === 'ok') state = decoded.state;
+let lang: PlanetLanguage = 'en';
+try { lang = localStorage.getItem('planet-lab-language') === 'ja' ? 'ja' : 'en'; } catch { /* storage is optional */ }
+let state: PlanetLabState = { ...DEFAULT_PLANET_STATE };
+let notice: 'input' | 'link' | null = null;
+function showNotice(): void {
+  status.textContent = notice === 'link'
+    ? (lang === 'ja' ? '不正な共有リンクです。直前の比較（初回は初期値）を維持しています。' : 'Invalid share link. The previous comparison (defaults on first load) is retained.')
+    : notice === 'input'
+      ? (lang === 'ja' ? '値を確認してください。直前の比較を維持しています。' : 'Check the entered values. The previous comparison is retained.')
+      : '';
+}
 
 function metric(label: string, value: string): string {
   return '<div class="pl-metric"><span>' + label + '</span><strong>' + value + '</strong></div>';
@@ -48,7 +54,7 @@ function renderWorld(selector: string, id: PlanetId): void {
     metric(planetMessage(lang, 'distance'), moment.distanceAU.toFixed(4) + ' AU') +
     metric(planetMessage(lang, 'flux'), moment.irradianceWm2.toFixed(1) + ' W/m²') +
     metric(planetMessage(lang, 'declination'), declination.toFixed(2) + '°') +
-    metric(planetMessage(lang, 'daylight'), daylight.toFixed(2) + ' h') +
+    metric(planetMessage(lang, 'daylight'), daylight.toFixed(2) + ' Earth h') +
     metric(planetMessage(lang, 'year'), planet.orbit.yearEarthDays.toFixed(2) + ' Earth d · ' + yearSolarDays(planet).toFixed(2) + ' ' + planetMessage(lang, 'sols')) +
     metric(planetMessage(lang, 'elapsed'), moment.elapsedEarthDays.toFixed(2) + ' Earth d · ' + moment.elapsedSolarDays.toFixed(2) + ' ' + planetMessage(lang, 'sols')) +
     metric(planetMessage(lang, 'speed'), moment.speedRatio.toFixed(3) + '×');
@@ -61,13 +67,12 @@ function renderWorld(selector: string, id: PlanetId): void {
 }
 
 function currentState(): PlanetLabState {
-  const next: PlanetLabState = {
-    version: 1,
-    worldA: worldA.value as PlanetId,
-    worldB: worldB.value as PlanetId,
-    seasonalLongitudeDeg: Number(season.value),
-    latitudeDeg: Number(latitude.value),
-  };
+  if (!season.value.trim() || !latitude.value.trim()) throw new RangeError('Empty numeric field.');
+  const next = validatePlanetState({
+    version: 1, worldA: worldA.value, worldB: worldB.value,
+    seasonalLongitudeDeg: season.valueAsNumber, latitudeDeg: latitude.valueAsNumber,
+  });
+  if (!next) throw new RangeError('Invalid controls.');
   return next;
 }
 
@@ -88,22 +93,36 @@ function translate(): void {
 }
 
 function render(): void {
-  state = currentState();
+  // Rendering reads the accepted state only. Draft input cannot partly repaint a world.
   renderWorld('#pl-card-a', state.worldA);
   renderWorld('#pl-card-b', state.worldB);
-  const hash = encodePlanetState(state);
-  if (location.hash !== hash) history.replaceState(null, '', hash);
   shareURL.value = planetShareURL(location.href, state);
 }
 
 function safeRender(): void {
   try {
+    const next = currentState();
+    const hash = encodePlanetState(next);
+    if (location.hash !== hash) history.replaceState(null, '', hash);
+    state = next;
+    notice = null;
     render();
-    status.textContent = '';
-  } catch {
-    status.textContent = lang === 'ja' ? '値を確認してください。' : 'Check the entered values.';
-  }
+  } catch { notice = 'input'; }
+  showNotice();
 }
+
+function restoreHash(): void {
+  const decoded = decodePlanetState(location.hash);
+  if (decoded.status === 'error') {
+    notice = 'link'; // Preserve both the accepted comparison and the invalid URL for inspection.
+  } else {
+    applyState(decoded.status === 'ok' ? decoded.state : { ...DEFAULT_PLANET_STATE });
+    notice = null;
+    render();
+  }
+  showNotice();
+}
+window.addEventListener('hashchange', restoreHash);
 
 for (const input of [worldA, worldB, season, latitude]) input.addEventListener('input', safeRender);
 document.querySelectorAll<HTMLButtonElement>('[data-season]').forEach((button) => {
@@ -116,9 +135,10 @@ document.querySelectorAll<HTMLButtonElement>('[data-season]').forEach((button) =
 language.value = lang;
 language.addEventListener('change', () => {
   lang = language.value === 'ja' ? 'ja' : 'en';
-  localStorage.setItem('planet-lab-language', lang);
+  try { localStorage.setItem('planet-lab-language', lang); } catch { /* session-only preference */ }
   translate();
-  safeRender();
+  render();
+  showNotice();
 });
 large.addEventListener('change', () => shell.classList.toggle('large', large.checked));
 copy.addEventListener('click', async () => {
@@ -133,3 +153,4 @@ copy.addEventListener('click', async () => {
 applyState(state);
 translate();
 render();
+restoreHash();
