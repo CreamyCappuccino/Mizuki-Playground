@@ -1,4 +1,4 @@
-export type PlanetId = 'earth' | 'mars';
+export type PlanetId = 'earth' | 'mars' | 'uranus';
 
 export interface OrbitDefinition {
   /** Semimajor axis in astronomical units. */
@@ -76,9 +76,27 @@ export const MARS_PLANET: Readonly<PlanetDefinition> = Object.freeze({
   }),
 });
 
+/** Fixed J2000-like teaching world. Positive latitude follows the spin pole,
+ * opposite the IAU cartographic north pole for Uranus. See docs/V2.2.md. */
+export const URANUS_PLANET: Readonly<PlanetDefinition> = Object.freeze({
+  id: 'uranus', name: 'Uranus',
+  orbit: Object.freeze({
+    semiMajorAxisAU: 19.18916464, eccentricity: 0.04725744,
+    perihelionSeasonDeg: 3.4124884286485,
+    yearEarthDays: 84.016846 * 365.25,
+  }),
+  rotation: Object.freeze({
+    obliquityDeg: 97.77, siderealDayHours: 17.24,
+    solarDayHours: 24 / (24 / 17.24 + 1 / (84.016846 * 365.25)),
+    direction: 'retrograde',
+  }),
+  climate: Object.freeze({ kind: 'none', reason: 'No Uranus climate model; geometric illumination only.' }),
+});
+
 export const PLANETS: Readonly<Record<PlanetId, Readonly<PlanetDefinition>>> = Object.freeze({
   earth: EARTH_PLANET,
   mars: MARS_PLANET,
+  uranus: URANUS_PLANET,
 });
 
 export function getPlanetDefinition(id: PlanetId): Readonly<PlanetDefinition> {
