@@ -1,4 +1,4 @@
-export type PlanetId = 'earth' | 'mars' | 'uranus';
+export type PlanetId = 'earth' | 'mars' | 'uranus' | 'mercury';
 
 export interface OrbitDefinition {
   /** Semimajor axis in astronomical units. */
@@ -93,10 +93,29 @@ export const URANUS_PLANET: Readonly<PlanetDefinition> = Object.freeze({
   climate: Object.freeze({ kind: 'none', reason: 'No Uranus climate model; geometric illumination only.' }),
 });
 
+/** Exact 3:2 teaching resonance: no libration or secular precession.
+ * Fixed JPL J2000 orbital elements; pole angle derived in audits/planet. */
+const MERCURY_YEAR_DAYS = 0.2408467 * 365.25;
+export const MERCURY_PLANET: Readonly<PlanetDefinition> = Object.freeze({
+  id: 'mercury', name: 'Mercury',
+  orbit: Object.freeze({
+    semiMajorAxisAU: 0.38709927, eccentricity: 0.20563593,
+    perihelionSeasonDeg: 49.24790603457269, yearEarthDays: MERCURY_YEAR_DAYS,
+  }),
+  rotation: Object.freeze({
+    obliquityDeg: 0.034,
+    siderealDayHours: MERCURY_YEAR_DAYS * 2 / 3 * 24,
+    solarDayHours: MERCURY_YEAR_DAYS * 2 * 24,
+    direction: 'prograde',
+  }),
+  climate: Object.freeze({kind: 'none', reason: 'No Mercury temperature model; use the coupled Sun experiment.'}),
+});
+
 export const PLANETS: Readonly<Record<PlanetId, Readonly<PlanetDefinition>>> = Object.freeze({
   earth: EARTH_PLANET,
   mars: MARS_PLANET,
   uranus: URANUS_PLANET,
+  mercury: MERCURY_PLANET,
 });
 
 export function getPlanetDefinition(id: PlanetId): Readonly<PlanetDefinition> {
