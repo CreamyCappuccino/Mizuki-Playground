@@ -1,5 +1,23 @@
 # Earth Axial Tilt Lab
 
+## v2.4.0-rc.1 — Planet Synthesis
+
+Open **[Planet Explorer](planet-explorer.html)** for Earth/Mars/Uranus/Mercury,
+optional native-value gallery, independent World A/B selections and hypothetical
+0–180° tilts. Compare equal seasonal angle or equal elapsed Earth days, then inspect
+shared-scale illumination curves and export native or seasonal CSVs. The new
+**[Mercury clock lab](mercury-lab.html)** follows exact 3:2 resonance and apparent
+solar reversal. The original Earth 3D/climate/Atlas pages and share formats remain
+unchanged; their controls include an Explorer link. Panel-collapse polish is retained.
+
+Read [v2.4 scope](docs/V2.4.md), [Uranus](docs/V2.2.md), [Mercury](docs/V2.3.md),
+and [verification](docs/VERIFICATION-2.4-rc.1.md), then check latest source/CI HEAD.
+This is a teaching-model release candidate, not completion of a wholesale Earth
+internal migration, a weather model, or physical iPhone/public-deployment acceptance.
+
+### Earlier checkpoints
+
+
 ## v2.3 alpha — Mercury Spin–Orbit Lab
 
 `mercury-lab.html` adds exact 3:2 coupled spin/orbit, perihelion Sun reversal,
