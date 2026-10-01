@@ -301,3 +301,15 @@ v1.x Earth orbit, declination and daylight functions.
 Mars uses fixed educational orbital/rotation constants documented in [V2.1](V2.1.md). The model is
 two-body Kepler astronomy, not a dated ephemeris. Mars has no temperature capability in v2.1; Earth EBM
 coefficients, geography and feedback parameters are not reused.
+
+
+## v2.2–v2.4 Planet chapter
+
+[Uranus](V2.2.md) defines a directed positive spin pole, including obliquities above
+90° without a second spin sign inversion. Its positive latitude is opposite IAU
+cartographic north. [Mercury](V2.3.md) uses one clock for Kepler orbit and exact
+3:2 spin; its changing Sun is not estimated from a frozen-orbit daylight fraction.
+[Planet Synthesis](V2.4.md) distinguishes equal-angle curves, equal elapsed-time
+snapshots and analytic time-weighted annual ray-normal flux. New geometric-sphere
+brightness is normalized for visibility, not cross-planet radiometry. Existing
+Earth climate equations and original share schemas are unchanged.
