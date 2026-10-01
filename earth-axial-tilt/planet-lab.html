@@ -26,8 +26,8 @@
     <section class="pl-card pl-controls">
       <label><span data-pl="worldA"></span><select id="pl-world-a"><option value="earth">Earth</option><option value="mars">Mars</option></select></label>
       <label><span data-pl="worldB"></span><select id="pl-world-b"><option value="earth">Earth</option><option value="mars">Mars</option></select></label>
-      <label><span data-pl="season"></span><input id="pl-season" type="number" min="0" max="359.999" step="1"></label>
-      <label><span data-pl="latitude"></span><input id="pl-latitude" type="number" min="-90" max="90" step="1"></label>
+      <label><span data-pl="season"></span><input id="pl-season" type="number" min="0" max="359.99999999999994" step="any" required></label>
+      <label><span data-pl="latitude"></span><input id="pl-latitude" type="number" min="-90" max="90" step="any" required></label>
       <div class="pl-presets">
         <button type="button" data-season="0" data-pl="northSpring"></button>
         <button type="button" data-season="90" data-pl="northSummer"></button>
@@ -42,6 +42,10 @@
     </div>
 
     <p class="pl-note" data-pl="note"></p>
+    <p class="pl-note">h = Earth hours / 地球の時間。TOA flux = ray-normal / 光線に垂直な面の日射。<br>
+      <a href="https://nssdc.gsfc.nasa.gov/planetary/factsheet/marsfact.html" rel="noreferrer">NASA · Mars data</a> ·
+      <a href="https://www.giss.nasa.gov/tools/mars24/help/notes.html" rel="noreferrer">NASA GISS · Ls / solar time</a>
+    </p>
 
     <section class="pl-card pl-share">
       <strong data-pl="share"></strong>
