@@ -49,7 +49,7 @@ function render():void{
   if(inp('url').value)$('share-status').textContent=inp('url').value===mercuryURL(location.href,state)?tr('Link matches this state.','この状態のリンクです。'):tr('Snapshot of earlier settings. Create the link again.','前の設定のリンクです。作り直してください。');
   error();plot();
 }
-function pause():void{playing=false;cancelAnimationFrame(raf);last=0;}
+function pause(syncTime=false):void{const wasPlaying=playing;playing=false;cancelAnimationFrame(raf);last=0;if(wasPlaying&&syncTime)inp('cycles').value=String(state.cycles);}
 function adopt(next:MercurySettings,link=true):void{pause();state=validateMercury(next);problem=false;controls();if(link)history.replaceState(null,'',mercuryHash(state));render();}
 for(const k of ['cycles','latitude','longitude','eccentricity'])on(k,'change',()=>{pause();try{adopt(read());}catch{problem=true;render();}});
 on('timeline','input',()=>adopt({...state,cycles:inp('timeline').valueAsNumber}));
@@ -59,16 +59,16 @@ on('circle','click',()=>{zoom=false;adopt({...state,eccentricity:0,cycles:0});})
 on('horizon','click',()=>{zoom=true;adopt({...DEFAULT_MERCURY,cycles:.94,longitude:90});});
 on('full','click',()=>{zoom=false;render();});
 function tick(now:number):void{if(!playing||disposed)return;const dt=last?Math.min(.1,(now-last)/1000):0;last=now;state={...state,cycles:Math.min(2,state.cycles+dt/20)};
-  if(now-paint>70){inp('cycles').value=String(state.cycles);render();paint=now;}if(state.cycles===2){pause();history.replaceState(null,'',mercuryHash(state));render();return;}raf=requestAnimationFrame(tick);}
-on('play','click',()=>{if(playing){pause();history.replaceState(null,'',mercuryHash(state));}else{try{state=read();problem=false;if(state.cycles===2)state={...state,cycles:0};playing=true;last=0;raf=requestAnimationFrame(tick);}catch{problem=true;}}render();});
+  if(now-paint>70){inp('cycles').value=String(state.cycles);render();paint=now;}if(state.cycles===2){pause(true);history.replaceState(null,'',mercuryHash(state));render();return;}raf=requestAnimationFrame(tick);}
+on('play','click',()=>{if(playing){pause(true);history.replaceState(null,'',mercuryHash(state));}else{try{state=read();problem=false;if(state.cycles===2)state={...state,cycles:0};playing=true;last=0;raf=requestAnimationFrame(tick);}catch{problem=true;}}render();});
 $<HTMLSelectElement>('language').value=lang;inp('large').checked=large;
 on('language','change',()=>{lang=$<HTMLSelectElement>('language').value==='ja'?'ja':'en';try{localStorage.setItem('planet-lab-language',lang);}catch{/* optional */}translate();render();});
 on('large','change',()=>{large=inp('large').checked;try{localStorage.setItem('earth-lab:text-size',large?'large':'comfortable');}catch{/* optional */}translate();render();});
-on('share','click',()=>{try{adopt(read());inp('url').value=mercuryURL(location.href,state);render();}catch{problem=true;error();}});
+on('share','click',()=>{try{pause(true);adopt(read());inp('url').value=mercuryURL(location.href,state);render();}catch{problem=true;error();}});
 on('copy','click',()=>{void (async()=>{try{if(!inp('url').value)throw new Error('No link');await navigator.clipboard.writeText(inp('url').value);$('share-status').textContent=tr('Copied.','コピーしました。');}catch{inp('url').focus();inp('url').select();$('share-status').textContent=tr('Create a link and copy the selected URL manually.','リンクを作成し、選択したURLを手動でコピーしてください。');}})();});
 on('csv','click',()=>{try{const text=mercuryCSV(read());const url=URL.createObjectURL(new Blob([text],{type:'text/csv;charset=utf-8'})),a=document.createElement('a');a.href=url;a.download='mercury-two-orbits.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),0);}catch{problem=true;error();}});
 function restore():void{try{adopt(parseMercuryHash(location.hash)??DEFAULT_MERCURY,false);}catch{pause();problem=true;render();}}
-window.addEventListener('hashchange',restore,{signal:events.signal});document.addEventListener('visibilitychange',()=>{if(document.hidden){pause();render();}},{signal:events.signal});
+window.addEventListener('hashchange',restore,{signal:events.signal});document.addEventListener('visibilitychange',()=>{if(document.hidden){pause(true);render();}},{signal:events.signal});
 const observer=new ResizeObserver(()=>{if(!disposed)plot();});observer.observe($('motion'));observer.observe($('elevation'));
-window.addEventListener('pagehide',e=>{pause();if(e.persisted){render();return;}disposed=true;events.abort();observer.disconnect();},{signal:events.signal});
+window.addEventListener('pagehide',e=>{pause(true);if(e.persisted){render();return;}disposed=true;events.abort();observer.disconnect();},{signal:events.signal});
 controls();translate();restore();
