@@ -62,19 +62,20 @@ export function renderWorldCanvas(canvas:HTMLCanvasElement,p:Readonly<PlanetDefi
 }
 
 export function renderCurve(host:HTMLElement,curves:readonly {values:readonly number[];name:string}[],
-  max:number,xmax:number,yUnit:string,cursor:number,large:boolean):void {
+  max:number,xmax:number,yUnit:string,cursor:number,large:boolean,min=0,xmin=0):void {
   const W=Math.max(280,host.clientWidth),H=230,L=large?68:55,T=16,B=40,R=18;
   const ns='http://www.w3.org/2000/svg';const svg=document.createElementNS(ns,'svg');
   svg.setAttribute('viewBox',`0 0 ${W} ${H}`);svg.setAttribute('role','img');svg.setAttribute('aria-label',host.dataset.label??yUnit);
   function node(tag:string,attrs:Record<string,string|number>,text?:string):SVGElement{
     const n=document.createElementNS(ns,tag);for(const [k,v] of Object.entries(attrs))n.setAttribute(k,String(v));if(text)n.textContent=text;svg.append(n);return n;
   }
-  const y=(v:number)=>H-B-v/max*(H-B-T),x=(v:number)=>L+v/xmax*(W-L-R);
-  for(let i=0;i<5;i++){const v=i*max/4,Y=y(v);node('line',{x1:L,y1:Y,x2:W-R,y2:Y,class:'px-grid'});
+  const y=(v:number)=>H-B-(v-min)/(max-min)*(H-B-T),x=(v:number)=>L+(v-xmin)/(xmax-xmin)*(W-L-R);
+  for(let i=0;i<5;i++){const v=min+i*(max-min)/4,Y=y(v);node('line',{x1:L,y1:Y,x2:W-R,y2:Y,class:'px-grid'});
     node('text',{x:L-8,y:Y+5,'text-anchor':'end','font-size':large?17:14},`${v<10?Number(v.toFixed(2)):Math.round(v)}`);}
-  for(let i=0;i<5;i++)node('text',{x:x(i*xmax/4),y:H-12,'text-anchor':'middle','font-size':large?17:14},String(Number((i*xmax/4).toFixed(1))));
-  curves.forEach((c,i)=>{const path=c.values.map((v,k)=>`${k?'L':'M'}${x(k*xmax/(c.values.length-1)).toFixed(2)},${y(v).toFixed(2)}`).join(' ');
+  for(let i=0;i<5;i++)node('text',{x:x(xmin+i*(xmax-xmin)/4),y:H-12,'text-anchor':'middle','font-size':large?17:14},String(Number((xmin+i*(xmax-xmin)/4).toFixed(2))));
+  curves.forEach((c,i)=>{const path=c.values.map((v,k)=>`${k?'L':'M'}${x(xmin+k*(xmax-xmin)/(c.values.length-1)).toFixed(2)},${y(v).toFixed(2)}`).join(' ');
     const n=node('path',{d:path,class:i?'px-line px-line-b':'px-line'});const title=document.createElementNS(ns,'title');title.textContent=c.name;n.append(title);});
-  node('line',{x1:x(cursor),x2:x(cursor),y1:T,y2:H-B,class:'px-cursor'});
+  if(min<0&&max>0)node('line',{x1:L,x2:W-R,y1:y(0),y2:y(0),class:'px-grid','stroke-dasharray':'4 3'});
+  if(cursor>=xmin&&cursor<=xmax)node('line',{x1:x(cursor),x2:x(cursor),y1:T,y2:H-B,class:'px-cursor'});
   host.replaceChildren(svg);
 }
