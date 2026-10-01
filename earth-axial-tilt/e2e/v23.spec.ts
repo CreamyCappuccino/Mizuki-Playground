@@ -23,5 +23,5 @@ test('Mercury Japanese Large phone works with blocked storage and no overflow',a
   await page.goto('/mercury-lab.html');await page.locator('#mc-language').selectOption('ja');await page.locator('#mc-large').check();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
   await page.locator('#mc-play').click();await expect(page.locator('#mc-play')).toHaveAttribute('aria-pressed','true');await page.locator('#mc-play').click();
-  await expect(page.locator('#mc-play')).toHaveAttribute('aria-pressed','false');await page.screenshot({path:info.outputPath('mercury-mobile-ja-large.png'),fullPage:true});
+  await expect(page.locator('#mc-play')).toHaveAttribute('aria-pressed','false');expect(Number(await page.locator('#mc-cycles').inputValue())).toBe(Number(await page.locator('#mc-canvas').getAttribute('data-cycles')));await page.screenshot({path:info.outputPath('mercury-mobile-ja-large.png'),fullPage:true});
 });
