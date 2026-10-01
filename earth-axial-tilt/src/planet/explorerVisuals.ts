@@ -6,8 +6,10 @@ const normalize=(v:Vec3):Vec3=>{const l=Math.hypot(...v);return [v[0]/l,v[1]/l,v
 const cross=(a:Vec3,b:Vec3):Vec3=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
 const front=normalize([2,3,1.8]),right=normalize(cross([0,0,1],front)),up=cross(front,right);
 const colours:Record<string,readonly [number,number,number]>={earth:[74,168,223],mars:[226,135,97],uranus:[126,220,220],mercury:[184,174,160]};
-const scratch=document.createElement('canvas');scratch.width=240;scratch.height=240;
-const scratchCtx=scratch.getContext('2d')!;
+// Keep a distinct backing surface per output canvas. WebKit can defer drawImage
+// consumption; rewriting one shared source can contaminate earlier worlds.
+// Weak ownership lets replaced gallery canvases and their buffers be collected.
+const sphereSurfaces=new WeakMap<HTMLCanvasElement,HTMLCanvasElement>();
 const normals:({v:Vec3;edge:number}|null)[]=Array.from({length:240*240},(_,i)=>{
   const x=((i%240)+.5-120)/119,y=(120-Math.floor(i/240)-.5)/119,r=x*x+y*y;
   if(r>1)return null;const z=Math.sqrt(1-r);
@@ -19,6 +21,9 @@ export function renderWorldCanvas(canvas:HTMLCanvasElement,p:Readonly<PlanetDefi
   lat:number,lon:number,spin:number):void {
   const context=canvas.getContext('2d');if(!context)return;
   const ctx:CanvasRenderingContext2D=context;
+  let scratch=sphereSurfaces.get(canvas);
+  if(!scratch){scratch=document.createElement('canvas');scratch.width=240;scratch.height=240;sphereSurfaces.set(canvas,scratch);}
+  const scratchCtx=scratch.getContext('2d');if(!scratchCtx)return;
   canvas.width=520;canvas.height=300;ctx.clearRect(0,0,520,300);
   const sun=sunDirection(ls),colour=colours[p.id],im=scratchCtx.createImageData(240,240);
   for(let i=0;i<normals.length;i++){
