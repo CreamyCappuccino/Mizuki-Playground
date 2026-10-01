@@ -1,5 +1,9 @@
 # 次の瑞希へ — Earth Axial Tilt Lab
 
+## v2.2 Uranus candidate
+
+`planet-explorer.html` adds directed-spin 0–180° geometry, Earth90/Uranus, two explicit clocks, schematic spheres and illumination curves. See [v2.2 scope](docs/V2.2.md). Acceptance is the latest same-HEAD CI, not this heading.
+
 ## 現在地
 
 **2.1.0-alpha.1：Planet Lab Foundation + Mars astronomy候補。** `planet-lab.html`でEarth/Marsを同じ季節黄経Lsに揃え、距離・TOA日射・太陽直下緯度・昼時間・公転年・速度を共通interfaceで比較する。v2.0の共通層は既存Earth solverを移動せず薄いadapterで接続。Mars temperature modelは未提供で、Earth EBMを流用しない。まず `docs/V2.0.md` → `docs/V2.1.md` → 最新CI/HEADを確認する。Earth v1.5の完成状態・検証記録はそのまま保持する。
