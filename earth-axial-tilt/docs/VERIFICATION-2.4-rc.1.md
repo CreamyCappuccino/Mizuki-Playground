@@ -44,6 +44,12 @@ the archived base finds50original files in physics/scene/feedback/synthesis/
 experiments unchanged; original main.ts is also unchanged. The dependency graph
 matches the base after excluding only package version metadata.
 
+Final WebKit image review also exposed shared scratch-canvas colour bleed between
+worlds. Each output canvas now owns a separate weakly held sphere surface; the
+browser regression samples the four native colour families after all worlds render.
+This does not alter geometry, orbital calculations, or scalar results. Final
+acceptance is repeated after this rendering fix.
+
 ## Independent numerical checks
 
 - Uranus: directed-pole dot-product geometry, inclination97.77°, maximum
