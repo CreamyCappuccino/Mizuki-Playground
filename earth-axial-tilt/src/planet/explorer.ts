@@ -110,7 +110,7 @@ function render():void{
     tr('Shared elapsed time from each world’s own spring, not a common real date. Coupled spin and orbit; 1 Earth day per second. Graph cursor follows A’s Ls.','各世界の春を起点に同じ経過時間で比較。実際の同時刻ではありません。自転と公転を連動し、1秒に地球1日。グラフの縦線はAのLsです。');
   $('play').setAttribute('aria-pressed',String(playing));$('play').textContent=playing?tr('Pause','一時停止'):tr('Play this clock','この時計で再生');showNotice();
 }
-function pause():void{playing=false;cancelAnimationFrame(raf);raf=0;last=0;}
+function pause(syncTime=false):void{const wasPlaying=playing;playing=false;cancelAnimationFrame(raf);raf=0;last=0;if(wasPlaying&&syncTime){input('season').value=String(state.season);input('days').value=String(state.days);}}
 function adopt(next:ExplorerState,writeURL=false):void{
   pause();state=validateExplorer(next);notice=null;controls();if(writeURL)history.replaceState(null,'',new URL(explorerURL(location.href,state)).hash);render();
 }
@@ -133,16 +133,16 @@ function tick(now:number):void{
   const dt=last?Math.min(.1,(now-last)/1000):0;last=now;
   state={...state,...(state.clock==='season'?{season:(state.season+20*dt)%360}:{days:Math.min(100000,state.days+dt)})};
   if(now-lastPaint>70){input('season').value=String(state.season);input('days').value=String(state.days);render();lastPaint=now;}
-  if(state.clock==='elapsed'&&state.days===100000){pause();render();return;}raf=requestAnimationFrame(tick);
+  if(state.clock==='elapsed'&&state.days===100000){pause(true);render();return;}raf=requestAnimationFrame(tick);
 }
-on('play','click',()=>{if(playing){pause();history.replaceState(null,'',new URL(explorerURL(location.href,state)).hash);}else{try{state=read();notice=null;playing=true;last=0;raf=requestAnimationFrame(tick);}catch{notice='input';}}render();});
+on('play','click',()=>{if(playing){pause(true);history.replaceState(null,'',new URL(explorerURL(location.href,state)).hash);}else{try{state=read();notice=null;playing=true;last=0;raf=requestAnimationFrame(tick);}catch{notice='input';}}render();});
 select('language').value=lang;input('large').checked=large;
 on('language','change',()=>{lang=select('language').value==='ja'?'ja':'en';try{localStorage.setItem('planet-lab-language',lang);}catch{/* optional */}translate();gallery();render();});
 on('large','change',()=>{large=input('large').checked;try{localStorage.setItem('earth-lab:text-size',large?'large':'comfortable');}catch{/* optional */}translate();gallery();render();});
 function saveFile(name:string,text:string,type:string):void{
   const url=URL.createObjectURL(new Blob([text],{type})),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),0);
 }
-on('share','click',()=>{try{adopt(read(),true);input('url').value=explorerURL(location.href,state);$('share-status').textContent=tr('Link ready. No playback or personal display preferences are imported.','リンク作成済み。再生や個人の表示設定は読み込みません。');}catch{notice='input';showNotice();}});
+on('share','click',()=>{try{pause(true);adopt(read(),true);input('url').value=explorerURL(location.href,state);$('share-status').textContent=tr('Link ready. No playback or personal display preferences are imported.','リンク作成済み。再生や個人の表示設定は読み込みません。');}catch{notice='input';showNotice();}});
 on('copy','click',()=>{void(async()=>{try{if(!input('url').value)throw new Error('Create link first');await navigator.clipboard.writeText(input('url').value);$('share-status').textContent=tr('Copied.','コピーしました。');}catch{input('url').focus();input('url').select();$('share-status').textContent=tr('Create a link and copy the selected URL manually.','リンクを作成し、選択したURLを手動でコピーしてください。');}})();});
 on('csv','click',()=>{try{saveFile('planet-season-comparison.csv',explorerCSV(read()),'text/csv;charset=utf-8');}catch{notice='input';showNotice();}});
 on('gallery-csv','click',()=>saveFile('planet-native-comparison.csv',galleryCSV(),'text/csv;charset=utf-8'));
@@ -151,7 +151,7 @@ on('save','click',()=>{try{const text=explorerFile(read());$<HTMLTextAreaElement
 on('load','click',()=>{try{adopt(parseExplorerFile($<HTMLTextAreaElement>('json').value),true);}catch{notice='link';showNotice();}});
 function restore():void{try{adopt(parseExplorerHash(location.hash)??validateExplorer(DEFAULT_EXPLORER));}catch{notice='link';showNotice();}}
 window.addEventListener('hashchange',restore,{signal:events.signal});
-document.addEventListener('visibilitychange',()=>{if(document.hidden){pause();render();}},{signal:events.signal});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){pause(true);render();}},{signal:events.signal});
 const observer=new ResizeObserver(()=>{if(!disposed)plot();});observer.observe($('fraction'));observer.observe($('energy'));
-window.addEventListener('pagehide',e=>{pause();if(e.persisted){render();return;}disposed=true;events.abort();observer.disconnect();},{signal:events.signal});
+window.addEventListener('pagehide',e=>{pause(true);if(e.persisted){render();return;}disposed=true;events.abort();observer.disconnect();},{signal:events.signal});
 controls();translate();gallery();render();restore();
