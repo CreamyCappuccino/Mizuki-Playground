@@ -26,3 +26,23 @@ test('Japanese Large phone gallery scrolls inside its table without hiding the w
   await page.screenshot({path:info.outputPath('planet-synthesis-mobile-ja-large.png'),fullPage:true});
   await page.locator('#open-mercury').click();await expect(page).toHaveURL(/mercury-lab/);await expect(page.locator('#mc-play')).toHaveAttribute('aria-pressed','false');
 });
+
+
+test('separate sphere surfaces retain native planet colours after all worlds have rendered',async({page})=>{
+  await page.goto('/planet-explorer.html');await page.locator('#px-gallery-section summary').click();
+  const colours=await page.locator('#px-gallery').evaluate(parent=>{
+    const result:Record<string,number[]>={};
+    parent.querySelectorAll<HTMLCanvasElement>('canvas').forEach(canvas=>{
+      const id=canvas.closest<HTMLElement>('[data-planet]')!.dataset.planet!;
+      const pixels=canvas.getContext('2d')!.getImageData(164,143,3,3).data;
+      const rgb=[0,0,0];for(let i=0;i<pixels.length;i+=4)for(let j=0;j<3;j++)rgb[j]+=pixels[i+j]/9;
+      result[id]=rgb;
+    });return result;
+  });
+  expect(colours.earth[2]).toBeGreaterThan(colours.earth[0]+20);
+  expect(colours.mars[0]).toBeGreaterThan(colours.mars[2]+20);
+  expect(colours.uranus[1]).toBeGreaterThan(colours.uranus[0]+15);
+  expect(Math.abs(colours.uranus[1]-colours.uranus[2])).toBeLessThan(5);
+  expect(colours.mercury[0]).toBeGreaterThan(colours.mercury[2]);
+  expect(colours.mercury[0]-colours.mercury[2]).toBeLessThan(20);
+});
