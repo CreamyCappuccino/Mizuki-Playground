@@ -919,3 +919,48 @@ select { min-height: 44px; }
 #orbit-workbench { min-width:0; }
 #orbit-workbench .input-help, #orbit-values { line-height:1.65; overflow-wrap:anywhere; }
 #orbit-input-status:not(:empty) { color:#ffbbac; }
+
+
+/* v2.1 polish: independent overlay panel visibility for narrower laptop displays. */
+.panel-toggle {
+  position: absolute;
+  top: 122px;
+  z-index: 13;
+  width: 36px;
+  height: 42px;
+  padding: 0;
+  border: 1px solid rgba(145, 194, 235, 0.26);
+  border-radius: 10px;
+  background: rgba(4, 13, 24, 0.78);
+  color: #dff7ff;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.22);
+  backdrop-filter: blur(12px);
+}
+.panel-toggle:hover { background: rgba(8, 24, 40, 0.92); }
+.panel-toggle:focus-visible { outline: 2px solid #8ce8ff; outline-offset: 2px; }
+.panel-toggle-left { left: 360px; }
+.panel-toggle-right { right: 22px; top: auto; bottom: 22px; transform: translateY(calc(-1 * min(520px, 54svh) - 10px)); }
+
+@media (max-width: 1100px) {
+  .panel-toggle-left { left: 316px; }
+  .panel-toggle-right { right: 10px; }
+}
+
+@media (max-width: 900px) {
+  .panel-toggle { top: 100px; }
+  .panel-toggle-left { left: 310px; }
+  .panel-toggle-right { top: auto; bottom: 10px; transform: translateY(calc(-1 * min(450px, 54svh) - 10px)); }
+}
+
+@media (max-width: 680px) {
+  .panel-toggle {
+    position: sticky;
+    top: 72px;
+    z-index: 20;
+    width: 44px;
+    height: 44px;
+    margin-top: 8px;
+  }
+  .panel-toggle-left { left: 10px; margin-left: 10px; }
+  .panel-toggle-right { float: right; right: 10px; bottom: auto; transform: none; margin-right: 10px; }
+}
