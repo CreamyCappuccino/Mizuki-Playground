@@ -70,6 +70,10 @@ const rotationInput = $<HTMLInputElement>('#rotation');
 const locationSelect = $<HTMLSelectElement>('#location-select');
 const chartContainer = $<HTMLElement>('#annual-chart');
 const textSize = $<HTMLSelectElement>('#text-size');
+const controlsPanel = $<HTMLElement>('#controls-panel');
+const locationPanel = $<HTMLElement>('#location-panel');
+const controlsPanelToggle = $<HTMLButtonElement>('#toggle-controls-panel');
+const locationPanelToggle = $<HTMLButtonElement>('#toggle-location-panel');
 // A local display preference only. The app still works when storage is blocked.
 try {
     textSize.value = localStorage.getItem('earth-lab:text-size') === 'large' ? 'large' : 'comfortable';
@@ -93,6 +97,39 @@ const scene = new EarthScene(canvas, {
         update();
     },
 });
+const panelPreference = (key: string): boolean => {
+    try { return localStorage.getItem(key) !== 'closed'; }
+    catch { return true; }
+};
+const storePanelPreference = (key: string, open: boolean): void => {
+    try { localStorage.setItem(key, open ? 'open' : 'closed'); }
+    catch { /* local display preference only */ }
+};
+let controlsPanelOpen = panelPreference('earth-lab:controls-panel');
+let locationPanelOpen = panelPreference('earth-lab:location-panel');
+function syncOverlayPanels(): void {
+    controlsPanel.hidden = !controlsPanelOpen;
+    locationPanel.hidden = !locationPanelOpen;
+    controlsPanelToggle.setAttribute('aria-expanded', String(controlsPanelOpen));
+    controlsPanelToggle.setAttribute('aria-label', controlsPanelOpen ? 'Hide controls / 設定パネルを隠す' : 'Show controls / 設定パネルを表示');
+    controlsPanelToggle.firstElementChild!.textContent = controlsPanelOpen ? '◀' : '▶';
+    locationPanelToggle.setAttribute('aria-expanded', String(locationPanelOpen));
+    locationPanelToggle.setAttribute('aria-label', locationPanelOpen ? 'Hide details / 詳細パネルを隠す' : 'Show details / 詳細パネルを表示');
+    locationPanelToggle.firstElementChild!.textContent = locationPanelOpen ? '▶' : '◀';
+    scene.refreshView();
+}
+controlsPanelToggle.addEventListener('click', () => {
+    controlsPanelOpen = !controlsPanelOpen;
+    storePanelPreference('earth-lab:controls-panel', controlsPanelOpen);
+    syncOverlayPanels();
+}, { signal: applicationEvents.signal });
+locationPanelToggle.addEventListener('click', () => {
+    locationPanelOpen = !locationPanelOpen;
+    storePanelPreference('earth-lab:location-panel', locationPanelOpen);
+    syncOverlayPanels();
+}, { signal: applicationEvents.signal });
+syncOverlayPanels();
+
 const disposeView = bindViewControls({ quality: value => scene.setQuality(value), lights: value => scene.setNightLights(value), refresh: () => scene.refreshView() });
 const disposeRelease = bindReleaseControls(() => scene.refreshView());
 const sceneView = $<HTMLSelectElement>('#scene-view');
