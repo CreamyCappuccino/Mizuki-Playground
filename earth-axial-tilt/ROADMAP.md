@@ -4,6 +4,9 @@
 
 ## 現在地
 
+- v2.4.0-rc.1候補：Planet Synthesis。Earth/Mars/Uranus/Mercuryの天文比較、独立A/B選択、0–180°の仮想傾斜、季節角／共通経過日数、標準値ギャラリー、問い、CSV。別Mercury実験で3:2共鳴と太陽の反転。詳しい範囲・検証は [V2.4](docs/V2.4.md) と [検証](docs/VERIFICATION-2.4-rc.1.md)。下記2.0の全Earth内部移行は未完了で、今回の天文教材統合とは別。実機・公開は別承認。
+
+
 - v1.5.0-rc.1: sweep-first Milankovitch Explorerと7問のEarth総合案内。既存3D/Atlas/Feedbackへ検証済み形式の設定リンクで接続。実年代データは含めず、実機/公開gateは別。[V1.5](docs/V1.5.md)・[検証](docs/VERIFICATION-1.5-rc.1.md)。候補の最終CIは最新HEADで確認。
 
 - v1.4 alpha 1 accepted at `3861d5a1`, main CI72 and existing M4 source/HTTP checked: 90-band feedback workspace, warm/cold seeds and full-state history/sweeps. [V1.4](docs/V1.4.md). 2D feedback and main-globe feedback display are not part of this first milestone.
@@ -394,7 +397,7 @@ Earth vs Marsをastronomy metricsで比較でき、Earth用気候係数を偽装
 
 ---
 
-# v2.2 — Uranus
+# v2.2 — Uranus（天文実験の受入チェックポイント）
 
 ## 目的
 
@@ -418,6 +421,16 @@ Earth/Marsと同様、専用モデルがないTemperatureは未提供。
 ## Definition of Done
 
 「地球を横倒しにした思考実験」と「実際のUranusの極端な季節」を同じLabで比較できる。
+
+---
+
+# v2.3 — Mercury（3:2の天文実験）
+
+固定Kepler軌道と厳密3:2の自転を同じ経過時刻で動かし、2公転・3自転・1太陽日、近日点付近の反転、円軌道との違いを見る。Model meridianはIAU地理経度ではない。温度は未提供。[V2.3](docs/V2.3.md)
+
+# v2.4 — Planet Synthesis（4惑星の教材統合）
+
+4惑星の共通指標／単位、ギャラリーからのA/B選択、問い、共有と書き出しを揃える。惑星数を増やすだけでなく、傾き・距離・周期・時計の意味の違いを分けて観察できることが完了条件。元のEarth3D/Atlas/気候を失わず、新しい幾何学的な球と軌道表示を接続する。全Earthコードの移植完了とは区別する。[V2.4](docs/V2.4.md)
 
 ---
 
