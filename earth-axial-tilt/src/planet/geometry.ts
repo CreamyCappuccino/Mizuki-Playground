@@ -67,7 +67,7 @@ export function illumination(p: Readonly<PlanetDefinition>, ls: number, lat: num
   return { declination, rotationFraction:h/Math.PI,
     frozenMeanWm2:Math.max(0,flux/Math.PI*(h*Math.sin(phi)*Math.sin(d)+Math.cos(phi)*Math.cos(d)*Math.sin(h))),
     instantWm2:flux*Math.max(0,Math.abs(mu)<1e-12?0:mu), elevation:Math.asin(mu)/D,
-    daylightHours:p.rotation.solarDayHours*h/Math.PI };
+    daylightHours:p.id==='mercury'?null:p.rotation.solarDayHours*h/Math.PI };
 }
 export function seasonSeries(p: Readonly<PlanetDefinition>, lat: number): {ls:number; fraction:number; mean:number; flux:number}[] {
   bounded(lat,-90,90);
