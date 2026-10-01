@@ -69,3 +69,25 @@ test('Planet Lab desktop and Japanese Large mobile screenshots', async ({ page }
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
   await page.screenshot({ path: testInfo.outputPath('planet-mobile-ja-large.png'), fullPage: true });
 });
+
+
+test('main Earth overlay panels can be hidden independently and persist on a laptop viewport', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 1366, height: 768 });
+  await page.goto('/index.html');
+  await expect(page.locator('#controls-panel')).toBeVisible();
+  await expect(page.locator('#location-panel')).toBeVisible();
+  await page.locator('#toggle-controls-panel').click();
+  await expect(page.locator('#controls-panel')).toBeHidden();
+  await expect(page.locator('#location-panel')).toBeVisible();
+  await page.locator('#toggle-location-panel').click();
+  await expect(page.locator('#location-panel')).toBeHidden();
+  await expect(page.locator('#earth-canvas')).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath('earth-panels-collapsed-1366.png') });
+  await page.reload();
+  await expect(page.locator('#controls-panel')).toBeHidden();
+  await expect(page.locator('#location-panel')).toBeHidden();
+  await page.locator('#toggle-controls-panel').click();
+  await page.locator('#toggle-location-panel').click();
+  await expect(page.locator('#controls-panel')).toBeVisible();
+  await expect(page.locator('#location-panel')).toBeVisible();
+});
