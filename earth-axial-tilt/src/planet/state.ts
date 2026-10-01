@@ -23,7 +23,7 @@ function isPlanet(value: unknown): value is PlanetId {
 }
 
 export function validatePlanetState(value: unknown): PlanetLabState | null {
-  if (!value || typeof value !== 'object') return null;
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
   const state = value as Partial<PlanetLabState>;
   if (state.version !== 1 || !isPlanet(state.worldA) || !isPlanet(state.worldB)) return null;
   if (typeof state.seasonalLongitudeDeg !== 'number' || !Number.isFinite(state.seasonalLongitudeDeg) ||
@@ -58,11 +58,18 @@ export type DecodePlanetState =
   | { status: 'error' };
 
 export function decodePlanetState(hash: string): DecodePlanetState {
+  if (typeof hash !== 'string' || hash.length > 2048) return { status: 'error' };
   const raw = hash.startsWith('#') ? hash.slice(1) : hash;
   if (!raw) return { status: 'empty' };
   const params = new URLSearchParams(raw);
-  for (const key of ['planet', 'a', 'b', 'ls', 'lat'])
-    if (params.getAll(key).length > 1) return { status: 'error' };
+  const keys = ['planet', 'a', 'b', 'ls', 'lat'];
+  for (const key of keys)
+    if (params.getAll(key).length !== 1 || !params.get(key)?.trim()) return { status: 'error' };
+  let unknown = false;
+  params.forEach((_value, key) => { if (!keys.includes(key)) unknown = true; });
+  if (unknown || /%(?![0-9a-f]{2})/i.test(raw)) return { status: 'error' };
+  const decimal = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i;
+  if (!decimal.test(params.get('ls')!) || !decimal.test(params.get('lat')!)) return { status: 'error' };
   if (params.get('planet') !== String(PLANET_STATE_VERSION)) return { status: 'error' };
   const state = validatePlanetState({
     version: 1,
