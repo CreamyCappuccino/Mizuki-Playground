@@ -1,5 +1,13 @@
 # 次の瑞希へ — Earth Axial Tilt Lab
 
+## v2.3 alpha — Mercury Spin–Orbit Lab
+
+`mercury-lab.html` adds exact 3:2 coupled spin/orbit, perihelion Sun reversal,
+a magnified middle-perihelion view, a circular counterfactual, bounded links and CSV.
+See [the Mercury contract](docs/V2.3.md). Uranus comparison remains in
+`planet-explorer.html`. Both are astronomy teaching experiments, not climate models.
+
+
 ## v2.2 Uranus candidate
 
 `planet-explorer.html` adds directed-spin 0–180° geometry, Earth90/Uranus, two explicit clocks, schematic spheres and illumination curves. See [v2.2 scope](docs/V2.2.md). Acceptance is the latest same-HEAD CI, not this heading.
